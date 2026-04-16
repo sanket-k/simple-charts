@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChartForge — Branded Chart Creator for Social Media</title>
+  <meta name="description" content="Create beautiful, brand-consistent charts for social media. Line charts, pie charts, bar charts, and more with your custom brand kit.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Top Navigation -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <rect x="2" y="2" width="20" height="20" rx="4" fill="currentColor" opacity="0.1"/>
+          <path d="M6 18L10 10L14 14L18 6" stroke="#F7931A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="logo-text">ChartForge</span>
+      </div>
+    </div>
+    <div class="topbar-center">
+      <span class="data-info" id="dataInfo"></span>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-icon" id="themeToggle" title="Toggle theme (⌘D)">
+        <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+      <div class="export-group">
+        <div class="size-selector">
+          <label>Size</label>
+          <select id="exportSize">
+            <option value="1200x675">Twitter / X (1200×675)</option>
+            <option value="1080x1080">Instagram (1080×1080)</option>
+            <option value="1200x627">LinkedIn (1200×627)</option>
+            <option value="1200x900">General (1200×900)</option>
+          </select>
+        </div>
+        <div class="format-selector">
+          <label>Format</label>
+          <select id="exportFormat">
+            <option value="png">PNG</option>
+            <option value="jpg">JPG</option>
+            <option value="svg">SVG</option>
+            <option value="webp">WebP</option>
+          </select>
+        </div>
+        <button class="btn-secondary" id="copyClipboardBtn" title="Copy to clipboard (⌘C)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+        <button class="btn-primary" id="exportBtn" title="Export (⌘E)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-layout">
+    <!-- Left Panel: Chart Type & Settings -->
+    <aside class="panel panel-left">
+      <div class="panel-section">
+        <h3 class="panel-title">Chart Type</h3>
+        <div class="chart-type-grid" id="chartTypeGrid">
+          <button class="chart-type-btn active" data-type="line" title="Line Chart">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 30L14 18L22 24L34 10" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Line</span>
+          </button>
+          <button class="chart-type-btn" data-type="timeline" title="Timeline Line Chart">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 30L14 18L22 24L34 10" stroke-linecap="round" stroke-linejoin="round"/><line x1="20" y1="8" x2="20" y2="32" stroke-dasharray="2 2" opacity="0.5"/><circle cx="20" cy="8" r="2" fill="currentColor"/></svg>
+            <span>Timeline</span>
+          </button>
+          <button class="chart-type-btn" data-type="bar" title="Horizontal Bar Chart">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="8" width="24" height="5" rx="1" fill="currentColor" opacity="0.3"/><rect x="6" y="17" width="18" height="5" rx="1" fill="currentColor" opacity="0.3"/><rect x="6" y="26" width="28" height="5" rx="1" fill="currentColor" opacity="0.3"/></svg>
+            <span>H-Bar</span>
+          </button>
+          <button class="chart-type-btn" data-type="pie" title="Pie Chart">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><circle cx="20" cy="20" r="12"/><path d="M20 8V20L30 14" stroke-linecap="round"/></svg>
+            <span>Pie</span>
+          </button>
+          <button class="chart-type-btn" data-type="donut" title="Donut Chart">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="20" cy="20" r="12"/><circle cx="20" cy="20" r="6"/></svg>
+            <span>Donut</span>
+          </button>
+          <button class="chart-type-btn" data-type="area" title="Stacked Area Chart">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 30L14 22L22 26L34 16V30H6Z" fill="currentColor" opacity="0.15"/><path d="M6 30L14 22L22 26L34 16" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 30L14 26L22 28L34 22V30H6Z" fill="currentColor" opacity="0.1"/></svg>
+            <span>Area</span>
+          </button>
+          <button class="chart-type-btn" data-type="radar" title="Spider / Radar Chart">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="20,6 33,14 30,30 10,30 7,14" opacity="0.2" fill="currentColor"/><polygon points="20,6 33,14 30,30 10,30 7,14"/><polygon points="20,12 28,17 26,26 14,26 12,17" stroke-dasharray="2 2" opacity="0.5"/></svg>
+            <span>Radar</span>
+          </button>
+          <button class="chart-type-btn" data-type="scatter" title="Scatter Plot">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="28" r="2.5" fill="currentColor"/><circle cx="16" cy="20" r="2.5" fill="currentColor"/><circle cx="24" cy="14" r="2.5" fill="currentColor"/><circle cx="30" cy="22" r="2.5" fill="currentColor"/><circle cx="20" cy="26" r="2.5" fill="currentColor" opacity="0.4"/></svg>
+            <span>Scatter</span>
+          </button>
+          <button class="chart-type-btn" data-type="waterfall" title="Waterfall Chart">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="6" y="10" width="5" height="16" fill="currentColor" opacity="0.3"/><rect x="13" y="8" width="5" height="6" fill="currentColor" opacity="0.2"/><rect x="20" y="14" width="5" height="8" fill="currentColor" opacity="0.2"/><rect x="27" y="6" width="5" height="20" fill="currentColor" opacity="0.3"/><line x1="11" y1="10" x2="13" y2="10" stroke-dasharray="1 1"/><line x1="18" y1="14" x2="20" y2="14" stroke-dasharray="1 1"/><line x1="25" y1="22" x2="27" y2="22" stroke-dasharray="1 1"/></svg>
+            <span>Waterfall</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Labels -->
+      <div class="panel-section">
+        <h3 class="panel-title">Labels</h3>
+        <div class="input-group">
+          <label for="chartTitle">Title</label>
+          <input type="text" id="chartTitle" placeholder="Chart title…" value="">
+        </div>
+        <div class="input-group">
+          <label for="chartSubtitle">Subtitle</label>
+          <input type="text" id="chartSubtitle" placeholder="Supporting context…" value="">
+        </div>
+        <div class="input-group">
+          <label for="chartSource">Source</label>
+          <input type="text" id="chartSource" placeholder="Data source…" value="">
+        </div>
+      </div>
+
+      <!-- Timeline Events (shown for timeline chart) -->
+      <div class="panel-section" id="timelineSettings" style="display:none;">
+        <h3 class="panel-title">Timeline Events</h3>
+        <p class="hint-text" style="margin-bottom:8px;">Add markers for key events on the chart. Match "Position" to a label in your data.</p>
+        <div class="timeline-input-tabs">
+          <button class="tab-btn small active" data-tltab="manual">Manual</button>
+          <button class="tab-btn small" data-tltab="bulk">Bulk / Paste</button>
+        </div>
+        <div class="tl-tab-content active" id="tltab-manual">
+          <div id="timelineEventsList"></div>
+          <button class="btn-secondary full-width" id="addTimelineEvent">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Event
+          </button>
+        </div>
+        <div class="tl-tab-content" id="tltab-bulk">
+          <textarea id="bulkEventsTextarea" class="data-textarea small" placeholder="Paste events, one per line:&#10;date, event name&#10;&#10;Example:&#10;2024-03, ETF Approved&#10;2024-04, Halving"></textarea>
+          <button class="btn-secondary full-width" id="parseBulkEventsBtn">Parse Events</button>
+        </div>
+      </div>
+
+      <!-- Style -->
+      <div class="panel-section">
+        <h3 class="panel-title">Style</h3>
+        <div class="input-group">
+          <label for="chartCurve">Line Tension</label>
+          <input type="range" id="chartCurve" min="0" max="0.5" step="0.05" value="0.35">
+        </div>
+        <div class="input-group">
+          <label for="pointSize">Point Size</label>
+          <input type="range" id="pointSize" min="0" max="8" step="1" value="3">
+        </div>
+        <div class="input-group">
+          <label for="lineWidth">Line Width</label>
+          <input type="range" id="lineWidth" min="1" max="5" step="0.5" value="2.5">
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="showLegend" checked>
+          <label for="showLegend">Show Legend</label>
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="showGrid" checked>
+          <label for="showGrid">Show Grid</label>
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="showDataLabels">
+          <label for="showDataLabels">Data Labels</label>
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="fillArea">
+          <label for="fillArea">Fill Under Line</label>
+        </div>
+      </div>
+
+      <!-- Formatting -->
+      <div class="panel-section">
+        <h3 class="panel-title">Formatting</h3>
+        <div class="input-group">
+          <label for="numberFormat">Number Format</label>
+          <select id="numberFormat">
+            <option value="auto">Auto (K / M / B)</option>
+            <option value="raw">Raw Numbers</option>
+            <option value="comma">Commas (1,000,000)</option>
+            <option value="short">Short (1M, 1B)</option>
+            <option value="currency">Currency ($1.2M)</option>
+            <option value="percent">Percentage (%)</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="dateFormat">Date Label Format</label>
+          <select id="dateFormat">
+            <option value="auto">Auto</option>
+            <option value="yyyy">Year (2024)</option>
+            <option value="MMM yyyy">Mon Year (Jan 2024)</option>
+            <option value="MMM yy">Mon YY (Jan '24)</option>
+            <option value="MM/yyyy">MM/YYYY</option>
+            <option value="MMM">Month (Jan)</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="maxTicks">Max Axis Labels</label>
+          <input type="range" id="maxTicks" min="4" max="30" step="1" value="12">
+          <span class="range-value" id="maxTicksValue">12</span>
+        </div>
+      </div>
+
+      <!-- Colors -->
+      <div class="panel-section">
+        <h3 class="panel-title">Colors</h3>
+        <div class="color-swatches" id="colorSwatches">
+          <div class="swatch-row">
+            <label>Hero</label>
+            <input type="color" class="color-input" id="colorHero" value="#F7931A">
+            <input type="text" class="swatch-hex-input" id="colorHeroHex" value="#F7931A" maxlength="7">
+          </div>
+          <div class="swatch-row">
+            <label>Secondary</label>
+            <input type="color" class="color-input" id="colorSecondary" value="#60A5FA">
+            <input type="text" class="swatch-hex-input" id="colorSecondaryHex" value="#60A5FA" maxlength="7">
+          </div>
+          <div class="swatch-row">
+            <label>Tertiary</label>
+            <input type="color" class="color-input" id="colorTertiary" value="#34D399">
+            <input type="text" class="swatch-hex-input" id="colorTertiaryHex" value="#34D399" maxlength="7">
+          </div>
+          <div class="swatch-row">
+            <label>4th</label>
+            <input type="color" class="color-input" id="colorFourth" value="#F472B6">
+            <input type="text" class="swatch-hex-input" id="colorFourthHex" value="#F472B6" maxlength="7">
+          </div>
+          <div class="swatch-row">
+            <label>5th</label>
+            <input type="color" class="color-input" id="colorFifth" value="#A78BFA">
+            <input type="text" class="swatch-hex-input" id="colorFifthHex" value="#A78BFA" maxlength="7">
+          </div>
+        </div>
+        <button class="btn-secondary full-width" id="resetColorsBtn" style="margin-top:6px;">Reset to Brand</button>
+      </div>
+    </aside>
+
+    <!-- Center: Chart Preview -->
+    <section class="chart-stage">
+      <div class="chart-container" id="chartContainer">
+        <canvas id="chartCanvas"></canvas>
+      </div>
+    </section>
+
+    <!-- Right Panel: Data Input -->
+    <aside class="panel panel-right">
+      <div class="panel-section">
+        <h3 class="panel-title">Data</h3>
+        <div class="data-input-tabs">
+          <button class="tab-btn active" data-tab="paste">Paste</button>
+          <button class="tab-btn" data-tab="csv">CSV</button>
+          <button class="tab-btn" data-tab="manual">Manual</button>
+        </div>
+
+        <div class="tab-content active" id="tab-paste">
+          <textarea id="dataTextarea" class="data-textarea" placeholder="Paste your data here…&#10;&#10;Format: Label, Value&#10;or: Label, Series1, Series2&#10;&#10;Example:&#10;Jan, 120&#10;Feb, 340&#10;Mar, 280"></textarea>
+          <button class="btn-secondary full-width" id="parseDataBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            Parse Data
+          </button>
+        </div>
+
+        <div class="tab-content" id="tab-csv">
+          <div class="file-drop-zone" id="fileDropZone">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <p>Drop CSV file here</p>
+            <span>or click to browse</span>
+            <input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" hidden>
+          </div>
+        </div>
+
+        <div class="tab-content" id="tab-manual">
+          <div class="manual-data" id="manualDataArea">
+            <div class="manual-header">
+              <input type="text" class="manual-cell header-cell" value="Label" readonly>
+              <input type="text" class="manual-cell header-cell" id="series1Name" value="Series 1">
+              <button class="btn-icon small" id="addSeriesBtn" title="Add series">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+            </div>
+            <div id="manualRows">
+              <div class="manual-row">
+                <input type="text" class="manual-cell" placeholder="Label">
+                <input type="number" class="manual-cell" placeholder="Value">
+              </div>
+            </div>
+            <button class="btn-secondary full-width" id="addRowBtn">+ Add Row</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Preview -->
+      <div class="panel-section">
+        <h3 class="panel-title">
+          Data Preview
+          <span class="badge" id="rowCountBadge"></span>
+        </h3>
+        <div class="data-preview" id="dataPreview">
+          <p class="placeholder-text">No data loaded yet</p>
+        </div>
+      </div>
+
+      <!-- Data Options -->
+      <div class="panel-section" id="dataOptionsSection" style="display:none;">
+        <h3 class="panel-title">Data Options</h3>
+        <div class="input-group">
+          <label for="downsampleSelect">Downsample (large data)</label>
+          <select id="downsampleSelect">
+            <option value="auto">Auto</option>
+            <option value="none">None (all points)</option>
+            <option value="weekly">Weekly average</option>
+            <option value="monthly">Monthly average</option>
+            <option value="quarterly">Quarterly average</option>
+            <option value="yearly">Yearly average</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="columnSelect">Y-Axis Column</label>
+          <select id="columnSelect"></select>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
