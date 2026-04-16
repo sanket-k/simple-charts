@@ -58,6 +58,18 @@
             <option value="webp">WebP</option>
           </select>
         </div>
+        <div class="format-selector">
+          <label>Quality</label>
+          <select id="exportQuality">
+            <option value="1">1x</option>
+            <option value="2" selected>2x</option>
+            <option value="3">3x</option>
+          </select>
+        </div>
+        <button class="btn-secondary" id="copyJsonBtn" title="Copy chart data as JSON">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          JSON
+        </button>
         <button class="btn-secondary" id="copyClipboardBtn" title="Copy to clipboard (⌘C)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           Copy
@@ -87,6 +99,10 @@
           <button class="chart-type-btn" data-type="bar" title="Horizontal Bar Chart">
             <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="8" width="24" height="5" rx="1" fill="currentColor" opacity="0.3"/><rect x="6" y="17" width="18" height="5" rx="1" fill="currentColor" opacity="0.3"/><rect x="6" y="26" width="28" height="5" rx="1" fill="currentColor" opacity="0.3"/></svg>
             <span>H-Bar</span>
+          </button>
+          <button class="chart-type-btn" data-type="vbar" title="Vertical Bar Chart">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="16" width="5" height="18" rx="1" fill="currentColor" opacity="0.3"/><rect x="15" y="8" width="5" height="26" rx="1" fill="currentColor" opacity="0.3"/><rect x="24" y="12" width="5" height="22" rx="1" fill="currentColor" opacity="0.3"/><rect x="33" y="6" width="5" height="28" rx="1" fill="currentColor" opacity="0.3"/></svg>
+            <span>V-Bar</span>
           </button>
           <button class="chart-type-btn" data-type="pie" title="Pie Chart">
             <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><circle cx="20" cy="20" r="12"/><path d="M20 8V20L30 14" stroke-linecap="round"/></svg>
@@ -135,7 +151,15 @@
       <!-- Timeline Events (shown for timeline chart) -->
       <div class="panel-section" id="timelineSettings" style="display:none;">
         <h3 class="panel-title">Timeline Events</h3>
-        <p class="hint-text" style="margin-bottom:8px;">Add markers for key events on the chart. Match "Position" to a label in your data.</p>
+        <div class="input-group checkbox-group" style="margin-bottom:6px;">
+          <input type="checkbox" id="showEventMarkers" checked>
+          <label for="showEventMarkers">Show event markers</label>
+        </div>
+        <div class="swatch-row" style="margin-bottom:8px;">
+          <label style="font-size:0.72rem;min-width:42px;">Marker</label>
+          <input type="color" class="color-input" id="eventMarkerColor" value="#F7931A">
+        </div>
+        <p class="hint-text" style="margin-bottom:8px;">Add markers for key events. Use dates matching your data (e.g. 2024-03-15).</p>
         <div class="timeline-input-tabs">
           <button class="tab-btn small active" data-tltab="manual">Manual</button>
           <button class="tab-btn small" data-tltab="bulk">Bulk / Paste</button>
@@ -148,7 +172,7 @@
           </button>
         </div>
         <div class="tl-tab-content" id="tltab-bulk">
-          <textarea id="bulkEventsTextarea" class="data-textarea small" placeholder="Paste events, one per line:&#10;date, event name&#10;&#10;Example:&#10;2024-03, ETF Approved&#10;2024-04, Halving"></textarea>
+          <textarea id="bulkEventsTextarea" class="data-textarea small" placeholder="Paste events, one per line:&#10;date, event name&#10;&#10;Example:&#10;2024-03-15, ETF Approved&#10;2024-04-20, Halving"></textarea>
           <button class="btn-secondary full-width" id="parseBulkEventsBtn">Parse Events</button>
         </div>
       </div>
@@ -184,11 +208,77 @@
           <input type="checkbox" id="fillArea">
           <label for="fillArea">Fill Under Line</label>
         </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="spanGaps" checked>
+          <label for="spanGaps">Bridge Missing Data</label>
+        </div>
+        <div class="input-group">
+          <label for="gridStyle">Grid Style</label>
+          <select id="gridStyle">
+            <option value="solid">Solid</option>
+            <option value="dashed">Dashed</option>
+            <option value="dotted">Dotted</option>
+            <option value="none">None</option>
+          </select>
+        </div>
+        <div class="input-group" id="borderRadiusGroup">
+          <label for="barBorderRadius">Border Radius (Bar/Waterfall)</label>
+          <input type="range" id="barBorderRadius" min="0" max="12" step="1" value="4">
+          <span class="range-value" id="barBorderRadiusValue">4</span>
+        </div>
+      </div>
+
+      <!-- Display -->
+      <div class="panel-section">
+        <h3 class="panel-title">Display</h3>
+        <div class="input-group">
+          <label for="legendPosition">Legend Position</label>
+          <select id="legendPosition">
+            <option value="top">Top</option>
+            <option value="bottom">Bottom</option>
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="tooltipStyle">Tooltip Style</label>
+          <select id="tooltipStyle">
+            <option value="default">Default</option>
+            <option value="compact">Compact</option>
+            <option value="detailed">Detailed</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="animationSpeed">Animation Speed</label>
+          <select id="animationSpeed">
+            <option value="0">None</option>
+            <option value="300">Fast (300ms)</option>
+            <option value="600" selected>Normal (600ms)</option>
+            <option value="1000">Slow (1000ms)</option>
+          </select>
+        </div>
       </div>
 
       <!-- Formatting -->
       <div class="panel-section">
         <h3 class="panel-title">Formatting</h3>
+        <div class="input-group">
+          <label for="xAxisType">X-Axis Type</label>
+          <select id="xAxisType">
+            <option value="auto">Auto-detect</option>
+            <option value="category">Category (labels)</option>
+            <option value="time">Date / Time</option>
+            <option value="linear">Linear (numbers)</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="xAxisLabel">X-Axis Title</label>
+          <input type="text" id="xAxisLabel" placeholder="e.g. Date, Month, Year">
+        </div>
+        <div class="input-group">
+          <label for="yAxisLabel">Y-Axis Title</label>
+          <input type="text" id="yAxisLabel" placeholder="e.g. Revenue ($), Volume">
+        </div>
         <div class="input-group">
           <label for="numberFormat">Number Format</label>
           <select id="numberFormat">
@@ -216,11 +306,82 @@
           <input type="range" id="maxTicks" min="4" max="30" step="1" value="12">
           <span class="range-value" id="maxTicksValue">12</span>
         </div>
+        <div class="input-group">
+          <label for="yAxisScale">Y-Axis Scale</label>
+          <select id="yAxisScale">
+            <option value="linear">Linear</option>
+            <option value="logarithmic">Logarithmic</option>
+          </select>
+        </div>
+        <div class="input-group-row">
+          <div class="input-group">
+            <label for="yAxisMin">Y-Axis Min</label>
+            <input type="number" id="yAxisMin" placeholder="Auto">
+          </div>
+          <div class="input-group">
+            <label for="yAxisMax">Y-Axis Max</label>
+            <input type="number" id="yAxisMax" placeholder="Auto">
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="xAxisRotation">X-Axis Label Rotation</label>
+          <input type="range" id="xAxisRotation" min="0" max="90" step="5" value="45">
+          <span class="range-value" id="xAxisRotationValue">45°</span>
+        </div>
+        <div class="input-group">
+          <label for="decimalPlaces">Decimal Places</label>
+          <select id="decimalPlaces">
+            <option value="auto">Auto</option>
+            <option value="0">0</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="currencyPrefix">Currency Symbol</label>
+          <input type="text" id="currencyPrefix" placeholder="$" value="$" maxlength="3">
+        </div>
+      </div>
+
+      <!-- Annotations -->
+      <div class="panel-section">
+        <h3 class="panel-title">Annotations</h3>
+        <div class="input-group-row">
+          <div class="input-group">
+            <label for="refLineY">Reference Line Y</label>
+            <input type="number" id="refLineY" placeholder="Value">
+          </div>
+          <div class="input-group">
+            <label for="refLineLabel">Label</label>
+            <input type="text" id="refLineLabel" placeholder="Label">
+          </div>
+        </div>
       </div>
 
       <!-- Colors -->
       <div class="panel-section">
         <h3 class="panel-title">Colors</h3>
+        <div class="preset-palettes" id="presetPalettes">
+          <div class="palette-swatch active" data-palette="default" title="Default">
+            <span style="background:#F7931A"></span><span style="background:#60A5FA"></span><span style="background:#34D399"></span><span style="background:#F472B6"></span><span style="background:#A78BFA"></span>
+          </div>
+          <div class="palette-swatch" data-palette="warm" title="Warm">
+            <span style="background:#F59E0B"></span><span style="background:#EF4444"></span><span style="background:#F97316"></span><span style="background:#EC4899"></span><span style="background:#D97706"></span>
+          </div>
+          <div class="palette-swatch" data-palette="cool" title="Cool">
+            <span style="background:#3B82F6"></span><span style="background:#06B6D4"></span><span style="background:#8B5CF6"></span><span style="background:#14B8A6"></span><span style="background:#6366F1"></span>
+          </div>
+          <div class="palette-swatch" data-palette="neon" title="Neon">
+            <span style="background:#00FF87"></span><span style="background:#FF006E"></span><span style="background:#FFBE0B"></span><span style="background:#3A86FF"></span><span style="background:#8338EC"></span>
+          </div>
+          <div class="palette-swatch" data-palette="pastel" title="Pastel">
+            <span style="background:#FCA5A5"></span><span style="background:#93C5FD"></span><span style="background:#86EFAC"></span><span style="background:#FDE68A"></span><span style="background:#C4B5FD"></span>
+          </div>
+          <div class="palette-swatch" data-palette="mono" title="Monochrome">
+            <span style="background:#F8FAFC"></span><span style="background:#CBD5E1"></span><span style="background:#94A3B8"></span><span style="background:#64748B"></span><span style="background:#475569"></span>
+          </div>
+        </div>
         <div class="color-swatches" id="colorSwatches">
           <div class="swatch-row">
             <label>Hero</label>
@@ -249,13 +410,36 @@
           </div>
         </div>
         <button class="btn-secondary full-width" id="resetColorsBtn" style="margin-top:6px;">Reset to Brand</button>
+        <div class="swatch-row" style="margin-top:8px;">
+          <label style="font-size:0.72rem;min-width:42px;">Chart BG</label>
+          <input type="color" class="color-input" id="chartBgColor" value="#111622">
+        </div>
+        <div class="swatch-row">
+          <label style="font-size:0.72rem;min-width:42px;">Grid</label>
+          <input type="color" class="color-input" id="chartGridColor" value="#334155">
+        </div>
       </div>
     </aside>
 
     <!-- Center: Chart Preview -->
     <section class="chart-stage">
-      <div class="chart-container" id="chartContainer">
-        <canvas id="chartCanvas"></canvas>
+      <div class="chart-wrapper">
+        <div class="chart-container" id="chartContainer">
+          <canvas id="chartCanvas"></canvas>
+        </div>
+        <!-- Zoom Slider -->
+        <div class="zoom-slider-container" id="zoomSliderContainer" style="display:none;">
+          <div class="zoom-slider-track" id="zoomSliderTrack">
+            <div class="zoom-slider-range" id="zoomSliderRange"></div>
+            <input type="range" class="zoom-handle zoom-handle-min" id="zoomMin" min="0" max="100" value="0" step="0.1">
+            <input type="range" class="zoom-handle zoom-handle-max" id="zoomMax" min="0" max="100" value="100" step="0.1">
+          </div>
+          <div class="zoom-labels">
+            <span id="zoomLabelStart">Start</span>
+            <span class="zoom-reset-btn" id="zoomResetBtn" title="Reset zoom">Reset</span>
+            <span id="zoomLabelEnd">End</span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -334,6 +518,58 @@
         <div class="input-group">
           <label for="columnSelect">Y-Axis Column</label>
           <select id="columnSelect"></select>
+        </div>
+        <div class="input-group">
+          <label for="maxRowsInput">Max Rows to Load</label>
+          <input type="number" id="maxRowsInput" value="50000" min="100" max="100000" step="1000">
+        </div>
+        <div class="data-size-info" id="dataSizeInfo"></div>
+      </div>
+
+      <!-- Dual Y-Axis -->
+      <div class="panel-section" id="dualAxisSection" style="display:none;">
+        <h3 class="panel-title">Dual Y-Axis</h3>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="dualAxisToggle">
+          <label for="dualAxisToggle">Enable Dual Axis</label>
+        </div>
+        <div id="axisAssignmentList"></div>
+      </div>
+
+      <!-- Branding -->
+      <div class="panel-section">
+        <h3 class="panel-title">Branding</h3>
+        <div class="input-group">
+          <label for="brandName">Brand Name</label>
+          <input type="text" id="brandName" placeholder="e.g. ChartForge" value="ChartForge">
+        </div>
+        <div class="input-group">
+          <label for="brandLogoFile">Brand Logo</label>
+          <div class="brand-logo-row">
+            <div class="brand-logo-preview" id="brandLogoPreview">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="2" width="20" height="20" rx="4" fill="currentColor" opacity="0.1"/>
+                <path d="M6 18L10 10L14 14L18 6" stroke="#F7931A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <button class="btn-secondary" id="brandLogoBtn">Upload</button>
+            <button class="btn-secondary" id="brandLogoClearBtn" title="Remove logo" style="padding:6px 10px;">×</button>
+            <input type="file" id="brandLogoFile" accept="image/*" hidden>
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="brandPosition">Position</label>
+          <select id="brandPosition">
+            <option value="bottom-right">Bottom Right</option>
+            <option value="bottom-left">Bottom Left</option>
+            <option value="top-right">Top Right</option>
+            <option value="top-left">Top Left</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="brandOpacity">Opacity</label>
+          <input type="range" id="brandOpacity" min="0.2" max="1" step="0.1" value="0.7">
+          <span class="range-value" id="brandOpacityValue">0.7</span>
         </div>
       </div>
     </aside>
