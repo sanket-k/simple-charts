@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════
-   ChartForge — Application Logic
+   Simple Charts — Application Logic
    ═══════════════════════════════════════════ */
 
 (() => {
@@ -1584,7 +1584,7 @@
   }
 
   function getLineDatasetDefaults(ds, i, c, colors, tension, useTimeAxis, displayData) {
-    const pointRadius = parseInt(dom.pointSize.value) || 3;
+    const pointRadius = parseInt(dom.pointSize.value) ?? 3;
     const lineWidth = parseFloat(dom.lineWidth.value) || 2.5;
     const fill = dom.fillArea.checked;
     const gaps = dom.spanGaps.checked;
@@ -1920,7 +1920,7 @@
             borderColor: colors[i % colors.length],
             backgroundColor: hexToRgba(colors[i % colors.length], 0.2),
             borderWidth: 2,
-            pointRadius: Math.min(parseInt(dom.pointSize.value) || 2, ds.values.length > 200 ? 0 : 3),
+            pointRadius: Math.min(parseInt(dom.pointSize.value) ?? 2, ds.values.length > 200 ? 0 : 3),
             pointHoverRadius: 5,
             pointBackgroundColor: colors[i % colors.length],
             pointBorderColor: c.bg,
@@ -2013,7 +2013,7 @@
           backgroundColor: hexToRgba(userColors[0], 0.7),
           borderColor: userColors[0],
           borderWidth: 1.5,
-          pointRadius: Math.min(parseInt(dom.pointSize.value) || 5, points.length > 500 ? 2 : 5),
+          pointRadius: Math.min(parseInt(dom.pointSize.value) ?? 5, points.length > 500 ? 2 : 5),
           pointHoverRadius: 8,
           pointHoverBorderWidth: 2,
           pointHoverBorderColor: c.bg,
