@@ -1361,3 +1361,60 @@ body {
   justify-content: flex-end;
   gap: var(--sp-3);
 }
+
+/* ═══════════════════════════════════════════
+   Responsive Design & Mobile
+   ═══════════════════════════════════════════ */
+
+@media (max-width: 1024px) {
+  .app-layout {
+    grid-template-columns: 240px 1fr;
+  }
+  .panel-right {
+    display: none; /* Data panel hidden on medium screens unless toggled */
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    overflow-y: auto;
+  }
+  .topbar {
+    padding: var(--sp-2) var(--sp-3);
+    height: auto;
+    min-height: 52px;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+  }
+  .topbar-center {
+    display: none;
+  }
+  .export-group {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .app-layout {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100vh - 52px);
+  }
+  .chart-stage {
+    order: -1;
+    min-height: 350px;
+    padding: var(--sp-4);
+  }
+  .chart-wrapper {
+    max-width: 100%;
+  }
+  .panel {
+    border-right: none;
+    border-left: none;
+    border-top: 1px solid var(--border-secondary);
+    min-height: auto;
+    overflow-y: visible;
+  }
+  .panel-right {
+    display: block; /* Show data panel stacked on mobile */
+  }
+}

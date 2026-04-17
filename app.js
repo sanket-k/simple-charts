@@ -474,8 +474,12 @@
   dom.chartTypeGrid.addEventListener('click', (e) => {
     const btn = e.target.closest('.chart-type-btn');
     if (!btn) return;
-    $$('.chart-type-btn').forEach(b => b.classList.remove('active'));
+    $$('.chart-type-btn').forEach(b => {
+      b.classList.remove('active');
+      b.setAttribute('aria-selected', 'false');
+    });
     btn.classList.add('active');
+    btn.setAttribute('aria-selected', 'true');
     currentChartType = btn.dataset.type;
 
     // Show/hide timeline settings
@@ -493,9 +497,13 @@
   $$('.data-input-tabs .tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const parent = btn.closest('.panel-section');
-      parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      parent.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
       parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
       $(`#tab-${btn.dataset.tab}`).classList.add('active');
     });
   });
@@ -503,9 +511,13 @@
   // Timeline event tabs (manual / bulk)
   $$('.timeline-input-tabs .tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      $$('.timeline-input-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+      $$('.timeline-input-tabs .tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
       $$('.tl-tab-content').forEach(c => c.classList.remove('active'));
       btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
       $(`#tltab-${btn.dataset.tltab}`).classList.add('active');
     });
   });
@@ -544,13 +556,17 @@
     return (isNegative ? -1 : 1) * parsed * multiplier;
   }
 
-  function parseDataFromText(text) {
+  async function parseDataFromText(text) {
     if (!text.trim()) return null;
 
-    const result = Papa.parse(text.trim(), {
-      header: false,
-      skipEmptyLines: true,
-      dynamicTyping: true
+    const result = await new Promise(resolve => {
+      Papa.parse(text.trim(), {
+        header: false,
+        skipEmptyLines: true,
+        dynamicTyping: true,
+        worker: true,
+        complete: resolve
+      });
     });
 
     if (!result.data || result.data.length === 0) return null;
@@ -631,7 +647,7 @@
     return { labels, datasets, isTimeSeries: isTS, dateObjects, dateRange };
   }
 
-  function loadSampleData() {
+  async function loadSampleData() {
     const samplesByType = {
       line: "Month, Revenue, Costs\nJan, 4200, 3100\nFeb, 5100, 3400\nMar, 4800, 3200\nApr, 6200, 3800\nMay, 7100, 4100\nJun, 6800, 3900\nJul, 7800, 4300\nAug, 8200, 4500",
       timeline: "Month, Price\nJan 2024, 42000\nFeb 2024, 43500\nMar 2024, 51000\nApr 2024, 64000\nMay 2024, 61000\nJun 2024, 58000\nJul 2024, 63000\nAug 2024, 59000\nSep 2024, 55000\nOct 2024, 62000\nNov 2024, 72000\nDec 2024, 68000",
@@ -647,7 +663,7 @@
 
     const sample = samplesByType[currentChartType] || samplesByType.line;
     dom.dataTextarea.value = sample;
-    rawParsedData = parseDataFromText(sample);
+    rawParsedData = await parseDataFromText(sample);
     parsedData = rawParsedData;
 
     if (currentChartType === 'timeline') {
@@ -754,8 +770,8 @@
     updateZoomLabels();
   }
 
-  dom.parseDataBtn.addEventListener('click', () => {
-    rawParsedData = parseDataFromText(dom.dataTextarea.value);
+  dom.parseDataBtn.addEventListener('click', async () => {
+    rawParsedData = await parseDataFromText(dom.dataTextarea.value);
     if (rawParsedData) {
       parsedData = rawParsedData;
       zoomRange = [0, 100];
@@ -772,20 +788,24 @@
 
   dom.fileDropZone.addEventListener('click', () => dom.csvFileInput.click());
 
-  dom.fileDropZone.addEventListener('dragover', (e) => {
+  document.addEventListener('dragover', (e) => {
     e.preventDefault();
     dom.fileDropZone.classList.add('dragover');
   });
 
-  dom.fileDropZone.addEventListener('dragleave', () => {
-    dom.fileDropZone.classList.remove('dragover');
+  document.addEventListener('dragleave', (e) => {
+    if (!e.relatedTarget || e.relatedTarget.nodeName === 'HTML') {
+      dom.fileDropZone.classList.remove('dragover');
+    }
   });
 
-  dom.fileDropZone.addEventListener('drop', (e) => {
+  document.addEventListener('drop', (e) => {
     e.preventDefault();
     dom.fileDropZone.classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if (file) handleCSVFile(file);
+    const file = e.dataTransfer?.files?.[0];
+    if (file && file.name.match(/\.(csv|tsv|txt)$/i)) {
+      handleCSVFile(file);
+    }
   });
 
   dom.csvFileInput.addEventListener('change', (e) => {
@@ -795,16 +815,21 @@
 
   function handleCSVFile(file) {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const text = e.target.result;
       dom.dataTextarea.value = text.substring(0, 50000); // Limit textarea display
-      rawParsedData = parseDataFromText(text);
+      rawParsedData = await parseDataFromText(text);
       if (rawParsedData) {
         // Switch to paste tab
         const parent = dom.dataTextarea.closest('.panel-section');
-        parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        parent.querySelectorAll('.tab-btn').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-selected', 'false');
+        });
         parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        parent.querySelector('.tab-btn[data-tab="paste"]').classList.add('active');
+        const pasteTab = parent.querySelector('.tab-btn[data-tab="paste"]');
+        pasteTab.classList.add('active');
+        pasteTab.setAttribute('aria-selected', 'true');
         $('#tab-paste').classList.add('active');
 
         parsedData = rawParsedData;
@@ -2521,7 +2546,7 @@
   //  Clipboard Paste
   // ═══════════════════════════════════════════
 
-  document.addEventListener('paste', (e) => {
+  document.addEventListener('paste', async (e) => {
     const tag = document.activeElement?.tagName?.toLowerCase();
     if (tag === 'input' || tag === 'textarea') return;
 
@@ -2529,7 +2554,7 @@
     if (!text) return;
 
     dom.dataTextarea.value = text;
-    rawParsedData = parseDataFromText(text);
+    rawParsedData = await parseDataFromText(text);
     if (rawParsedData) {
       parsedData = rawParsedData;
       zoomRange = [0, 100];
