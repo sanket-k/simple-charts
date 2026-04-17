@@ -514,6 +514,36 @@
   //  Data Parsing
   // ═══════════════════════════════════════════
 
+  function smartParseNumber(v) {
+    if (typeof v === 'number') return isNaN(v) ? null : v;
+    if (!v || typeof v !== 'string') return null;
+    v = v.trim();
+    if (v === '' || v.toLowerCase() === 'nan' || v.toLowerCase() === 'null') return null;
+
+    let isNegative = false;
+    if (v.startsWith('(') && v.endsWith(')')) {
+      isNegative = true;
+      v = v.slice(1, -1);
+    } else if (v.startsWith('-')) {
+      isNegative = true;
+      v = v.slice(1);
+    }
+
+    let multiplier = 1;
+    const lastChar = v.charAt(v.length - 1).toLowerCase();
+    if (lastChar === 'k') { multiplier = 1e3; v = v.slice(0, -1); }
+    else if (lastChar === 'm') { multiplier = 1e6; v = v.slice(0, -1); }
+    else if (lastChar === 'b') { multiplier = 1e9; v = v.slice(0, -1); }
+    else if (lastChar === '%') { multiplier = 1; v = v.slice(0, -1); }
+
+    v = v.replace(/[^0-9.]/g, '');
+
+    const parsed = parseFloat(v);
+    if (isNaN(parsed)) return null;
+
+    return (isNegative ? -1 : 1) * parsed * multiplier;
+  }
+
   function parseDataFromText(text) {
     if (!text.trim()) return null;
 
@@ -525,7 +555,7 @@
 
     if (!result.data || result.data.length === 0) return null;
 
-    const rows = result.data;
+    let rows = result.data;
 
     // Check row limit
     if (rows.length > HARD_ROW_LIMIT) {
@@ -535,6 +565,15 @@
     if (rows.length > WARN_ROW_LIMIT) {
       showToast(`Large dataset (${rows.length.toLocaleString()} rows). Auto-downsampling recommended.`, 'warning');
     }
+
+    // Ensure data shape uniformity (pad short rows)
+    const expectedCols = Math.max(...rows.map(r => r.length));
+    rows = rows.map(r => {
+      if (r.length < expectedCols) {
+        return [...r, ...Array(expectedCols - r.length).fill(null)];
+      }
+      return r;
+    });
 
     // Detect if first row is header
     const firstRow = rows[0];
@@ -574,15 +613,19 @@
     }
 
     const datasets = [];
+    let hasAnyValidNumber = false;
     for (let i = 1; i < (dataRows[0] || []).length; i++) {
+      const values = dataRows.map(r => smartParseNumber(r[i]));
+      if (values.some(v => v !== null)) hasAnyValidNumber = true;
       datasets.push({
         name: seriesNames[i - 1] || `Series ${i}`,
-        values: dataRows.map(r => {
-          const v = r[i];
-          if (v == null || v === '' || v === 'NaN') return null;
-          return typeof v === 'number' ? v : (parseFloat(v) || null);
-        })
+        values: values
       });
+    }
+
+    if (!hasAnyValidNumber && datasets.length > 0) {
+      showToast('No valid numeric data found for chart.', 'error');
+      return null;
     }
 
     return { labels, datasets, isTimeSeries: isTS, dateObjects, dateRange };
@@ -808,15 +851,22 @@
     dom.manualRows.appendChild(row);
   }
 
-  dom.manualRows.addEventListener('input', () => parseManualData());
+  dom.manualRows.parentElement.addEventListener('input', (e) => {
+    if (e.target.tagName === 'INPUT') parseManualData();
+  });
 
   function parseManualData() {
     const rows = dom.manualRows.querySelectorAll('.manual-row');
     const labels = [];
     const datasets = [];
 
+    // Support reading edited header labels
+    const headers = dom.manualRows.parentElement.querySelectorAll('.header-cell');
+
     for (let i = 0; i < seriesCount; i++) {
-      datasets.push({ name: `Series ${i + 1}`, values: [] });
+      // Offset by 1 to skip the "Label" header
+      const headerVal = headers[i + 1] ? headers[i + 1].value : `Series ${i + 1}`;
+      datasets.push({ name: headerVal || `Series ${i + 1}`, values: [] });
     }
 
     rows.forEach(row => {
@@ -826,8 +876,7 @@
       labels.push(label);
       for (let i = 1; i < cells.length; i++) {
         if (datasets[i - 1]) {
-          const val = parseFloat(cells[i].value);
-          datasets[i - 1].values.push(isNaN(val) ? null : val);
+          datasets[i - 1].values.push(smartParseNumber(cells[i].value));
         }
       }
     });
@@ -1175,9 +1224,12 @@
       boxPadding: 4,
       callbacks: {
         label: (ctx) => {
-          const label = ctx.dataset.label || '';
+          let label = ctx.dataset.label || '';
+          if (currentChartType === 'pie' || currentChartType === 'donut') {
+            label = ctx.chart.data.labels[ctx.dataIndex] || '';
+          }
           const val = ctx.parsed.y != null ? ctx.parsed.y : ctx.parsed;
-          return `${label}: ${formatNumber(typeof val === 'object' ? ctx.raw : val)}`;
+          return `${label ? label + ': ' : ''}${formatNumber(typeof val === 'object' ? ctx.raw : val)}`;
         }
       }
     };
@@ -1516,7 +1568,7 @@
     }
 
     const displayData = applyZoom(parsedData);
-    if (!displayData || displayData.labels.length === 0) return;
+    if (!displayData || !displayData.labels || displayData.labels.length === 0 || !displayData.datasets || displayData.datasets.length === 0) return;
 
     const c = getThemeColors();
     const colors = getMultiColors();
@@ -1816,6 +1868,7 @@
     opts.plugins.datalabels.align = 'center';
     opts.plugins.datalabels.formatter = (value, ctx) => {
       const total = ctx.dataset.data.reduce((a, b) => (a || 0) + (b || 0), 0);
+      if (total === 0) return '';
       const pct = ((value / total) * 100).toFixed(0);
       return pct > 5 ? `${pct}%` : '';
     };
@@ -1861,6 +1914,7 @@
     opts.plugins.datalabels.offset = 6;
     opts.plugins.datalabels.formatter = (value, ctx) => {
       const total = ctx.dataset.data.reduce((a, b) => (a || 0) + (b || 0), 0);
+      if (total === 0) return '';
       const pct = ((value / total) * 100).toFixed(0);
       return pct > 4 ? `${ctx.chart.data.labels[ctx.dataIndex]}\n${pct}%` : '';
     };
@@ -1948,6 +2002,7 @@
   function buildRadarChart(labels, datasets, c, colors) {
     const opts = getBaseChartOptions();
     delete opts.scales;
+    opts.aspectRatio = 1.6;
     opts.scales = {
       r: {
         angleLines: {
