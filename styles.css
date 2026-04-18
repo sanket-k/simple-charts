@@ -86,7 +86,7 @@
   --chart-hero: #F7931A;
   --chart-secondary: #3B82F6;
   --chart-bg: #FFFBF6;
-  --chart-grid: #F1F5F9;
+  --chart-grid: #E8DDD0;
   --chart-text: #1E293B;
   --chart-text-secondary: #64748B;
 
@@ -717,6 +717,8 @@ body {
   font-family: var(--font-sans);
   font-size: 0.68rem;
   padding: 2px 8px;
+  border: none;
+  background: none;
   border-radius: 4px;
   transition: all var(--duration);
 }
@@ -1360,6 +1362,24 @@ body {
   display: flex;
   justify-content: flex-end;
   gap: var(--sp-3);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* ═══════════════════════════════════════════
+   Reduced Motion
+   ═══════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ═══════════════════════════════════════════

@@ -5,7 +5,7 @@
 (() => {
   'use strict';
 
-  // ── Brand Palette ──
+  // ── Constants ──
   const PALETTE = {
     dark: {
       hero: '#F7931A',
@@ -21,7 +21,7 @@
       hero: '#F7931A',
       secondary: '#3B82F6',
       bg: '#FFFBF6',
-      grid: '#F1F5F9',
+      grid: '#E8DDD0',
       text: '#1E293B',
       textSecondary: '#64748B',
       textMuted: '#94A3B8',
@@ -41,30 +41,89 @@
     mono: ['#F8FAFC', '#CBD5E1', '#94A3B8', '#64748B', '#475569']
   };
 
-  const WARN_ROW_LIMIT = 10000;
+  const SEMANTIC = { up: '#34D399', down: '#F87171' };
 
-  let HARD_ROW_LIMIT = 50000;
+  const CONFIG = {
+    warnRowLimit: 10000,
+    hardRowLimit: 50000,
+    maxBars: 30,
+    maxPieSlices: 12,
+    maxDonutSlices: 10,
+    eventProximityMs: 30 * 24 * 60 * 60 * 1000,
+    debounceMs: 120,
+  };
 
   // ── State ──
   let currentTheme = 'dark';
   let currentChartType = 'line';
   let chartInstance = null;
-  let parsedData = null;         // { labels, datasets, isTimeSeries, dateObjects }
-  let rawParsedData = null;      // Before downsampling
+  let parsedData = null;
+  let rawParsedData = null;
   let timelineEvents = [];
   let userColors = [...DEFAULT_COLORS];
   let userBgColor = null;
   let userGridColor = null;
   let brandLogoUrl = null;
+  let brandLogoImg = null;
   let dualAxisEnabled = false;
-  let axisAssignments = []; // 'left' | 'right' | 'hidden' per dataset index
-  let axisNames = {}; // { left: 'name', right: 'name' }
-  let zoomRange = [0, 100];      // Percentage range for zoom
+  let axisAssignments = [];
+  let axisNames = {};
+  let zoomRange = [0, 100];
+
+  // ── Utilities ──
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => document.querySelectorAll(sel);
+
+  function debounce(fn, ms) {
+    let timer;
+    return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
+  }
+
+  function safeInt(val, fallback) {
+    const n = Number(val);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  function safeFloat(val, fallback) {
+    const n = parseFloat(val);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  function escapeHtml(str) {
+    const el = document.createElement('span');
+    el.textContent = str;
+    return el.innerHTML;
+  }
+
+  function hexToRgba(hex, alpha = 1) {
+    if (!hex) return `rgba(0,0,0,${alpha})`;
+    hex = hex.replace('#', '');
+    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  function wrapText(text, maxChars) {
+    if (!text) return [''];
+    if (text.length <= maxChars) return [text];
+    const words = text.split(' ');
+    const lines = [];
+    let line = '';
+    for (const word of words) {
+      if (line.length + word.length + 1 > maxChars && line.length > 0) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = line ? line + ' ' + word : word;
+      }
+    }
+    if (line) lines.push(line);
+    return lines.slice(0, 3);
+  }
 
   // ── DOM Refs ──
-  const $ = (selector) => document.querySelector(selector);
-  const $$ = (selector) => document.querySelectorAll(selector);
-
   const dom = {
     themeToggle: $('#themeToggle'),
     exportBtn: $('#exportBtn'),
@@ -111,7 +170,6 @@
     dataOptionsSection: $('#dataOptionsSection'),
     dataSizeInfo: $('#dataSizeInfo'),
     resetColorsBtn: $('#resetColorsBtn'),
-    // Zoom
     zoomSliderContainer: $('#zoomSliderContainer'),
     zoomMin: $('#zoomMin'),
     zoomMax: $('#zoomMax'),
@@ -119,7 +177,6 @@
     zoomLabelStart: $('#zoomLabelStart'),
     zoomLabelEnd: $('#zoomLabelEnd'),
     zoomResetBtn: $('#zoomResetBtn'),
-    // New controls
     showEventMarkers: $('#showEventMarkers'),
     eventMarkerColor: $('#eventMarkerColor'),
     gridStyle: $('#gridStyle'),
@@ -155,9 +212,9 @@
     dualAxisToggle: $('#dualAxisToggle'),
     dualAxisSection: $('#dualAxisSection'),
     axisAssignmentList: $('#axisAssignmentList'),
+    presetPalettes: $('#presetPalettes'),
   };
 
-  // Color input pairs
   const colorPairs = [
     { picker: $('#colorHero'), hex: $('#colorHeroHex'), idx: 0 },
     { picker: $('#colorSecondary'), hex: $('#colorSecondaryHex'), idx: 1 },
@@ -171,7 +228,7 @@
   // ═══════════════════════════════════════════
 
   function formatNumber(value, format) {
-    if (value == null || isNaN(value)) return '—';
+    if (value == null || isNaN(value)) return '\u2014';
     const fmt = format || dom.numberFormat.value;
     const abs = Math.abs(value);
     const decimals = dom.decimalPlaces ? dom.decimalPlaces.value : 'auto';
@@ -214,15 +271,26 @@
   function tryParseDate(str) {
     if (!str || typeof str !== 'string') return null;
     str = str.trim();
-    // ISO: 2024-03-15
-    let d = new Date(str);
-    if (!isNaN(d.getTime()) && str.match(/\d{4}/)) return d;
-    // Try MM/DD/YYYY
+
+    const strictPatterns = [
+      /^\d{4}-\d{1,2}-\d{1,2}$/,
+      /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/,
+      /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s\-]+\d{1,2},?\s*\d{2,4}$/i,
+      /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s\-]+\d{2,4}$/i,
+      /^\d{4}[\/\-]\d{1,2}$/,
+    ];
+
+    const isStrict = strictPatterns.some(p => p.test(str));
+    if (!isStrict) return null;
+
+    const d = new Date(str);
+    if (!isNaN(d.getTime()) && str.match(/\d{2,4}/)) return d;
+
     const parts = str.split(/[\/\-\.]/);
     if (parts.length === 3) {
       const [a, b, c] = parts.map(Number);
-      if (a > 31) { d = new Date(a, b - 1, c); if (!isNaN(d)) return d; }
-      if (c > 31) { d = new Date(c, a - 1, b); if (!isNaN(d)) return d; }
+      if (a > 31) { const d2 = new Date(a, b - 1, c); if (!isNaN(d2)) return d2; }
+      if (c > 31) { const d2 = new Date(c, a - 1, b); if (!isNaN(d2)) return d2; }
     }
     return null;
   }
@@ -258,12 +326,10 @@
 
   function getAutoDateFormat(dateRange) {
     if (!dateRange) return 'MMM yyyy';
-    const diffMs = dateRange.max - dateRange.min;
-    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    const diffDays = (dateRange.max - dateRange.min) / (1000 * 60 * 60 * 24);
     if (diffDays > 365 * 5) return 'yyyy';
     if (diffDays > 365) return 'MMM yyyy';
     if (diffDays > 30) return 'MMM yy';
-    if (diffDays > 7) return 'DD MMM';
     return 'DD MMM';
   }
 
@@ -275,11 +341,8 @@
     if (!data || !data.isTimeSeries || !data.dateObjects) return data;
     if (mode === 'none') return data;
 
-    const dates = data.dateObjects;
-    const labels = data.labels;
-    const datasets = data.datasets;
+    const { dateObjects, labels, datasets } = data;
 
-    // For auto mode, decide based on size
     if (mode === 'auto') {
       const count = labels.length;
       if (count <= 500) return data;
@@ -287,7 +350,6 @@
       else mode = 'quarterly';
     }
 
-    // Group by time bucket
     function getBucket(date) {
       const y = date.getFullYear();
       const m = date.getMonth();
@@ -306,7 +368,7 @@
 
     const buckets = new Map();
 
-    dates.forEach((date, i) => {
+    dateObjects.forEach((date, i) => {
       if (!date) return;
       const key = getBucket(date);
       if (!buckets.has(key)) {
@@ -315,13 +377,15 @@
       buckets.get(key).indices.push(i);
     });
 
+    const sorted = [...buckets.entries()].sort((a, b) => a[1].date - b[1].date);
+
     const newLabels = [];
     const newDateObjects = [];
     const newDatasets = datasets.map(ds => ({ name: ds.name, values: [] }));
 
     const autoFmt = data.dateRange ? getAutoDateFormat(data.dateRange) : 'MMM yyyy';
 
-    for (const [, bucket] of buckets) {
+    for (const [, bucket] of sorted) {
       newLabels.push(formatDateLabel(bucket.date, autoFmt));
       newDateObjects.push(bucket.date);
 
@@ -375,7 +439,6 @@
     dom.zoomLabelStart.textContent = parsedData.labels[startIdx] || '';
     dom.zoomLabelEnd.textContent = parsedData.labels[endIdx] || '';
 
-    // Update range highlight
     dom.zoomSliderRange.style.left = zoomRange[0] + '%';
     dom.zoomSliderRange.style.width = (zoomRange[1] - zoomRange[0]) + '%';
   }
@@ -439,15 +502,14 @@
     userBgColor = null;
     userGridColor = null;
     if (dom.chartBgColor) dom.chartBgColor.value = currentTheme === 'dark' ? '#111622' : '#FFFBF6';
-    if (dom.chartGridColor) dom.chartGridColor.value = currentTheme === 'dark' ? '#334155' : '#F1F5F9';
+    if (dom.chartGridColor) dom.chartGridColor.value = currentTheme === 'dark' ? '#334155' : '#E8DDD0';
     document.querySelectorAll('.palette-swatch').forEach(s => s.classList.remove('active'));
     document.querySelector('.palette-swatch[data-palette="default"]')?.classList.add('active');
     renderChart();
     showToast('Colors reset to defaults', 'success');
   });
 
-  // Preset palettes
-  document.addEventListener('click', (e) => {
+  dom.presetPalettes.addEventListener('click', (e) => {
     const swatch = e.target.closest('.palette-swatch');
     if (!swatch) return;
     const paletteName = swatch.dataset.palette;
@@ -482,7 +544,6 @@
     btn.setAttribute('aria-selected', 'true');
     currentChartType = btn.dataset.type;
 
-    // Show/hide timeline settings
     dom.timelineSettings.style.display =
       currentChartType === 'timeline' ? 'block' : 'none';
 
@@ -493,7 +554,6 @@
   //  Data Input Tabs
   // ═══════════════════════════════════════════
 
-  // Main data tabs (paste / csv / manual)
   $$('.data-input-tabs .tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const parent = btn.closest('.panel-section');
@@ -508,7 +568,6 @@
     });
   });
 
-  // Timeline event tabs (manual / bulk)
   $$('.timeline-input-tabs .tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       $$('.timeline-input-tabs .tab-btn').forEach(b => {
@@ -573,16 +632,14 @@
 
     let rows = result.data;
 
-    // Check row limit
-    if (rows.length > HARD_ROW_LIMIT) {
-      showToast(`Data exceeds ${HARD_ROW_LIMIT.toLocaleString()} rows limit. Increase "Max Rows" or reduce data size.`, 'error');
+    if (rows.length > CONFIG.hardRowLimit) {
+      showToast(`Data exceeds ${CONFIG.hardRowLimit.toLocaleString()} rows limit. Increase "Max Rows" or reduce data size.`, 'error');
       return null;
     }
-    if (rows.length > WARN_ROW_LIMIT) {
+    if (rows.length > CONFIG.warnRowLimit) {
       showToast(`Large dataset (${rows.length.toLocaleString()} rows). Auto-downsampling recommended.`, 'warning');
     }
 
-    // Ensure data shape uniformity (pad short rows)
     const expectedCols = Math.max(...rows.map(r => r.length));
     rows = rows.map(r => {
       if (r.length < expectedCols) {
@@ -591,7 +648,6 @@
       return r;
     });
 
-    // Detect if first row is header
     const firstRow = rows[0];
     let hasHeader = false;
     if (firstRow.length > 1 && typeof firstRow[0] === 'string') {
@@ -612,7 +668,6 @@
 
     labels = dataRows.map(r => String(r[0]).trim());
 
-    // Detect time series
     const isTS = isDateColumn(labels);
     let dateObjects = null;
     let dateRange = null;
@@ -625,6 +680,18 @@
           min: new Date(Math.min(...validDates.map(d => d.getTime()))),
           max: new Date(Math.max(...validDates.map(d => d.getTime())))
         };
+
+        const indices = dataRows.map((r, i) => i);
+        indices.sort((a, b) => {
+          const da = dateObjects[a], db = dateObjects[b];
+          if (!da && !db) return 0;
+          if (!da) return 1;
+          if (!db) return -1;
+          return da.getTime() - db.getTime();
+        });
+        labels = indices.map(i => labels[i]);
+        dateObjects = indices.map(i => dateObjects[i]);
+        dataRows = indices.map(i => dataRows[i]);
       }
     }
 
@@ -702,11 +769,11 @@
     const rawCount = rawParsedData ? rawParsedData.labels.length : count;
     let info = `${rawCount.toLocaleString()} rows`;
     if (rawCount !== count) {
-      info += ` → ${count.toLocaleString()} (downsampled)`;
+      info += ` \u2192 ${count.toLocaleString()} (downsampled)`;
     }
     if (parsedData.dateRange) {
       const fmt = { year: 'numeric', month: 'short' };
-      info += ` · ${parsedData.dateRange.min.toLocaleDateString('en-US', fmt)} — ${parsedData.dateRange.max.toLocaleDateString('en-US', fmt)}`;
+      info += ` \u00B7 ${parsedData.dateRange.min.toLocaleDateString('en-US', fmt)} \u2014 ${parsedData.dateRange.max.toLocaleDateString('en-US', fmt)}`;
     }
     dom.dataInfo.textContent = info;
     dom.rowCountBadge.textContent = count;
@@ -721,7 +788,6 @@
     const showOptions = rawParsedData.labels.length > 100 || rawParsedData.datasets.length > 1;
     dom.dataOptionsSection.style.display = showOptions ? 'block' : 'none';
 
-    // Populate column select
     dom.columnSelect.innerHTML = '';
     rawParsedData.datasets.forEach((ds, i) => {
       const opt = document.createElement('option');
@@ -731,21 +797,19 @@
       dom.columnSelect.appendChild(opt);
     });
 
-    // Data size info
     const rows = rawParsedData.labels.length;
     let sizeHtml = `<span class="data-size-label">${rows.toLocaleString()} data points</span>`;
     if (rows <= 500) {
-      sizeHtml += `<span class="data-size-ok">✓ Optimal size — all points rendered</span>`;
+      sizeHtml += `<span class="data-size-ok">\u2713 Optimal size</span>`;
     } else if (rows <= 2000) {
-      sizeHtml += `<span class="data-size-ok">✓ Good size — renders smoothly</span>`;
-    } else if (rows <= WARN_ROW_LIMIT) {
-      sizeHtml += `<span class="data-size-warn">⚡ Large dataset — downsampling recommended</span>`;
+      sizeHtml += `<span class="data-size-ok">\u2713 Good size</span>`;
+    } else if (rows <= CONFIG.warnRowLimit) {
+      sizeHtml += `<span class="data-size-warn">\u26A1 Large dataset — downsampling recommended</span>`;
     } else {
-      sizeHtml += `<span class="data-size-danger">⚠ Very large — may impact performance</span>`;
+      sizeHtml += `<span class="data-size-danger">\u26A0 Very large — may impact performance</span>`;
     }
     dom.dataSizeInfo.innerHTML = sizeHtml;
 
-    // Dual Y-Axis section
     if (rawParsedData.datasets.length >= 2) {
       dom.dualAxisSection.style.display = 'block';
       if (axisAssignments.length !== rawParsedData.datasets.length) {
@@ -788,18 +852,16 @@
 
   dom.fileDropZone.addEventListener('click', () => dom.csvFileInput.click());
 
-  document.addEventListener('dragover', (e) => {
+  dom.fileDropZone.addEventListener('dragover', (e) => {
     e.preventDefault();
     dom.fileDropZone.classList.add('dragover');
   });
 
-  document.addEventListener('dragleave', (e) => {
-    if (!e.relatedTarget || e.relatedTarget.nodeName === 'HTML') {
-      dom.fileDropZone.classList.remove('dragover');
-    }
+  dom.fileDropZone.addEventListener('dragleave', () => {
+    dom.fileDropZone.classList.remove('dragover');
   });
 
-  document.addEventListener('drop', (e) => {
+  dom.fileDropZone.addEventListener('drop', (e) => {
     e.preventDefault();
     dom.fileDropZone.classList.remove('dragover');
     const file = e.dataTransfer?.files?.[0];
@@ -817,10 +879,9 @@
     const reader = new FileReader();
     reader.onload = async (e) => {
       const text = e.target.result;
-      dom.dataTextarea.value = text.substring(0, 50000); // Limit textarea display
+      dom.dataTextarea.value = text.substring(0, 50000);
       rawParsedData = await parseDataFromText(text);
       if (rawParsedData) {
-        // Switch to paste tab
         const parent = dom.dataTextarea.closest('.panel-section');
         parent.querySelectorAll('.tab-btn').forEach(b => {
           b.classList.remove('active');
@@ -876,8 +937,10 @@
     dom.manualRows.appendChild(row);
   }
 
+  const parseManualDataDebounced = debounce(parseManualData, CONFIG.debounceMs);
+
   dom.manualRows.parentElement.addEventListener('input', (e) => {
-    if (e.target.tagName === 'INPUT') parseManualData();
+    if (e.target.tagName === 'INPUT') parseManualDataDebounced();
   });
 
   function parseManualData() {
@@ -885,11 +948,9 @@
     const labels = [];
     const datasets = [];
 
-    // Support reading edited header labels
     const headers = dom.manualRows.parentElement.querySelectorAll('.header-cell');
 
     for (let i = 0; i < seriesCount; i++) {
-      // Offset by 1 to skip the "Label" header
       const headerVal = headers[i + 1] ? headers[i + 1].value : `Series ${i + 1}`;
       datasets.push({ name: headerVal || `Series ${i + 1}`, values: [] });
     }
@@ -935,28 +996,63 @@
       return;
     }
 
-    let html = '<div class="axis-assign-row axis-name-row">';
-    html += '<span class="axis-assign-label" style="font-weight:600;">Left Axis Name</span>';
-    html += `<input type="text" class="axis-name-input" data-axis="left" value="${axisNames.left || ''}" placeholder="e.g. Revenue">`;
-    html += '</div>';
-    html += '<div class="axis-assign-row axis-name-row">';
-    html += '<span class="axis-assign-label" style="font-weight:600;">Right Axis Name</span>';
-    html += `<input type="text" class="axis-name-input" data-axis="right" value="${axisNames.right || ''}" placeholder="e.g. Volume">`;
-    html += '</div>';
-    html += '<div style="height:6px;"></div>';
+    const frag = document.createDocumentFragment();
+    const container = document.createElement('div');
+
+    const nameRowLeft = document.createElement('div');
+    nameRowLeft.className = 'axis-assign-row';
+    nameRowLeft.innerHTML = `<span class="axis-assign-label" style="font-weight:600;">Left Axis Name</span>`;
+    const leftInput = document.createElement('input');
+    leftInput.type = 'text';
+    leftInput.className = 'axis-name-input';
+    leftInput.dataset.axis = 'left';
+    leftInput.value = axisNames.left || '';
+    leftInput.placeholder = 'e.g. Revenue';
+    nameRowLeft.appendChild(leftInput);
+    container.appendChild(nameRowLeft);
+
+    const nameRowRight = document.createElement('div');
+    nameRowRight.className = 'axis-assign-row';
+    nameRowRight.innerHTML = `<span class="axis-assign-label" style="font-weight:600;">Right Axis Name</span>`;
+    const rightInput = document.createElement('input');
+    rightInput.type = 'text';
+    rightInput.className = 'axis-name-input';
+    rightInput.dataset.axis = 'right';
+    rightInput.value = axisNames.right || '';
+    rightInput.placeholder = 'e.g. Volume';
+    nameRowRight.appendChild(rightInput);
+    container.appendChild(nameRowRight);
+
+    const spacer = document.createElement('div');
+    spacer.style.height = '6px';
+    container.appendChild(spacer);
 
     rawParsedData.datasets.forEach((ds, i) => {
       const val = axisAssignments[i] || 'left';
-      html += `<div class="axis-assign-row">
-        <span class="axis-assign-label">${ds.name}</span>
-        <select class="axis-assign-select" data-ds-index="${i}">
-          <option value="left"${val === 'left' ? ' selected' : ''}>Left Y</option>
-          <option value="right"${val === 'right' ? ' selected' : ''}>Right Y</option>
-          <option value="hidden"${val === 'hidden' ? ' selected' : ''}>Hidden</option>
-        </select>
-      </div>`;
+      const row = document.createElement('div');
+      row.className = 'axis-assign-row';
+
+      const label = document.createElement('span');
+      label.className = 'axis-assign-label';
+      label.textContent = ds.name;
+      row.appendChild(label);
+
+      const select = document.createElement('select');
+      select.className = 'axis-assign-select';
+      select.dataset.dsIndex = i;
+      ['left', 'right', 'hidden'].forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt;
+        o.textContent = opt === 'left' ? 'Left Y' : opt === 'right' ? 'Right Y' : 'Hidden';
+        if (val === opt) o.selected = true;
+        select.appendChild(o);
+      });
+      row.appendChild(select);
+      container.appendChild(row);
     });
-    dom.axisAssignmentList.innerHTML = html;
+
+    dom.axisAssignmentList.innerHTML = '';
+    dom.axisAssignmentList.appendChild(container);
 
     dom.axisAssignmentList.querySelectorAll('.axis-name-input').forEach(input => {
       input.addEventListener('input', (e) => {
@@ -983,10 +1079,11 @@
   }
 
   dom.maxRowsInput.addEventListener('change', () => {
-    HARD_ROW_LIMIT = parseInt(dom.maxRowsInput.value) || 50000;
+    CONFIG.hardRowLimit = parseInt(dom.maxRowsInput.value) || 50000;
   });
 
-  // Branding
+  // ── Branding ──
+
   dom.brandLogoBtn.addEventListener('click', () => dom.brandLogoFile.click());
 
   dom.brandLogoFile.addEventListener('change', (e) => {
@@ -995,14 +1092,20 @@
     const reader = new FileReader();
     reader.onload = (ev) => {
       brandLogoUrl = ev.target.result;
-      dom.brandLogoPreview.innerHTML = `<img src="${brandLogoUrl}" alt="Logo">`;
-      renderChart();
+      const img = new Image();
+      img.onload = () => {
+        brandLogoImg = img;
+        dom.brandLogoPreview.innerHTML = `<img src="${brandLogoUrl}" alt="Logo">`;
+        renderChart();
+      };
+      img.src = brandLogoUrl;
     };
     reader.readAsDataURL(file);
   });
 
   dom.brandLogoClearBtn.addEventListener('click', () => {
     brandLogoUrl = null;
+    brandLogoImg = null;
     dom.brandLogoFile.value = '';
     dom.brandLogoPreview.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="4" fill="currentColor" opacity="0.1"/><path d="M6 18L10 10L14 14L18 6" stroke="#F7931A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     renderChart();
@@ -1016,7 +1119,6 @@
       }
       renderChart();
     });
-    el.addEventListener('change', () => renderChart());
   });
 
   // ═══════════════════════════════════════════
@@ -1025,7 +1127,7 @@
 
   dom.zoomMin.addEventListener('input', () => {
     let min = parseFloat(dom.zoomMin.value);
-    let max = parseFloat(dom.zoomMax.value);
+    const max = parseFloat(dom.zoomMax.value);
     if (min >= max - 2) min = max - 2;
     dom.zoomMin.value = min;
     zoomRange = [min, max];
@@ -1034,7 +1136,7 @@
   });
 
   dom.zoomMax.addEventListener('input', () => {
-    let min = parseFloat(dom.zoomMin.value);
+    const min = parseFloat(dom.zoomMin.value);
     let max = parseFloat(dom.zoomMax.value);
     if (max <= min + 2) max = min + 2;
     dom.zoomMax.value = max;
@@ -1085,11 +1187,31 @@
     timelineEvents.forEach((evt, i) => {
       const row = document.createElement('div');
       row.className = 'timeline-event-row';
-      row.innerHTML = `
-        <input type="text" placeholder="Date (e.g. 2024-03-15)" value="${evt.position}" data-field="position" data-index="${i}">
-        <input type="text" placeholder="Event name" value="${evt.label}" data-field="label" data-index="${i}">
-        <button class="btn-remove" data-index="${i}">&times;</button>
-      `;
+
+      const dateInput = document.createElement('input');
+      dateInput.type = 'text';
+      dateInput.placeholder = 'Date (e.g. 2024-03-15)';
+      dateInput.value = evt.position;
+      dateInput.dataset.field = 'position';
+      dateInput.dataset.index = i;
+      row.appendChild(dateInput);
+
+      const labelInput = document.createElement('input');
+      labelInput.type = 'text';
+      labelInput.placeholder = 'Event name';
+      labelInput.value = evt.label;
+      labelInput.dataset.field = 'label';
+      labelInput.dataset.index = i;
+      row.appendChild(labelInput);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'btn-remove';
+      removeBtn.dataset.index = i;
+      removeBtn.setAttribute('aria-label', 'Remove event');
+      removeBtn.textContent = '\u00D7';
+      row.appendChild(removeBtn);
+
       dom.timelineEventsList.appendChild(row);
     });
 
@@ -1128,19 +1250,25 @@
     const displayLabels = showAll ? labels : [...labels.slice(0, 10), '...', ...labels.slice(-5)];
 
     let html = '<table><thead><tr><th>Label</th>';
-    datasets.forEach(ds => { html += `<th>${ds.name}</th>`; });
+    datasets.forEach(ds => { html += `<th>${escapeHtml(ds.name)}</th>`; });
     html += '</tr></thead><tbody>';
 
     displayLabels.forEach((label, i) => {
       if (label === '...') {
-        html += `<tr class="ellipsis-row"><td colspan="${datasets.length + 1}">… ${labels.length - 15} more rows …</td></tr>`;
+        html += `<tr class="ellipsis-row"><td colspan="${datasets.length + 1}">\u2026 ${labels.length - 15} more rows \u2026</td></tr>`;
         return;
       }
       const realIdx = showAll ? i : (i < 10 ? i : labels.length - (displayLabels.length - i));
-      html += `<tr><td>${label}</td>`;
+      html += `<tr><td>${escapeHtml(label)}</td>`;
       datasets.forEach(ds => {
         const val = ds.values[realIdx];
-        html += `<td>${val != null ? formatNumber(val) : '—'}</td>`;
+        if (val != null) {
+          // Show precise value in preview (up to 4 decimal places, strip trailing zeros)
+          const display = Number.isInteger(val) ? String(val) : String(parseFloat(val.toFixed(4)));
+          html += `<td>${display}</td>`;
+        } else {
+          html += `<td>\u2014</td>`;
+        }
       });
       html += '</tr>';
     });
@@ -1150,8 +1278,10 @@
   }
 
   // ═══════════════════════════════════════════
-  //  Chart Settings Listeners
+  //  Chart Settings Listeners (debounced)
   // ═══════════════════════════════════════════
+
+  const debouncedRender = debounce(renderChart, CONFIG.debounceMs);
 
   const settingsInputs = [
     dom.chartTitle, dom.chartSubtitle, dom.chartSource,
@@ -1172,14 +1302,14 @@
   settingsInputs.forEach(el => {
     if (!el) return;
     el.addEventListener('input', () => {
-      if (el === dom.maxTicks) {
+      if (el === dom.maxTicks && dom.maxTicksValue) {
         dom.maxTicksValue.textContent = dom.maxTicks.value;
       }
       if (el === dom.barBorderRadius && dom.barBorderRadiusValue) {
         dom.barBorderRadiusValue.textContent = dom.barBorderRadius.value;
       }
       if (el === dom.xAxisRotation && dom.xAxisRotationValue) {
-        dom.xAxisRotationValue.textContent = dom.xAxisRotation.value + '°';
+        dom.xAxisRotationValue.textContent = dom.xAxisRotation.value + '\u00B0';
       }
       if (el === dom.chartBgColor) {
         userBgColor = dom.chartBgColor.value;
@@ -1187,9 +1317,8 @@
       if (el === dom.chartGridColor) {
         userGridColor = dom.chartGridColor.value;
       }
-      renderChart();
+      debouncedRender();
     });
-    el.addEventListener('change', () => renderChart());
   });
 
   // ═══════════════════════════════════════════
@@ -1204,26 +1333,57 @@
     return [...userColors, ...EXTRA_COLORS];
   }
 
+  function buildYTickCallback() {
+    const fmt = dom.numberFormat.value;
+    const decimals = dom.decimalPlaces ? dom.decimalPlaces.value : 'auto';
+    const currency = dom.currencyPrefix ? dom.currencyPrefix.value || '$' : '$';
+    return (value) => formatNumber(value, fmt);
+  }
+
+  function buildDataLabelFormatter() {
+    return (value) => formatNumber(value);
+  }
+
+  function buildTooltipCallback() {
+    return (ctx) => {
+      let label = ctx.dataset.label || '';
+      if (currentChartType === 'pie' || currentChartType === 'donut') {
+        label = ctx.chart.data.labels[ctx.dataIndex] || '';
+      }
+      const val = ctx.parsed.y != null ? ctx.parsed.y : ctx.parsed;
+      return `${label ? label + ': ' : ''}${formatNumber(typeof val === 'object' ? ctx.raw : val)}`;
+    };
+  }
+
   function getBaseChartOptions() {
     const c = getThemeColors();
     const showGrid = dom.showGrid.checked;
     const showLegend = dom.showLegend.checked;
     const showDataLabels = dom.showDataLabels.checked;
-    const maxTicks = parseInt(dom.maxTicks.value) || 12;
+    const maxTicks = safeInt(dom.maxTicks.value, 12);
     const yScale = dom.yAxisScale.value;
-    const animDuration = dom.animationSpeed ? parseInt(dom.animationSpeed.value) : 600;
-    const legendPos = dom.legendPosition ? dom.legendPosition.value : 'top';
-    const tooltipStyle = dom.tooltipStyle ? dom.tooltipStyle.value : 'default';
-    const gridStyleVal = dom.gridStyle ? dom.gridStyle.value : 'solid';
-    const yAxisMinVal = dom.yAxisMin && dom.yAxisMin.value !== '' ? parseFloat(dom.yAxisMin.value) : undefined;
-    const yAxisMaxVal = dom.yAxisMax && dom.yAxisMax.value !== '' ? parseFloat(dom.yAxisMax.value) : undefined;
-    const xRotation = dom.xAxisRotation ? parseInt(dom.xAxisRotation.value) : 45;
-    const xAxisTypeVal = dom.xAxisType ? dom.xAxisType.value : 'auto';
-    const xAxisTitle = dom.xAxisLabel ? dom.xAxisLabel.value : '';
-    const yAxisTitle = dom.yAxisLabel ? dom.yAxisLabel.value : '';
+    const animDuration = safeInt(dom.animationSpeed?.value, 600);
+    const legendPos = dom.legendPosition?.value || 'top';
+    const tooltipStyle = dom.tooltipStyle?.value || 'default';
+    const gridStyleVal = dom.gridStyle?.value || 'solid';
+    const yAxisMinVal = dom.yAxisMin?.value !== '' ? safeFloat(dom.yAxisMin.value, undefined) : undefined;
+    const yAxisMaxVal = dom.yAxisMax?.value !== '' ? safeFloat(dom.yAxisMax.value, undefined) : undefined;
+    const xRotation = safeInt(dom.xAxisRotation?.value, 45);
+    const xAxisTypeVal = dom.xAxisType?.value || 'auto';
+    const xAxisTitle = dom.xAxisLabel?.value || '';
+    const yAxisTitle = dom.yAxisLabel?.value || '';
 
     const leftAxisTitle = dualAxisEnabled ? (axisNames.left || yAxisTitle) : yAxisTitle;
     const rightAxisTitle = dualAxisEnabled ? (axisNames.right || '') : '';
+
+    if (yScale === 'logarithmic' && parsedData) {
+      const hasNonPositive = parsedData.datasets.some(ds =>
+        ds.values.some(v => v != null && v <= 0)
+      );
+      if (hasNonPositive) {
+        showToast('Logarithmic scale requires all values > 0. Some values will be filtered.', 'warning');
+      }
+    }
 
     let gridDash = [];
     if (gridStyleVal === 'dashed') gridDash = [6, 4];
@@ -1232,6 +1392,10 @@
 
     const chartBg = userBgColor || c.bg;
     const chartGrid = userGridColor || c.grid;
+
+    const tickCallback = buildYTickCallback();
+    const tooltipLabelCallback = buildTooltipCallback();
+    const dlFormatter = buildDataLabelFormatter();
 
     let tooltipOpts = {
       backgroundColor: currentTheme === 'dark' ? '#1e293b' : '#fff',
@@ -1248,14 +1412,7 @@
       boxHeight: 8,
       boxPadding: 4,
       callbacks: {
-        label: (ctx) => {
-          let label = ctx.dataset.label || '';
-          if (currentChartType === 'pie' || currentChartType === 'donut') {
-            label = ctx.chart.data.labels[ctx.dataIndex] || '';
-          }
-          const val = ctx.parsed.y != null ? ctx.parsed.y : ctx.parsed;
-          return `${label ? label + ': ' : ''}${formatNumber(typeof val === 'object' ? ctx.raw : val)}`;
-        }
+        label: tooltipLabelCallback
       }
     };
 
@@ -1278,8 +1435,8 @@
 
     const annotations = {};
 
-    const refY = dom.refLineY && dom.refLineY.value !== '' ? parseFloat(dom.refLineY.value) : null;
-    if (refY != null && !isNaN(refY)) {
+    const refY = dom.refLineY?.value !== '' ? safeFloat(dom.refLineY.value, null) : null;
+    if (refY != null) {
       annotations.refLine = {
         type: 'line',
         yMin: refY,
@@ -1288,8 +1445,8 @@
         borderWidth: 1.5,
         borderDash: [4, 4],
         label: {
-          display: !!dom.refLineLabel && dom.refLineLabel.value !== '',
-          content: dom.refLineLabel ? dom.refLineLabel.value : '',
+          display: !!dom.refLineLabel?.value,
+          content: dom.refLineLabel?.value || '',
           position: 'end',
           backgroundColor: hexToRgba(c.hero, 0.15),
           color: c.hero,
@@ -1340,22 +1497,18 @@
         autoSkip: true
       },
       title: xAxisTitleOpts,
-      border: {
-        display: false
-      }
+      border: { display: false }
     };
 
     if (resolvedXType === 'time') {
-      const dateFmt = dom.dateFormat ? dom.dateFormat.value : 'auto';
-      const autoFmt = parsedData && parsedData.dateRange ? getAutoDateFormat(parsedData.dateRange) : 'MMM yyyy';
+      const dateFmt = dom.dateFormat?.value || 'auto';
       xScaleBase.type = 'time';
       xScaleBase.time = {
         unit: (() => {
           if (dateFmt !== 'auto') return undefined;
           if (!parsedData || !parsedData.dateRange) return undefined;
-          const days = (parsedData.dateRange.max - parsedData.dateRange.min) / (86400000);
+          const days = (parsedData.dateRange.max - parsedData.dateRange.min) / 86400000;
           if (days > 365 * 3) return 'year';
-          if (days > 90) return 'month';
           if (days > 30) return 'month';
           if (days > 7) return 'day';
           return 'day';
@@ -1387,11 +1540,9 @@
         color: c.textSecondary,
         font: { size: 10, family: "'Inter', sans-serif" },
         padding: 8,
-        callback: (value) => formatNumber(value)
+        callback: tickCallback
       },
-      border: {
-        display: false
-      }
+      border: { display: false }
     };
 
     return {
@@ -1431,11 +1582,12 @@
           labels: {
             color: c.textSecondary,
             font: { size: 11, family: "'Inter', sans-serif" },
-            boxWidth: 12,
-            boxHeight: 3,
-            borderRadius: 2,
+            boxWidth: 8,
+            boxHeight: 8,
+            borderRadius: 4,
             padding: 16,
-            usePointStyle: false
+            usePointStyle: true,
+            pointStyle: 'circle'
           }
         },
         tooltip: tooltipOpts,
@@ -1446,7 +1598,7 @@
           anchor: 'end',
           align: 'top',
           offset: 4,
-          formatter: (value) => formatNumber(value)
+          formatter: dlFormatter
         },
         annotation: { annotations }
       },
@@ -1456,6 +1608,8 @@
         y1: {
           type: yScale,
           position: 'right',
+          min: yAxisMinVal,
+          max: yAxisMaxVal,
           title: {
             display: !!rightAxisTitle,
             text: rightAxisTitle,
@@ -1463,18 +1617,14 @@
             font: { size: 10, weight: '500', family: "'Inter', sans-serif" },
             padding: { bottom: 4 }
           },
-          grid: {
-            display: false
-          },
+          grid: { display: false },
           ticks: {
             color: c.textSecondary,
             font: { size: 10, family: "'Inter', sans-serif" },
             padding: 8,
-            callback: (value) => formatNumber(value)
+            callback: tickCallback
           },
-          border: {
-            display: false
-          }
+          border: { display: false }
         }
       }
     };
@@ -1511,16 +1661,16 @@
     }
   };
 
+  // ── Brand Plugin (uses cached Image) ──
   const brandPlugin = {
     id: 'brandWatermark',
     afterDraw(chart) {
-      const brandNameVal = dom.brandName ? dom.brandName.value : '';
-      const opacity = dom.brandOpacity ? parseFloat(dom.brandOpacity.value) : 0.7;
-      const position = dom.brandPosition ? dom.brandPosition.value : 'bottom-right';
-      if (!brandNameVal && !brandLogoUrl) return;
+      const brandNameVal = dom.brandName?.value || '';
+      const opacity = safeFloat(dom.brandOpacity?.value, 0.7);
+      const position = dom.brandPosition?.value || 'bottom-right';
+      if (!brandNameVal && !brandLogoImg) return;
 
       const ctx = chart.ctx;
-      const c = getThemeColors();
       ctx.save();
       ctx.globalAlpha = opacity;
 
@@ -1552,20 +1702,17 @@
 
       let logoH = 0;
 
-      if (brandLogoUrl) {
-        const img = new Image();
-        img.src = brandLogoUrl;
-        if (img.complete && img.naturalWidth) {
-          const drawH = 16;
-          const drawW = (img.naturalWidth / img.naturalHeight) * drawH;
-          const imgX = textAlign === 'right' ? x - drawW : x;
-          const imgY = brandNameVal ? y - drawH - 2 : y - drawH;
-          ctx.drawImage(img, imgX, imgY, drawW, drawH);
-          logoH = drawH + 2;
-        }
+      if (brandLogoImg && brandLogoImg.complete && brandLogoImg.naturalWidth) {
+        const drawH = 16;
+        const drawW = (brandLogoImg.naturalWidth / brandLogoImg.naturalHeight) * drawH;
+        const imgX = textAlign === 'right' ? x - drawW : x;
+        const imgY = brandNameVal ? y - drawH - 2 : y - drawH;
+        ctx.drawImage(brandLogoImg, imgX, imgY, drawW, drawH);
+        logoH = drawH + 2;
       }
 
       if (brandNameVal) {
+        const c = getThemeColors();
         ctx.font = `600 10px 'Inter', sans-serif`;
         ctx.fillStyle = c.textSecondary;
         ctx.textAlign = textAlign;
@@ -1578,7 +1725,7 @@
   };
 
   function isTimeXAxis() {
-    const v = dom.xAxisType ? dom.xAxisType.value : 'auto';
+    const v = dom.xAxisType?.value || 'auto';
     if (v === 'time') return true;
     if (v === 'auto' && parsedData && parsedData.isTimeSeries) return true;
     return false;
@@ -1597,8 +1744,8 @@
 
     const c = getThemeColors();
     const colors = getMultiColors();
-    let { labels, datasets } = displayData;
-    const tension = parseFloat(dom.chartCurve.value);
+    const { labels, datasets } = displayData;
+    const tension = safeFloat(dom.chartCurve.value, 0.35);
 
     const useTimeAxis = isTimeXAxis();
     let timeLabels = labels;
@@ -1617,10 +1764,10 @@
         config = buildTimelineChart(timeLabels, datasets, c, colors, tension, displayData, useTimeAxis);
         break;
       case 'bar':
-        config = buildBarChart(labels, datasets, c, colors);
+        config = buildBarChart(labels, datasets, c, colors, 'y');
         break;
       case 'vbar':
-        config = buildVBarChart(labels, datasets, c, colors);
+        config = buildBarChart(labels, datasets, c, colors, 'x');
         break;
       case 'pie':
         config = buildPieChart(labels, datasets, c, colors);
@@ -1661,15 +1808,15 @@
   }
 
   function getLineDatasetDefaults(ds, i, c, colors, tension, useTimeAxis, displayData) {
-    const pointRadius = parseInt(dom.pointSize.value) ?? 3;
-    const lineWidth = parseFloat(dom.lineWidth.value) || 2.5;
+    const pointRadius = safeInt(dom.pointSize.value, 3);
+    const lineWidth = safeFloat(dom.lineWidth.value, 2.5);
     const fill = dom.fillArea.checked;
     const gaps = dom.spanGaps.checked;
     const yAxisID = getYAxisID(i);
     const hidden = dualAxisEnabled && axisAssignments[i] === 'hidden';
 
     let data = ds.values;
-    if (useTimeAxis && displayData && displayData.dateObjects) {
+    if (useTimeAxis && displayData?.dateObjects) {
       data = ds.values.map((v, idx) => {
         const d = displayData.dateObjects[idx];
         return d ? { x: d.getTime(), y: v } : null;
@@ -1682,7 +1829,7 @@
       borderColor: colors[i % colors.length],
       backgroundColor: hexToRgba(colors[i % colors.length], fill ? 0.08 : 0),
       borderWidth: lineWidth,
-      pointRadius: pointRadius,
+      pointRadius,
       pointHoverRadius: pointRadius + 3,
       pointBackgroundColor: colors[i % colors.length],
       pointBorderColor: c.bg,
@@ -1696,23 +1843,22 @@
   }
 
   function buildLineChart(labels, datasets, c, colors, tension, useTimeAxis, displayData) {
-    const opts = getBaseChartOptions();
     return {
       type: 'line',
       data: {
         labels,
         datasets: datasets.map((ds, i) => getLineDatasetDefaults(ds, i, c, colors, tension, useTimeAxis, displayData))
       },
-      options: opts
+      options: getBaseChartOptions()
     };
   }
 
   function buildTimelineChart(labels, datasets, c, colors, tension, displayData, useTimeAxis) {
     const opts = getBaseChartOptions();
-    const eventColor = dom.eventMarkerColor ? dom.eventMarkerColor.value : (userColors[0] || c.hero);
-    const showMarkers = dom.showEventMarkers ? dom.showEventMarkers.checked : true;
+    const eventColor = dom.eventMarkerColor?.value || userColors[0] || c.hero;
+    const showMarkers = dom.showEventMarkers?.checked ?? true;
 
-    const annotations = opts.plugins.annotation ? { ...opts.plugins.annotation.annotations } : {};
+    const annotations = { ...opts.plugins.annotation?.annotations };
 
     if (showMarkers) {
       timelineEvents.forEach((evt, i) => {
@@ -1722,7 +1868,7 @@
           String(l).toLowerCase().trim() === evt.position.toLowerCase().trim()
         );
 
-        if (labelIndex === -1 && displayData && displayData.dateObjects) {
+        if (labelIndex === -1 && displayData?.dateObjects) {
           const evtDate = tryParseDate(evt.position);
           if (evtDate) {
             let closest = -1;
@@ -1735,7 +1881,7 @@
                 closest = idx;
               }
             });
-            if (closest >= 0 && closestDiff < 30 * 24 * 60 * 60 * 1000) {
+            if (closest >= 0 && closestDiff < CONFIG.eventProximityMs) {
               labelIndex = closest;
             }
           }
@@ -1744,7 +1890,6 @@
         if (labelIndex === -1) return;
 
         const yAdj = 10 + (i % 4) * 20;
-
         const wrappedLabel = wrapText(evt.label, 18);
 
         annotations[`line_${i}`] = {
@@ -1767,7 +1912,7 @@
           }
         };
 
-        if (datasets[0] && datasets[0].values[labelIndex] != null) {
+        if (datasets[0]?.values[labelIndex] != null) {
           annotations[`point_${i}`] = {
             type: 'point',
             xValue: labelIndex,
@@ -1797,17 +1942,18 @@
     };
   }
 
-  function buildBarChart(labels, datasets, c, colors) {
+  function buildBarChart(labels, datasets, c, colors, indexAxis) {
     const opts = getBaseChartOptions();
-    const borderRadius = dom.barBorderRadius ? parseInt(dom.barBorderRadius.value) : 4;
-    opts.indexAxis = 'y';
-    opts.scales.x.grid.display = dom.showGrid.checked;
-    opts.scales.y.grid.display = false;
+    const borderRadius = safeInt(dom.barBorderRadius?.value, 4);
+    opts.indexAxis = indexAxis;
+    if (indexAxis === 'y') {
+      opts.scales.x.grid.display = dom.showGrid.checked;
+      opts.scales.y.grid.display = false;
+    }
     opts.plugins.datalabels.anchor = 'end';
-    opts.plugins.datalabels.align = 'right';
+    opts.plugins.datalabels.align = indexAxis === 'y' ? 'right' : 'top';
 
-    // Limit bars for large datasets
-    const maxBars = 30;
+    const maxBars = CONFIG.maxBars;
     let displayLabels = labels;
     let displayDatasets = datasets;
     if (labels.length > maxBars) {
@@ -1832,48 +1978,7 @@
             ? ds.values.map((_, j) => colors[j % colors.length])
             : colors[i % colors.length],
           borderWidth: 1,
-          borderRadius: borderRadius,
-          borderSkipped: false,
-          barPercentage: 0.7,
-          categoryPercentage: 0.85
-        }))
-      },
-      options: opts
-    };
-  }
-
-  function buildVBarChart(labels, datasets, c, colors) {
-    const opts = getBaseChartOptions();
-    const borderRadius = dom.barBorderRadius ? parseInt(dom.barBorderRadius.value) : 4;
-    opts.plugins.datalabels.anchor = 'end';
-    opts.plugins.datalabels.align = 'top';
-
-    const maxBars = 30;
-    let displayLabels = labels;
-    let displayDatasets = datasets;
-    if (labels.length > maxBars) {
-      displayLabels = labels.slice(0, maxBars);
-      displayDatasets = datasets.map(ds => ({
-        ...ds,
-        values: ds.values.slice(0, maxBars)
-      }));
-    }
-
-    return {
-      type: 'bar',
-      data: {
-        labels: displayLabels,
-        datasets: displayDatasets.map((ds, i) => ({
-          label: ds.name,
-          data: ds.values,
-          backgroundColor: displayDatasets.length === 1
-            ? ds.values.map((_, j) => hexToRgba(colors[j % colors.length], 0.85))
-            : hexToRgba(colors[i % colors.length], 0.85),
-          borderColor: displayDatasets.length === 1
-            ? ds.values.map((_, j) => colors[j % colors.length])
-            : colors[i % colors.length],
-          borderWidth: 1,
-          borderRadius: borderRadius,
+          borderRadius,
           borderSkipped: false,
           barPercentage: 0.7,
           categoryPercentage: 0.85
@@ -1898,8 +2003,7 @@
       return pct > 5 ? `${pct}%` : '';
     };
 
-    // Limit slices for large datasets
-    const maxSlices = 12;
+    const maxSlices = CONFIG.maxPieSlices;
     let displayLabels = labels;
     let displayValues = datasets[0].values;
     if (labels.length > maxSlices) {
@@ -1944,8 +2048,7 @@
       return pct > 4 ? `${ctx.chart.data.labels[ctx.dataIndex]}\n${pct}%` : '';
     };
 
-    // Limit slices
-    const maxSlices = 10;
+    const maxSlices = CONFIG.maxDonutSlices;
     let displayLabels = labels;
     let displayValues = datasets[0].values;
     if (labels.length > maxSlices) {
@@ -1977,6 +2080,10 @@
     const opts = getBaseChartOptions();
     const gaps = dom.spanGaps.checked;
 
+    const stacked = !dualAxisEnabled;
+    opts.scales.y.stacked = stacked;
+    opts.scales.x.stacked = stacked;
+
     return {
       type: 'line',
       data: {
@@ -1986,7 +2093,7 @@
           const hidden = dualAxisEnabled && axisAssignments[i] === 'hidden';
 
           let data = ds.values;
-          if (useTimeAxis && displayData && displayData.dateObjects) {
+          if (useTimeAxis && displayData?.dateObjects) {
             data = ds.values.map((v, idx) => {
               const d = displayData.dateObjects[idx];
               return d ? { x: d.getTime(), y: v } : null;
@@ -1999,28 +2106,20 @@
             borderColor: colors[i % colors.length],
             backgroundColor: hexToRgba(colors[i % colors.length], 0.2),
             borderWidth: 2,
-            pointRadius: Math.min(parseInt(dom.pointSize.value) ?? 2, ds.values.length > 200 ? 0 : 3),
+            pointRadius: Math.min(safeInt(dom.pointSize.value, 2), ds.values.length > 200 ? 0 : 3),
             pointHoverRadius: 5,
             pointBackgroundColor: colors[i % colors.length],
             pointBorderColor: c.bg,
             pointBorderWidth: 2,
             tension,
-            fill: !dualAxisEnabled,
+            fill: stacked,
             spanGaps: gaps,
             yAxisID,
             hidden
           };
         })
       },
-      options: dualAxisEnabled ? (() => {
-        opts.scales.y.stacked = false;
-        opts.scales.x.stacked = false;
-        return opts;
-      })() : (() => {
-        opts.scales.y.stacked = true;
-        opts.scales.x.stacked = true;
-        return opts;
-      })()
+      options: opts
     };
   }
 
@@ -2030,22 +2129,13 @@
     opts.aspectRatio = 1.6;
     opts.scales = {
       r: {
-        angleLines: {
-          color: c.grid,
-          lineWidth: 0.5
-        },
-        grid: {
-          color: c.grid,
-          lineWidth: 0.5
-        },
+        angleLines: { color: c.grid, lineWidth: 0.5 },
+        grid: { color: c.grid, lineWidth: 0.5 },
         pointLabels: {
           color: c.textSecondary,
           font: { size: 10, weight: '500', family: "'Inter', sans-serif" }
         },
-        ticks: {
-          display: false,
-          backdropColor: 'transparent'
-        },
+        ticks: { display: false, backdropColor: 'transparent' },
         suggestedMin: 0,
         suggestedMax: 100
       }
@@ -2075,31 +2165,32 @@
 
   function buildScatterChart(labels, datasets, c, colors) {
     const opts = getBaseChartOptions();
-    const gaps = dom.spanGaps.checked;
-
-    const points = labels.map((label, i) => ({
-      x: typeof label === 'number' ? label : parseFloat(label) || i,
-      y: datasets[0].values[i]
-    })).filter(p => p.y != null);
 
     opts.plugins.datalabels.display = false;
 
+    const scatterDatasets = datasets.map((ds, dsIdx) => {
+      const points = labels.map((label, i) => ({
+        x: typeof label === 'number' ? label : parseFloat(label) || i,
+        y: ds.values[i]
+      })).filter(p => p.y != null);
+
+      const color = colors[dsIdx % colors.length];
+      return {
+        label: ds.name || `Series ${dsIdx + 1}`,
+        data: points,
+        backgroundColor: hexToRgba(color, 0.7),
+        borderColor: color,
+        borderWidth: 1.5,
+        pointRadius: Math.min(safeInt(dom.pointSize.value, 5), points.length > 500 ? 2 : 5),
+        pointHoverRadius: 8,
+        pointHoverBorderWidth: 2,
+        pointHoverBorderColor: c.bg,
+      };
+    });
+
     return {
       type: 'scatter',
-      data: {
-        datasets: [{
-          label: datasets[0].name || 'Data',
-          data: points,
-          backgroundColor: hexToRgba(userColors[0], 0.7),
-          borderColor: userColors[0],
-          borderWidth: 1.5,
-          pointRadius: Math.min(parseInt(dom.pointSize.value) ?? 5, points.length > 500 ? 2 : 5),
-          pointHoverRadius: 8,
-          pointHoverBorderWidth: 2,
-          pointHoverBorderColor: c.bg,
-          spanGaps: gaps
-        }]
-      },
+      data: { datasets: scatterDatasets },
       options: opts
     };
   }
@@ -2107,20 +2198,20 @@
   function buildWaterfallChart(labels, datasets, c, colors) {
     const opts = getBaseChartOptions();
     const values = datasets[0].values;
+    const borderRadius = safeInt(dom.barBorderRadius?.value, 4);
 
     let cumulative = 0;
     const bases = [];
     const positives = [];
     const negatives = [];
     const isTotal = [];
-    const borderRadius = dom.barBorderRadius ? parseInt(dom.barBorderRadius.value) : 4;
 
     values.forEach((val, i) => {
       if (val == null) val = 0;
-      const isTotalBar = i === values.length - 1 ||
-        (i > 0 && Math.abs(val - cumulative) < 0.01);
+      const isLast = i === values.length - 1;
+      const isTotalBar = isLast;
 
-      if (i === 0 || isTotalBar) {
+      if (isTotalBar) {
         if (i === 0) {
           bases.push(0);
           positives.push(val);
@@ -2157,11 +2248,11 @@
 
     const barColorsBg = values.map((v, i) => {
       if (isTotal[i]) return hexToRgba(userColors[0], 0.85);
-      return (v || 0) >= 0 ? hexToRgba('#34D399', 0.85) : hexToRgba('#F87171', 0.85);
+      return (v || 0) >= 0 ? hexToRgba(SEMANTIC.up, 0.85) : hexToRgba(SEMANTIC.down, 0.85);
     });
     const barColorsBorder = values.map((v, i) => {
       if (isTotal[i]) return userColors[0];
-      return (v || 0) >= 0 ? '#34D399' : '#F87171';
+      return (v || 0) >= 0 ? SEMANTIC.up : SEMANTIC.down;
     });
 
     return {
@@ -2225,13 +2316,7 @@
     }
 
     const format = dom.exportFormat.value;
-    let ext;
-    switch (format) {
-      case 'jpg': ext = 'jpg'; break;
-      case 'webp': ext = 'webp'; break;
-      case 'svg': ext = 'svg'; break;
-      default: ext = 'png';
-    }
+    const ext = { jpg: 'jpg', webp: 'webp', svg: 'svg' }[format] || 'png';
     const suggested = getExportFilename(ext);
 
     showExportModal(suggested, (confirmedName) => {
@@ -2244,27 +2329,49 @@
 
     const overlay = document.createElement('div');
     overlay.className = 'export-modal-overlay';
-    const c = getThemeColors();
-    overlay.innerHTML = `
-      <div class="export-modal">
-        <h3 class="export-modal-title">Export Chart</h3>
-        <label class="export-modal-label">Filename</label>
-        <input type="text" class="export-modal-input" value="${suggestedName}" id="exportFilenameInput">
-        <div class="export-modal-actions">
-          <button class="btn-secondary" id="exportModalCancel">Cancel</button>
-          <button class="btn-primary" id="exportModalConfirm">Export</button>
-        </div>
-      </div>
-    `;
+
+    const modal = document.createElement('div');
+    modal.className = 'export-modal';
+
+    const title = document.createElement('h3');
+    title.className = 'export-modal-title';
+    title.textContent = 'Export Chart';
+    modal.appendChild(title);
+
+    const label = document.createElement('label');
+    label.className = 'export-modal-label';
+    label.textContent = 'Filename';
+    modal.appendChild(label);
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'export-modal-input';
+    input.value = suggestedName;
+    modal.appendChild(input);
+
+    const actions = document.createElement('div');
+    actions.className = 'export-modal-actions';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn-secondary';
+    cancelBtn.textContent = 'Cancel';
+    actions.appendChild(cancelBtn);
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'btn-primary';
+    confirmBtn.textContent = 'Export';
+    actions.appendChild(confirmBtn);
+    modal.appendChild(actions);
+
+    overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
-    const input = overlay.querySelector('#exportFilenameInput');
     input.focus();
     const dotIdx = input.value.lastIndexOf('.');
     if (dotIdx > 0) input.setSelectionRange(0, dotIdx);
 
-    overlay.querySelector('#exportModalCancel').addEventListener('click', () => overlay.remove());
-    overlay.querySelector('#exportModalConfirm').addEventListener('click', () => {
+    cancelBtn.addEventListener('click', () => overlay.remove());
+    confirmBtn.addEventListener('click', () => {
       const name = input.value.trim() || suggestedName;
       overlay.remove();
       onConfirm(name);
@@ -2286,14 +2393,13 @@
   function doExport(filename, format, ext) {
     const sizeStr = dom.exportSize.value;
     const [w, h] = sizeStr.split('x').map(Number);
-    const quality = dom.exportQuality ? parseInt(dom.exportQuality.value) : 2;
+    const quality = safeInt(dom.exportQuality?.value, 2);
 
     if (format === 'svg') {
       exportAsSVG(w, h, filename);
       return;
     }
 
-    // Create offscreen canvas
     const wrapper = document.createElement('div');
     wrapper.className = 'export-canvas-wrapper';
     wrapper.style.width = w + 'px';
@@ -2306,13 +2412,11 @@
     wrapper.appendChild(offCanvas);
     document.body.appendChild(wrapper);
 
-    const currentConfig = chartInstance.config;
-    let exportConfig;
-    try {
-      exportConfig = JSON.parse(JSON.stringify(currentConfig));
-    } catch (e) {
-      exportConfig = { type: currentConfig.type, data: JSON.parse(JSON.stringify(currentConfig.data)), options: JSON.parse(JSON.stringify(currentConfig.options || {})) };
-    }
+    const tickCallback = buildYTickCallback();
+    const dlFormatter = buildDataLabelFormatter();
+    const tooltipLabelCallback = buildTooltipCallback();
+
+    const exportConfig = JSON.parse(JSON.stringify(chartInstance.config));
 
     if (!exportConfig.options) exportConfig.options = {};
     if (!exportConfig.options.layout) exportConfig.options.layout = { padding: { top: 4, bottom: 8, left: 4, right: 4 } };
@@ -2331,7 +2435,7 @@
     };
     scaleFonts(exportConfig.options);
 
-    if (exportConfig.options.layout && exportConfig.options.layout.padding) {
+    if (exportConfig.options.layout?.padding) {
       const pad = exportConfig.options.layout.padding;
       if (typeof pad === 'object') {
         Object.keys(pad).forEach(k => { pad[k] = Math.round(pad[k] * (1 + quality * 0.5)); });
@@ -2341,6 +2445,16 @@
     exportConfig.options.animation = false;
     exportConfig.options.responsive = false;
     exportConfig.options.maintainAspectRatio = false;
+
+    if (exportConfig.options?.scales?.y?.ticks) {
+      exportConfig.options.scales.y.ticks.callback = tickCallback;
+    }
+    if (exportConfig.options?.scales?.y1?.ticks) {
+      exportConfig.options.scales.y1.ticks.callback = tickCallback;
+    }
+    if (exportConfig.options?.plugins?.datalabels) {
+      exportConfig.options.plugins.datalabels.formatter = dlFormatter;
+    }
 
     const exportChartInstance = new Chart(offCanvas, {
       ...exportConfig,
@@ -2363,12 +2477,7 @@
 
     requestAnimationFrame(() => {
       setTimeout(() => {
-        let mimeType;
-        switch (format) {
-          case 'jpg': mimeType = 'image/jpeg'; break;
-          case 'webp': mimeType = 'image/webp'; break;
-          default: mimeType = 'image/png';
-        }
+        const mimeType = { jpg: 'image/jpeg', webp: 'image/webp' }[format] || 'image/png';
 
         const link = document.createElement('a');
         link.download = filename;
@@ -2405,7 +2514,6 @@
   // ═══════════════════════════════════════════
 
   dom.copyClipboardBtn.addEventListener('click', copyToClipboard);
-
   dom.copyJsonBtn.addEventListener('click', copyAsJSON);
 
   async function copyAsJSON() {
@@ -2430,11 +2538,9 @@
         theme: currentTheme
       };
 
-      const jsonStr = JSON.stringify(jsonData, null, 2);
-      await navigator.clipboard.writeText(jsonStr);
+      await navigator.clipboard.writeText(JSON.stringify(jsonData, null, 2));
       showToast('Chart data copied as JSON!', 'success');
     } catch (err) {
-      console.error('JSON copy failed:', err);
       showToast('Copy failed', 'error');
     }
   }
@@ -2449,24 +2555,22 @@
       const canvas = dom.chartCanvas;
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
 
-      if (navigator.clipboard && navigator.clipboard.write) {
+      if (navigator.clipboard?.write) {
         await navigator.clipboard.write([
           new ClipboardItem({ 'image/png': blob })
         ]);
         showToast('Chart copied to clipboard!', 'success');
       } else {
-        // Fallback: download
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.download = getExportFilename('png');
         link.href = url;
         link.click();
         URL.revokeObjectURL(url);
-        showToast('Clipboard not supported — downloaded instead', 'warning');
+        showToast('Clipboard not supported \u2014 downloaded instead', 'warning');
       }
     } catch (err) {
-      console.error('Clipboard copy failed:', err);
-      showToast('Copy failed — try downloading instead', 'error');
+      showToast('Copy failed \u2014 try downloading instead', 'error');
     }
   }
 
@@ -2474,41 +2578,11 @@
   //  Utilities
   // ═══════════════════════════════════════════
 
-  function hexToRgba(hex, alpha = 1) {
-    if (!hex) return `rgba(0,0,0,${alpha})`;
-    hex = hex.replace('#', '');
-    if (hex.length === 3) {
-      hex = hex.split('').map(c => c + c).join('');
-    }
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  }
-
-  function wrapText(text, maxChars) {
-    if (!text) return [''];
-    if (text.length <= maxChars) return [text];
-    const words = text.split(' ');
-    const lines = [];
-    let line = '';
-    for (const word of words) {
-      if (line.length + word.length + 1 > maxChars && line.length > 0) {
-        lines.push(line);
-        line = word;
-      } else {
-        line = line ? line + ' ' + word : word;
-      }
-    }
-    if (line) lines.push(line);
-    return lines.slice(0, 3);
-  }
-
   function getExportFilename(ext) {
     const dateStr = new Date().toISOString().slice(0, 10);
     const legendNames = parsedData ? parsedData.datasets.map(ds => ds.name).filter(Boolean) : [];
-    const subtitle = dom.chartSubtitle ? dom.chartSubtitle.value.trim() : '';
-    const title = dom.chartTitle ? dom.chartTitle.value.trim() : '';
+    const subtitle = dom.chartSubtitle?.value.trim() || '';
+    const title = dom.chartTitle?.value.trim() || '';
 
     let base = '';
     if (legendNames.length > 0 && legendNames.length <= 3) {
@@ -2572,14 +2646,13 @@
       e.preventDefault();
       exportChart();
     }
-    if ((e.metaKey || e.ctrlKey) && e.key === 'd') {
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'D') {
       e.preventDefault();
       setTheme(currentTheme === 'dark' ? 'light' : 'dark');
     }
     if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
       const tag = document.activeElement?.tagName?.toLowerCase();
       if (tag !== 'input' && tag !== 'textarea') {
-        // Don't prevent default if text is selected
         const selection = window.getSelection();
         if (!selection || selection.isCollapsed) {
           e.preventDefault();
@@ -2599,10 +2672,10 @@
 
     dom.maxTicksValue.textContent = dom.maxTicks.value;
     if (dom.barBorderRadiusValue) dom.barBorderRadiusValue.textContent = dom.barBorderRadius.value;
-    if (dom.xAxisRotationValue) dom.xAxisRotationValue.textContent = dom.xAxisRotation.value + '°';
+    if (dom.xAxisRotationValue) dom.xAxisRotationValue.textContent = dom.xAxisRotation.value + '\u00B0';
 
     if (dom.maxRowsInput) {
-      HARD_ROW_LIMIT = parseInt(dom.maxRowsInput.value) || 50000;
+      CONFIG.hardRowLimit = parseInt(dom.maxRowsInput.value) || 50000;
     }
 
     loadSampleData();
