@@ -2416,7 +2416,7 @@
     const dlFormatter = buildDataLabelFormatter();
     const tooltipLabelCallback = buildTooltipCallback();
 
-    const exportConfig = JSON.parse(JSON.stringify(chartInstance.config));
+    const exportConfig = JSON.parse(JSON.stringify(chartInstance.config._config));
 
     if (!exportConfig.options) exportConfig.options = {};
     if (!exportConfig.options.layout) exportConfig.options.layout = { padding: { top: 4, bottom: 8, left: 4, right: 4 } };

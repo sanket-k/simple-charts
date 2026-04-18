@@ -1243,7 +1243,8 @@ body {
   left: -9999px;
   top: -9999px;
   pointer-events: none;
-  opacity: 0;
+  /* opacity intentionally omitted — canvas must render its bitmap
+     even though the element is visually offscreen */
 }
 
 /* ═══════════════════════════════════════════
