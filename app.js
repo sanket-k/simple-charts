@@ -213,6 +213,34 @@
     dualAxisSection: $('#dualAxisSection'),
     axisAssignmentList: $('#axisAssignmentList'),
     presetPalettes: $('#presetPalettes'),
+    innovatorSettings: $('#innovatorSettings'),
+    innovatorXLabel: $('#innovatorXLabel'),
+    innovatorYLabel: $('#innovatorYLabel'),
+    innovatorTiers: $('#innovatorTiers'),
+    innovatorTiersValue: $('#innovatorTiersValue'),
+    innovatorSustainingPace: $('#innovatorSustainingPace'),
+    innovatorSustainingPaceValue: $('#innovatorSustainingPaceValue'),
+    innovatorShowIncumbent: $('#innovatorShowIncumbent'),
+    innovatorShowDisruptive: $('#innovatorShowDisruptive'),
+    innovatorDisruptionPace: $('#innovatorDisruptionPace'),
+    innovatorDisruptionPaceValue: $('#innovatorDisruptionPaceValue'),
+    innovatorDisruptiveStart: $('#innovatorDisruptiveStart'),
+    innovatorDisruptiveStartValue: $('#innovatorDisruptiveStartValue'),
+    innovatorDisruptivePeak: $('#innovatorDisruptivePeak'),
+    innovatorDisruptivePeakValue: $('#innovatorDisruptivePeakValue'),
+    innovatorIncumbentLead: $('#innovatorIncumbentLead'),
+    innovatorIncumbentLeadValue: $('#innovatorIncumbentLeadValue'),
+    innovatorMarketSpread: $('#innovatorMarketSpread'),
+    innovatorMarketSpreadValue: $('#innovatorMarketSpreadValue'),
+    innovatorTierNames: $('#innovatorTierNames'),
+    innovatorCurveType: $('#innovatorCurveType'),
+    innovatorTimeMode: $('#innovatorTimeMode'),
+    innovatorTimeYears: $('#innovatorTimeYears'),
+    innovatorTimeMonths: $('#innovatorTimeMonths'),
+    innovatorStartYear: $('#innovatorStartYear'),
+    innovatorEndYear: $('#innovatorEndYear'),
+    innovatorStartMonth: $('#innovatorStartMonth'),
+    innovatorEndMonth: $('#innovatorEndMonth'),
   };
 
   const colorPairs = [
@@ -547,7 +575,78 @@
     dom.timelineSettings.style.display =
       currentChartType === 'timeline' ? 'block' : 'none';
 
+    if (dom.innovatorSettings) {
+      dom.innovatorSettings.style.display =
+        currentChartType === 'innovator' ? 'block' : 'none';
+    }
+
     renderChart();
+  });
+
+  if (dom.innovatorTimeMode) {
+    dom.innovatorTimeMode.addEventListener('change', () => {
+      const mode = dom.innovatorTimeMode.value;
+      if (dom.innovatorTimeYears) dom.innovatorTimeYears.style.display = mode === 'years' ? 'flex' : 'none';
+      if (dom.innovatorTimeMonths) dom.innovatorTimeMonths.style.display = mode === 'months' ? 'flex' : 'none';
+      renderChart();
+    });
+  }
+
+  let innovatorTierCustomNames = [];
+
+  function getInnovatorTierDefaultName(t, total) {
+    if (total === 1) return 'Market Demand';
+    if (t === 0) return 'High-end Market';
+    if (t === total - 1) return 'Low-end Market';
+    return `Market Tier ${t + 1}`;
+  }
+
+  function renderInnovatorTierNames() {
+    if (!dom.innovatorTierNames) return;
+    const tiers = safeInt(dom.innovatorTiers?.value, 3);
+
+    while (innovatorTierCustomNames.length < tiers) {
+      const idx = innovatorTierCustomNames.length;
+      innovatorTierCustomNames.push(getInnovatorTierDefaultName(idx, tiers));
+    }
+    if (innovatorTierCustomNames.length > tiers) {
+      innovatorTierCustomNames.length = tiers;
+    }
+
+    for (let t = 0; t < tiers; t++) {
+      if (!innovatorTierCustomNames[t]) {
+        innovatorTierCustomNames[t] = getInnovatorTierDefaultName(t, tiers);
+      }
+    }
+
+    dom.innovatorTierNames.innerHTML = '';
+    for (let t = 0; t < tiers; t++) {
+      const row = document.createElement('div');
+      row.className = 'swatch-row';
+      const label = document.createElement('label');
+      label.style.fontSize = '0.72rem';
+      label.style.minWidth = '18px';
+      label.textContent = `${t + 1}`;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'swatch-hex-input';
+      input.style.flex = '1';
+      input.style.width = 'auto';
+      input.value = innovatorTierCustomNames[t];
+      input.placeholder = getInnovatorTierDefaultName(t, tiers);
+      input.dataset.tierIndex = t;
+      input.addEventListener('input', (e) => {
+        innovatorTierCustomNames[parseInt(e.target.dataset.tierIndex)] = e.target.value;
+        debouncedRender();
+      });
+      row.appendChild(label);
+      row.appendChild(input);
+      dom.innovatorTierNames.appendChild(row);
+    }
+  }
+
+  dom.innovatorTiers.addEventListener('input', () => {
+    renderInnovatorTierNames();
   });
 
   // ═══════════════════════════════════════════
@@ -1296,7 +1395,16 @@
     dom.xAxisType, dom.xAxisLabel, dom.yAxisLabel,
     dom.decimalPlaces, dom.currencyPrefix,
     dom.refLineY, dom.refLineLabel,
-    dom.chartBgColor, dom.chartGridColor
+    dom.chartBgColor, dom.chartGridColor,
+    dom.innovatorXLabel, dom.innovatorYLabel,
+    dom.innovatorTiers, dom.innovatorSustainingPace,
+    dom.innovatorShowIncumbent, dom.innovatorShowDisruptive,
+    dom.innovatorDisruptionPace,
+    dom.innovatorDisruptiveStart, dom.innovatorDisruptivePeak,
+    dom.innovatorIncumbentLead, dom.innovatorMarketSpread,
+    dom.innovatorCurveType, dom.innovatorTimeMode,
+    dom.innovatorStartYear, dom.innovatorEndYear,
+    dom.innovatorStartMonth, dom.innovatorEndMonth,
   ];
 
   settingsInputs.forEach(el => {
@@ -1316,6 +1424,27 @@
       }
       if (el === dom.chartGridColor) {
         userGridColor = dom.chartGridColor.value;
+      }
+      if (el === dom.innovatorTiers && dom.innovatorTiersValue) {
+        dom.innovatorTiersValue.textContent = dom.innovatorTiers.value;
+      }
+      if (el === dom.innovatorSustainingPace && dom.innovatorSustainingPaceValue) {
+        dom.innovatorSustainingPaceValue.textContent = dom.innovatorSustainingPace.value;
+      }
+      if (el === dom.innovatorDisruptionPace && dom.innovatorDisruptionPaceValue) {
+        dom.innovatorDisruptionPaceValue.textContent = dom.innovatorDisruptionPace.value;
+      }
+      if (el === dom.innovatorDisruptiveStart && dom.innovatorDisruptiveStartValue) {
+        dom.innovatorDisruptiveStartValue.textContent = dom.innovatorDisruptiveStart.value;
+      }
+      if (el === dom.innovatorDisruptivePeak && dom.innovatorDisruptivePeakValue) {
+        dom.innovatorDisruptivePeakValue.textContent = dom.innovatorDisruptivePeak.value;
+      }
+      if (el === dom.innovatorIncumbentLead && dom.innovatorIncumbentLeadValue) {
+        dom.innovatorIncumbentLeadValue.textContent = dom.innovatorIncumbentLead.value;
+      }
+      if (el === dom.innovatorMarketSpread && dom.innovatorMarketSpreadValue) {
+        dom.innovatorMarketSpreadValue.textContent = dom.innovatorMarketSpread.value;
       }
       debouncedRender();
     });
@@ -1732,12 +1861,17 @@
   }
 
   function renderChart() {
-    if (!parsedData) return;
-
     if (chartInstance) {
       chartInstance.destroy();
       chartInstance = null;
     }
+
+    if (currentChartType === 'innovator') {
+      renderInnovatorsDilemmaChart();
+      return;
+    }
+
+    if (!parsedData) return;
 
     const displayData = applyZoom(parsedData);
     if (!displayData || !displayData.labels || displayData.labels.length === 0 || !displayData.datasets || displayData.datasets.length === 0) return;
@@ -2304,6 +2438,249 @@
   }
 
   // ═══════════════════════════════════════════
+  //  Innovator's Dilemma Chart
+  // ═══════════════════════════════════════════
+
+  function renderInnovatorsDilemmaChart() {
+    const c = getThemeColors();
+    const colors = getMultiColors();
+
+    const tiers = safeInt(dom.innovatorTiers?.value, 3);
+    const sustainingPace = safeFloat(dom.innovatorSustainingPace?.value, 1.2);
+    const showIncumbent = dom.innovatorShowIncumbent?.checked ?? true;
+    const showDisruptive = dom.innovatorShowDisruptive?.checked ?? true;
+    const disruptionPace = safeFloat(dom.innovatorDisruptionPace?.value, 2.0);
+    const curveType = dom.innovatorCurveType?.value || 'exponential';
+    const timeMode = dom.innovatorTimeMode?.value || 'abstract';
+    const xLabel = dom.innovatorXLabel?.value || 'Time';
+    const yLabel = dom.innovatorYLabel?.value || 'Performance / Quality';
+
+    const disruptiveStart = safeFloat(dom.innovatorDisruptiveStart?.value, 3);
+    const disruptivePeak = safeFloat(dom.innovatorDisruptivePeak?.value, 90);
+    const incumbentLead = safeFloat(dom.innovatorIncumbentLead?.value, 5);
+    const marketSpread = safeFloat(dom.innovatorMarketSpread?.value, 50);
+
+    const marketTop = 20 + marketSpread;
+    const marketBottom = 20;
+    const disruptiveRange = Math.max(disruptivePeak - disruptiveStart, 1);
+    const slopePerUnit = sustainingPace * 0.8;
+
+    function disruptiveValue(xNorm) {
+      switch (curveType) {
+        case 'logistic':
+          return disruptiveStart + disruptiveRange / (1 + Math.exp(-disruptionPace * 6 * (xNorm - 0.5)));
+        case 'linear':
+          return disruptiveStart + disruptiveRange * xNorm;
+        case 'power':
+          return disruptiveStart + disruptiveRange * Math.pow(Math.max(xNorm, 0.001), 3 / Math.max(disruptionPace, 0.1));
+        case 'exponential':
+        default:
+          return disruptiveStart + disruptiveRange * (1 - Math.exp(-disruptionPace * 1.5 * xNorm));
+      }
+    }
+
+    let labels;
+    let isDateAxis = false;
+
+    if (timeMode === 'years') {
+      const startY = safeInt(dom.innovatorStartYear?.value, 1990);
+      const endY = safeInt(dom.innovatorEndYear?.value, 2020);
+      const clampedEnd = Math.max(startY + 1, endY);
+      labels = [];
+      for (let y = startY; y <= clampedEnd; y++) labels.push(String(y));
+      isDateAxis = true;
+    } else if (timeMode === 'months') {
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const startStr = dom.innovatorStartMonth?.value || 'Jan 2020';
+      const endStr = dom.innovatorEndMonth?.value || 'Dec 2020';
+      const startDate = tryParseDate(startStr) || new Date(2020, 0, 1);
+      const endDate = tryParseDate(endStr) || new Date(2020, 11, 31);
+      const cur = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      const end = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+      labels = [];
+      while (cur <= end) {
+        labels.push(`${months[cur.getMonth()]} ${cur.getFullYear()}`);
+        cur.setMonth(cur.getMonth() + 1);
+      }
+      if (labels.length < 2) labels = ['Jan 2020', 'Dec 2020'];
+      isDateAxis = true;
+    } else {
+      const numPoints = 80;
+      const xMax = 10;
+      labels = Array.from({ length: numPoints + 1 }, (_, i) =>
+        parseFloat(((i / numPoints) * xMax).toFixed(2))
+      );
+    }
+
+    const n = labels.length;
+    const normX = (i) => i / Math.max(n - 1, 1);
+
+    const datasets = [];
+    const tierSpacing = tiers > 1 ? (marketTop - marketBottom) / (tiers - 1) : 0;
+
+    if (showDisruptive) {
+      const data = labels.map((_, i) => disruptiveValue(normX(i)));
+      datasets.push({
+        label: 'Disruptive Technology',
+        data,
+        borderColor: colors[0] || c.hero,
+        backgroundColor: hexToRgba(colors[0] || c.hero, 0.06),
+        borderWidth: 3,
+        pointRadius: 0,
+        tension: curveType === 'linear' ? 0 : 0.35,
+        fill: true,
+        order: 0,
+      });
+    }
+
+    if (showIncumbent) {
+      const incumbentBase = marketTop + incumbentLead + (tiers > 1 ? tierSpacing * 0.3 : 0);
+      const data = labels.map((_, i) => incumbentBase + normX(i) * 10 * slopePerUnit * 1.15);
+      datasets.push({
+        label: 'Incumbent Technology',
+        data,
+        borderColor: colors[1] || '#60A5FA',
+        backgroundColor: 'transparent',
+        borderWidth: 2.5,
+        borderDash: [10, 6],
+        pointRadius: 0,
+        tension: 0,
+        fill: false,
+        order: 1,
+      });
+    }
+
+    for (let t = 0; t < tiers; t++) {
+      const baseY = tiers === 1
+        ? (marketTop + marketBottom) / 2
+        : marketTop - t * tierSpacing;
+      const data = labels.map((_, i) => baseY + normX(i) * 10 * slopePerUnit);
+
+      const tierName = (innovatorTierCustomNames[t] && innovatorTierCustomNames[t].trim())
+        ? innovatorTierCustomNames[t].trim()
+        : getInnovatorTierDefaultName(t, tiers);
+
+      datasets.push({
+        label: tierName,
+        data,
+        borderColor: hexToRgba(c.textSecondary, 0.22 + t * 0.04),
+        backgroundColor: 'transparent',
+        borderWidth: 1.2,
+        pointRadius: 0,
+        tension: 0,
+        fill: false,
+        order: 2 + t,
+      });
+    }
+
+    const animDuration = safeInt(dom.animationSpeed?.value, 600);
+
+    const config = {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: animDuration, easing: 'easeOutQuart' },
+        layout: {
+          padding: {
+            top: dom.chartTitle.value ? 8 : 4,
+            bottom: dom.chartSource.value ? 24 : 8,
+            left: 4,
+            right: 4,
+          },
+        },
+        plugins: {
+          title: {
+            display: !!dom.chartTitle.value,
+            text: dom.chartTitle.value,
+            color: c.text,
+            font: { size: 16, weight: '600', family: "'Inter', sans-serif" },
+            padding: { bottom: dom.chartSubtitle.value ? 2 : 12 },
+          },
+          subtitle: {
+            display: !!dom.chartSubtitle.value,
+            text: dom.chartSubtitle.value,
+            color: c.textSecondary,
+            font: { size: 11, weight: '400', family: "'Inter', sans-serif" },
+            padding: { bottom: 16 },
+          },
+          legend: {
+            display: dom.showLegend?.checked ?? true,
+            position: dom.legendPosition?.value || 'top',
+            align: 'end',
+            labels: {
+              color: c.textSecondary,
+              font: { size: 11, family: "'Inter', sans-serif" },
+              boxWidth: 12,
+              boxHeight: 3,
+              padding: 14,
+              usePointStyle: false,
+            },
+          },
+          tooltip: {
+            backgroundColor: currentTheme === 'dark' ? '#1e293b' : '#fff',
+            titleColor: c.text,
+            bodyColor: c.textSecondary,
+            borderColor: c.border,
+            borderWidth: 1,
+            cornerRadius: 8,
+            padding: 10,
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              title: (items) => isDateAxis ? items[0]?.label : `Time: ${items[0]?.label}`,
+              label: (ctx) => `  ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}`,
+            },
+          },
+          datalabels: { display: false },
+          annotation: { annotations: {} },
+        },
+        scales: {
+          x: {
+            type: isDateAxis ? 'category' : 'linear',
+            title: {
+              display: true,
+              text: xLabel,
+              color: c.textSecondary,
+              font: { size: 11, weight: '500', family: "'Inter', sans-serif" },
+            },
+            grid: { display: false },
+            ticks: {
+              color: isDateAxis ? c.textMuted : c.textMuted,
+              font: { size: isDateAxis ? 10 : 9, family: "'Inter', sans-serif" },
+              maxTicksLimit: isDateAxis ? Math.min(labels.length, 15) : 6,
+              maxRotation: isDateAxis ? 45 : 0,
+              autoSkip: true,
+            },
+            border: { display: false },
+            ...(isDateAxis ? {} : { min: 0, max: 10 }),
+          },
+          y: {
+            title: {
+              display: true,
+              text: yLabel,
+              color: c.textSecondary,
+              font: { size: 11, weight: '500', family: "'Inter', sans-serif" },
+            },
+            grid: { display: false },
+            ticks: {
+              color: c.textSecondary,
+              font: { size: 10, family: "'Inter', sans-serif" },
+              padding: 8,
+            },
+            border: { display: false },
+            min: 0,
+          },
+        },
+      },
+      plugins: [bgPlugin, sourceFooterPlugin, brandPlugin, ChartDataLabels],
+    };
+
+    chartInstance = new Chart(dom.chartCanvas, config);
+  }
+
+  // ═══════════════════════════════════════════
   //  Export
   // ═══════════════════════════════════════════
 
@@ -2673,6 +3050,15 @@
     dom.maxTicksValue.textContent = dom.maxTicks.value;
     if (dom.barBorderRadiusValue) dom.barBorderRadiusValue.textContent = dom.barBorderRadius.value;
     if (dom.xAxisRotationValue) dom.xAxisRotationValue.textContent = dom.xAxisRotation.value + '\u00B0';
+    if (dom.innovatorTiersValue) dom.innovatorTiersValue.textContent = dom.innovatorTiers.value;
+    if (dom.innovatorSustainingPaceValue) dom.innovatorSustainingPaceValue.textContent = dom.innovatorSustainingPace.value;
+    if (dom.innovatorDisruptionPaceValue) dom.innovatorDisruptionPaceValue.textContent = dom.innovatorDisruptionPace.value;
+    if (dom.innovatorDisruptiveStartValue) dom.innovatorDisruptiveStartValue.textContent = dom.innovatorDisruptiveStart.value;
+    if (dom.innovatorDisruptivePeakValue) dom.innovatorDisruptivePeakValue.textContent = dom.innovatorDisruptivePeak.value;
+    if (dom.innovatorIncumbentLeadValue) dom.innovatorIncumbentLeadValue.textContent = dom.innovatorIncumbentLead.value;
+    if (dom.innovatorMarketSpreadValue) dom.innovatorMarketSpreadValue.textContent = dom.innovatorMarketSpread.value;
+
+    renderInnovatorTierNames();
 
     if (dom.maxRowsInput) {
       CONFIG.hardRowLimit = parseInt(dom.maxRowsInput.value) || 50000;

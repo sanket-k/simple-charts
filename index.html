@@ -128,6 +128,10 @@
             <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="6" y="10" width="5" height="16" fill="currentColor" opacity="0.3"/><rect x="13" y="8" width="5" height="6" fill="currentColor" opacity="0.2"/><rect x="20" y="14" width="5" height="8" fill="currentColor" opacity="0.2"/><rect x="27" y="6" width="5" height="20" fill="currentColor" opacity="0.3"/><line x1="11" y1="10" x2="13" y2="10" stroke-dasharray="1 1"/><line x1="18" y1="14" x2="20" y2="14" stroke-dasharray="1 1"/><line x1="25" y1="22" x2="27" y2="22" stroke-dasharray="1 1"/></svg>
             <span>Waterfall</span>
           </button>
+          <button class="chart-type-btn" data-type="innovator" title="Innovator's Dilemma" role="tab" aria-selected="false">
+            <svg viewBox="0 0 40 40" fill="none"><path d="M8 28L32 20" stroke="currentColor" stroke-width="1.2" opacity="0.35"/><path d="M8 20L32 12" stroke="currentColor" stroke-width="1.2" opacity="0.35"/><path d="M8 12L32 4" stroke="currentColor" stroke-width="1.2" opacity="0.35"/><path d="M8 34C14 30 22 18 28 10L34 4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Innovator</span>
+          </button>
         </div>
       </div>
 
@@ -174,6 +178,102 @@
         <div class="tl-tab-content" id="tltab-bulk">
           <textarea id="bulkEventsTextarea" class="data-textarea small" placeholder="Paste events, one per line:&#10;date, event name&#10;&#10;Example:&#10;2024-03-15, ETF Approved&#10;2024-04-20, Halving"></textarea>
           <button class="btn-secondary full-width" id="parseBulkEventsBtn">Parse Events</button>
+        </div>
+      </div>
+
+      <!-- Innovator's Dilemma Settings (shown for innovator chart) -->
+      <div class="panel-section" id="innovatorSettings" style="display:none;">
+        <h3 class="panel-title">Innovator's Dilemma</h3>
+        <div class="input-group-row">
+          <div class="input-group">
+            <label for="innovatorXLabel">X-Axis Label</label>
+            <input type="text" id="innovatorXLabel" value="Time">
+          </div>
+          <div class="input-group">
+            <label for="innovatorYLabel">Y-Axis Label</label>
+            <input type="text" id="innovatorYLabel" value="Performance / Quality">
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="innovatorTiers">Market Tiers (Sustaining)</label>
+          <input type="range" id="innovatorTiers" min="1" max="6" step="1" value="3">
+          <span class="range-value" id="innovatorTiersValue">3</span>
+        </div>
+        <div id="innovatorTierNames"></div>
+        <div class="input-group">
+          <label for="innovatorSustainingPace">Pace of Sustaining Innovation</label>
+          <input type="range" id="innovatorSustainingPace" min="0.2" max="3" step="0.1" value="1.2">
+          <span class="range-value" id="innovatorSustainingPaceValue">1.2</span>
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="innovatorShowIncumbent" checked>
+          <label for="innovatorShowIncumbent">Incumbent Technology</label>
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="innovatorShowDisruptive" checked>
+          <label for="innovatorShowDisruptive">Disruptive Technology</label>
+        </div>
+        <div class="input-group">
+          <label for="innovatorDisruptionPace">Pace of Disruption</label>
+          <input type="range" id="innovatorDisruptionPace" min="0.3" max="4" step="0.1" value="2.0">
+          <span class="range-value" id="innovatorDisruptionPaceValue">2.0</span>
+        </div>
+        <div class="input-group">
+          <label for="innovatorDisruptiveStart">Disruptive Start Level</label>
+          <input type="range" id="innovatorDisruptiveStart" min="0" max="40" step="1" value="3">
+          <span class="range-value" id="innovatorDisruptiveStartValue">3</span>
+        </div>
+        <div class="input-group">
+          <label for="innovatorDisruptivePeak">Disruptive Peak Level</label>
+          <input type="range" id="innovatorDisruptivePeak" min="50" max="100" step="1" value="90">
+          <span class="range-value" id="innovatorDisruptivePeakValue">90</span>
+        </div>
+        <div class="input-group">
+          <label for="innovatorIncumbentLead">Incumbent Lead</label>
+          <input type="range" id="innovatorIncumbentLead" min="0" max="20" step="1" value="5">
+          <span class="range-value" id="innovatorIncumbentLeadValue">5</span>
+        </div>
+        <div class="input-group">
+          <label for="innovatorMarketSpread">Market Tier Spread</label>
+          <input type="range" id="innovatorMarketSpread" min="10" max="70" step="1" value="50">
+          <span class="range-value" id="innovatorMarketSpreadValue">50</span>
+        </div>
+        <div class="input-group">
+          <label for="innovatorCurveType">Disruption Curve Shape</label>
+          <select id="innovatorCurveType">
+            <option value="exponential">Exponential</option>
+            <option value="logistic">S-Curve (Logistic)</option>
+            <option value="linear">Linear</option>
+            <option value="power">Power Law</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="innovatorTimeMode">Time Axis</label>
+          <select id="innovatorTimeMode">
+            <option value="abstract">Abstract (0 – 10)</option>
+            <option value="years">Year Range (e.g. 1990 – 2020)</option>
+            <option value="months">Month Range (e.g. Jan – Dec 2020)</option>
+          </select>
+        </div>
+        <div class="input-group-row" id="innovatorTimeYears" style="display:none;">
+          <div class="input-group">
+            <label for="innovatorStartYear">Start Year</label>
+            <input type="number" id="innovatorStartYear" value="1990" min="1800" max="2100">
+          </div>
+          <div class="input-group">
+            <label for="innovatorEndYear">End Year</label>
+            <input type="number" id="innovatorEndYear" value="2020" min="1800" max="2100">
+          </div>
+        </div>
+        <div class="input-group-row" id="innovatorTimeMonths" style="display:none;">
+          <div class="input-group">
+            <label for="innovatorStartMonth">Start</label>
+            <input type="text" id="innovatorStartMonth" value="Jan 2020" placeholder="e.g. Jan 2020">
+          </div>
+          <div class="input-group">
+            <label for="innovatorEndMonth">End</label>
+            <input type="text" id="innovatorEndMonth" value="Dec 2020" placeholder="e.g. Dec 2020">
+          </div>
         </div>
       </div>
 
