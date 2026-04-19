@@ -50,7 +50,7 @@
     maxPieSlices: 12,
     maxDonutSlices: 10,
     eventProximityMs: 30 * 24 * 60 * 60 * 1000,
-    debounceMs: 120,
+    debounceMs: 300,
   };
 
   // ── State ──
@@ -1238,7 +1238,7 @@
     dom.axisAssignmentList.querySelectorAll('.axis-name-input').forEach(input => {
       input.addEventListener('input', (e) => {
         axisNames[e.target.dataset.axis] = e.target.value;
-        renderChart();
+        debouncedRender();
       });
     });
 
@@ -1298,7 +1298,7 @@
       if (el === dom.brandOpacity && dom.brandOpacityValue) {
         dom.brandOpacityValue.textContent = dom.brandOpacity.value;
       }
-      renderChart();
+      debouncedRender();
     });
   });
 
@@ -1401,7 +1401,7 @@
         const idx = parseInt(e.target.dataset.index);
         const field = e.target.dataset.field;
         timelineEvents[idx][field] = e.target.value;
-        renderChart();
+        debouncedRender();
       });
     });
 
@@ -2173,8 +2173,20 @@
     const borderRadius = safeInt(dom.barBorderRadius?.value, 4);
     opts.indexAxis = indexAxis;
     if (indexAxis === 'y') {
+      // Swap scale configs: x-axis becomes value axis, y-axis becomes category axis
+      const valueConfig = { ...opts.scales.y };
+      const catConfig = { ...opts.scales.x };
+      opts.scales.x = valueConfig;
       opts.scales.x.grid.display = dom.showGrid.checked;
+      opts.scales.y = catConfig;
       opts.scales.y.grid.display = false;
+      delete opts.scales.y.type;
+      delete opts.scales.y.time;
+      delete opts.scales.y.adapters;
+      opts.scales.y.min = undefined;
+      opts.scales.y.max = undefined;
+      if (opts.scales.y.ticks) delete opts.scales.y.ticks.callback;
+      delete opts.scales.y1;
     }
     opts.plugins.datalabels.anchor = 'end';
     opts.plugins.datalabels.align = indexAxis === 'y' ? 'right' : 'top';
