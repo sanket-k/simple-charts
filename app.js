@@ -59,6 +59,7 @@
   let chartInstance = null;
   let parsedData = null;
   let rawParsedData = null;
+  let currentInnovatorLabels = [];
   let timelineEvents = [];
   let userColors = [...DEFAULT_COLORS];
   let userBgColor = null;
@@ -460,15 +461,24 @@
   }
 
   function updateZoomLabels() {
-    if (!parsedData) return;
-    const len = parsedData.labels.length;
+    let lbls = [];
+    if (currentChartType === 'innovator') {
+      lbls = currentInnovatorLabels;
+    } else if (parsedData) {
+      lbls = parsedData.labels;
+    }
+
+    if (!lbls || lbls.length === 0) return;
+
+    const len = lbls.length;
     const startIdx = Math.floor((zoomRange[0] / 100) * len);
     const endIdx = Math.min(Math.ceil((zoomRange[1] / 100) * len), len - 1);
-    dom.zoomLabelStart.textContent = parsedData.labels[startIdx] || '';
-    dom.zoomLabelEnd.textContent = parsedData.labels[endIdx] || '';
+    dom.zoomLabelStart.textContent = lbls[startIdx] || '';
+    dom.zoomLabelEnd.textContent = lbls[endIdx] || '';
 
-    dom.zoomSliderRange.style.left = zoomRange[0] + '%';
-    dom.zoomSliderRange.style.width = (zoomRange[1] - zoomRange[0]) + '%';
+    const thumbW = 16;
+    dom.zoomSliderRange.style.left = `calc(${zoomRange[0]}% + ${thumbW / 2 - (zoomRange[0] / 100) * thumbW}px)`;
+    dom.zoomSliderRange.style.width = `calc(${zoomRange[1] - zoomRange[0]}% - ${(zoomRange[1] - zoomRange[0]) / 100 * thumbW}px)`;
   }
 
   // ═══════════════════════════════════════════
@@ -637,6 +647,7 @@
 
     updateSettingsVisibility();
     renderChart();
+    updateZoomSlider();
   });
 
   if (dom.innovatorTimeMode) {
@@ -661,18 +672,8 @@
     if (!dom.innovatorTierNames) return;
     const tiers = safeInt(dom.innovatorTiers?.value, 3);
 
-    while (innovatorTierCustomNames.length < tiers) {
-      const idx = innovatorTierCustomNames.length;
-      innovatorTierCustomNames.push(getInnovatorTierDefaultName(idx, tiers));
-    }
     if (innovatorTierCustomNames.length > tiers) {
       innovatorTierCustomNames.length = tiers;
-    }
-
-    for (let t = 0; t < tiers; t++) {
-      if (!innovatorTierCustomNames[t]) {
-        innovatorTierCustomNames[t] = getInnovatorTierDefaultName(t, tiers);
-      }
     }
 
     dom.innovatorTierNames.innerHTML = '';
@@ -688,7 +689,7 @@
       input.className = 'swatch-hex-input';
       input.style.flex = '1';
       input.style.width = 'auto';
-      input.value = innovatorTierCustomNames[t];
+      input.value = innovatorTierCustomNames[t] || '';
       input.placeholder = getInnovatorTierDefaultName(t, tiers);
       input.dataset.tierIndex = t;
       input.addEventListener('input', (e) => {
@@ -981,7 +982,14 @@
   }
 
   function updateZoomSlider() {
-    if (!parsedData || parsedData.labels.length < 50) {
+    const isInnovator = currentChartType === 'innovator';
+    if (!parsedData && !isInnovator) {
+      dom.zoomSliderContainer.style.display = 'none';
+      return;
+    }
+    const isLineChart = ['line', 'timeline', 'area', 'innovator'].includes(currentChartType);
+    const len = isInnovator ? currentInnovatorLabels.length : (parsedData ? parsedData.labels.length : 0);
+    if (!isLineChart && len < 50) {
       dom.zoomSliderContainer.style.display = 'none';
       return;
     }
@@ -2573,11 +2581,20 @@
     const n = labels.length;
     const normX = (i) => i / Math.max(n - 1, 1);
 
+    currentInnovatorLabels = labels;
+    if (currentChartType === 'innovator') setTimeout(updateZoomLabels, 0);
+
+    const startRatio = zoomRange[0] / 100;
+    const endRatio = zoomRange[1] / 100;
+    const startIndex = Math.floor(startRatio * labels.length);
+    const endIndex = Math.ceil(endRatio * labels.length) || 1;
+    const displayLabels = labels.slice(startIndex, endIndex);
+
     const datasets = [];
     const tierSpacing = tiers > 1 ? (marketTop - marketBottom) / (tiers - 1) : 0;
 
     if (showDisruptive) {
-      const data = labels.map((_, i) => disruptiveValue(normX(i)));
+      const data = labels.map((_, i) => disruptiveValue(normX(i))).slice(startIndex, endIndex);
       datasets.push({
         label: 'Disruptive Technology',
         data,
@@ -2593,7 +2610,7 @@
 
     if (showIncumbent) {
       const incumbentBase = marketTop + incumbentLead + (tiers > 1 ? tierSpacing * 0.3 : 0);
-      const data = labels.map((_, i) => incumbentBase + normX(i) * 10 * slopePerUnit * 1.15);
+      const data = labels.map((_, i) => incumbentBase + normX(i) * 10 * slopePerUnit * 1.15).slice(startIndex, endIndex);
       datasets.push({
         label: 'Incumbent Technology',
         data,
@@ -2612,7 +2629,7 @@
       const baseY = tiers === 1
         ? (marketTop + marketBottom) / 2
         : marketTop - t * tierSpacing;
-      const data = labels.map((_, i) => baseY + normX(i) * 10 * slopePerUnit);
+      const data = labels.map((_, i) => baseY + normX(i) * 10 * slopePerUnit).slice(startIndex, endIndex);
 
       const tierName = (innovatorTierCustomNames[t] && innovatorTierCustomNames[t].trim())
         ? innovatorTierCustomNames[t].trim()
@@ -2635,7 +2652,7 @@
 
     const config = {
       type: 'line',
-      data: { labels, datasets },
+      data: { labels: displayLabels, datasets },
       options: {
         responsive: true,
         maintainAspectRatio: false,

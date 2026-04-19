@@ -661,7 +661,7 @@ body {
   appearance: none;
   background: transparent;
   pointer-events: none;
-  z-index: 2;
+  z-index: 3;
   height: 24px;
   margin: 0;
   padding: 0;
@@ -679,15 +679,16 @@ body {
   border: 2px solid var(--bg-secondary);
   box-shadow: 0 0 0 1px var(--brand-orange), 0 2px 4px rgba(0,0,0,0.2);
   transition: transform 0.15s;
+  transform: translateY(-10%);
 }
 
 .zoom-handle::-webkit-slider-thumb:hover {
-  transform: scale(1.2);
+  transform: translateY(-10%) scale(1.2);
 }
 
 .zoom-handle::-webkit-slider-thumb:active {
   cursor: grabbing;
-  transform: scale(1.1);
+  transform: translateY(-10%) scale(1.1);
 }
 
 .zoom-handle::-webkit-slider-runnable-track {
@@ -698,6 +699,10 @@ body {
 
 .zoom-handle-min::-webkit-slider-runnable-track {
   background: transparent;
+}
+
+.zoom-handle-min {
+  z-index: 4;
 }
 
 .zoom-labels {
