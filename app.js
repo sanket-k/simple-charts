@@ -558,8 +558,71 @@
   });
 
   // ═══════════════════════════════════════════
-  //  Chart Type Selection
+  //  Chart Type Selection & Settings Visibility
   // ═══════════════════════════════════════════
+
+  function updateSettingsVisibility() {
+    const t = currentChartType;
+    const isAxisChart = ['line', 'timeline', 'bar', 'vbar', 'area', 'scatter', 'waterfall'].includes(t);
+    
+    if (dom.timelineSettings) dom.timelineSettings.style.display = t === 'timeline' ? 'block' : 'none';
+    if (dom.innovatorSettings) dom.innovatorSettings.style.display = t === 'innovator' ? 'block' : 'none';
+
+    const toggle = (el, show) => {
+      if (el) {
+        const group = el.closest('.input-group') || el.closest('.swatch-row') || el.parentElement;
+        if (group) group.style.display = show ? '' : 'none';
+      }
+    };
+
+    const toggleRow = (el, show) => {
+      if (el) {
+        const group = el.closest('.input-group-row');
+        if (group) group.style.display = show ? '' : 'none';
+      }
+    };
+
+    // Style
+    toggle(dom.chartCurve, ['line', 'timeline', 'area', 'radar'].includes(t));
+    toggle(dom.pointSize, ['line', 'timeline', 'scatter', 'radar', 'innovator'].includes(t));
+    toggle(dom.lineWidth, ['line', 'timeline', 'area', 'radar', 'innovator'].includes(t));
+    
+    const hasGrid = ['line', 'timeline', 'bar', 'vbar', 'area', 'scatter', 'waterfall'].includes(t);
+    toggle(dom.showGrid, hasGrid);
+    toggle(dom.gridStyle, hasGrid);
+    toggle(dom.chartGridColor, hasGrid);
+
+    toggle(dom.fillArea, ['line', 'timeline'].includes(t));
+    toggle(dom.spanGaps, ['line', 'timeline', 'area'].includes(t));
+    toggle(dom.barBorderRadius, ['bar', 'vbar', 'waterfall'].includes(t));
+
+    // Display
+    toggle(dom.legendPosition, t !== 'innovator'); // Innovator doesn't have a standard dataset layout for legend sometimes, but let's just keep pie/donut logic out
+
+    // Formatting
+    toggle(dom.xAxisType, isAxisChart);
+    toggle(dom.xAxisLabel, isAxisChart);
+    toggle(dom.yAxisLabel, isAxisChart);
+    toggle(dom.dateFormat, isAxisChart);
+    toggle(dom.maxTicks, isAxisChart);
+    toggle(dom.yAxisScale, isAxisChart);
+    toggleRow(dom.yAxisMin, isAxisChart);
+    toggle(dom.xAxisRotation, isAxisChart);
+
+    // Annotations
+    if (dom.refLineY) {
+      const annSection = dom.refLineY.closest('.panel-section');
+      if (annSection) annSection.style.display = isAxisChart ? '' : 'none';
+    }
+
+    if (dom.dualAxisSection) {
+      if (!isAxisChart || !rawParsedData || rawParsedData.datasets.length < 2) {
+        dom.dualAxisSection.style.display = 'none';
+      } else {
+        dom.dualAxisSection.style.display = 'block';
+      }
+    }
+  }
 
   dom.chartTypeGrid.addEventListener('click', (e) => {
     const btn = e.target.closest('.chart-type-btn');
@@ -572,14 +635,7 @@
     btn.setAttribute('aria-selected', 'true');
     currentChartType = btn.dataset.type;
 
-    dom.timelineSettings.style.display =
-      currentChartType === 'timeline' ? 'block' : 'none';
-
-    if (dom.innovatorSettings) {
-      dom.innovatorSettings.style.display =
-        currentChartType === 'innovator' ? 'block' : 'none';
-    }
-
+    updateSettingsVisibility();
     renderChart();
   });
 
@@ -845,6 +901,7 @@
 
   function updateAfterDataLoad() {
     applyDownsampling();
+    updateSettingsVisibility();
     updateDataPreview();
     updateDataInfo();
     updateDataOptions();
@@ -909,7 +966,8 @@
     }
     dom.dataSizeInfo.innerHTML = sizeHtml;
 
-    if (rawParsedData.datasets.length >= 2) {
+    const isAxisChart = ['line', 'timeline', 'bar', 'vbar', 'area', 'scatter', 'waterfall'].includes(currentChartType);
+    if (rawParsedData.datasets.length >= 2 && isAxisChart) {
       dom.dualAxisSection.style.display = 'block';
       if (axisAssignments.length !== rawParsedData.datasets.length) {
         axisAssignments = rawParsedData.datasets.map((_, i) => i === 0 ? 'left' : 'right');
