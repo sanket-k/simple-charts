@@ -583,7 +583,7 @@
     const t = currentChartType;
     const isAxisChart = ['line', 'timeline', 'bar', 'vbar', 'area', 'scatter', 'waterfall'].includes(t);
     
-    if (dom.timelineSettings) dom.timelineSettings.style.display = t === 'timeline' ? 'block' : 'none';
+    if (dom.timelineSettings) dom.timelineSettings.style.display = (t === 'timeline' || t === 'innovator') ? 'block' : 'none';
     if (dom.innovatorSettings) dom.innovatorSettings.style.display = t === 'innovator' ? 'block' : 'none';
 
     const toggle = (el, show) => {
@@ -901,6 +901,14 @@
       timelineEvents = [
         { label: 'ETF Approved', position: 'Mar 2024' },
         { label: 'Halving', position: 'Apr 2024' }
+      ];
+      renderTimelineEvents();
+    }
+
+    if (currentChartType === 'innovator') {
+      timelineEvents = [
+        { label: 'Disruption Begins', position: '3' },
+        { label: 'Market Shift', position: '6' }
       ];
       renderTimelineEvents();
     }
@@ -2687,6 +2695,100 @@
           callout: { display: false },
         };
       }
+    }
+
+    const showMarkers = dom.showEventMarkers?.checked ?? true;
+    const eventColor = dom.eventMarkerColor?.value || userColors[0] || c.hero;
+
+    if (showMarkers) {
+      timelineEvents.forEach((evt, i) => {
+        if (!evt.position) return;
+
+        let labelIndex = -1;
+
+        for (let li = 0; li < displayLabels.length; li++) {
+          const lbl = String(displayLabels[li]).toLowerCase().trim();
+          const pos = evt.position.toLowerCase().trim();
+          if (lbl === pos) { labelIndex = li; break; }
+          if (isDateAxis) {
+            const lblDate = tryParseDate(String(displayLabels[li]));
+            const posDate = tryParseDate(evt.position);
+            if (lblDate && posDate && lblDate.getTime() === posDate.getTime()) {
+              labelIndex = li; break;
+            }
+          }
+        }
+
+        if (labelIndex === -1 && isDateAxis) {
+          const evtDate = tryParseDate(evt.position);
+          if (evtDate) {
+            let closest = -1;
+            let closestDiff = Infinity;
+            displayLabels.forEach((lbl, idx) => {
+              const d = tryParseDate(String(lbl));
+              if (!d) return;
+              const diff = Math.abs(d.getTime() - evtDate.getTime());
+              if (diff < closestDiff) { closestDiff = diff; closest = idx; }
+            });
+            if (closest >= 0) labelIndex = closest;
+          }
+        }
+
+        if (labelIndex === -1) {
+          const numericPos = parseFloat(evt.position);
+          if (!isNaN(numericPos) && !isDateAxis) {
+            let closest = -1;
+            let closestDiff = Infinity;
+            displayLabels.forEach((lbl, idx) => {
+              const val = parseFloat(lbl);
+              if (isNaN(val)) return;
+              const diff = Math.abs(val - numericPos);
+              if (diff < closestDiff) { closestDiff = diff; closest = idx; }
+            });
+            if (closest >= 0 && closestDiff < (10 / displayLabels.length) * 2) {
+              labelIndex = closest;
+            }
+          }
+        }
+
+        if (labelIndex === -1) return;
+
+        const yAdj = 10 + (i % 4) * 20;
+        const wrappedLabel = wrapText(evt.label, 18);
+
+        tierAnnotations[`evtLine_${i}`] = {
+          type: 'line',
+          xMin: labelIndex,
+          xMax: labelIndex,
+          borderColor: hexToRgba(eventColor, 0.7),
+          borderWidth: 2.5,
+          borderDash: [8, 4],
+          label: {
+            display: true,
+            content: wrappedLabel,
+            position: 'end',
+            backgroundColor: hexToRgba(eventColor, 0.18),
+            color: eventColor,
+            font: { size: 10, weight: '600', family: "'Inter', sans-serif" },
+            padding: { x: 8, y: 4 },
+            borderRadius: 6,
+            yAdjust: yAdj,
+          },
+        };
+
+        const firstDsData = datasets[0]?.data;
+        if (firstDsData && firstDsData[labelIndex] != null) {
+          tierAnnotations[`evtPoint_${i}`] = {
+            type: 'point',
+            xValue: labelIndex,
+            yValue: firstDsData[labelIndex],
+            backgroundColor: eventColor,
+            borderColor: userBgColor || c.bg,
+            borderWidth: 3,
+            radius: 7,
+          };
+        }
+      });
     }
 
     const animDuration = safeInt(dom.animationSpeed?.value, 600);
