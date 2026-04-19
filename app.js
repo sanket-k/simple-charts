@@ -136,6 +136,7 @@
     chartTypeGrid: $('#chartTypeGrid'),
     dataTextarea: $('#dataTextarea'),
     parseDataBtn: $('#parseDataBtn'),
+    formatToggle: $('#formatToggle'),
     chartTitle: $('#chartTitle'),
     chartSubtitle: $('#chartSubtitle'),
     chartSource: $('#chartSource'),
@@ -748,6 +749,104 @@
   // ═══════════════════════════════════════════
   //  Data Parsing
   // ═══════════════════════════════════════════
+  //  JSON Data Parsing
+  // ═══════════════════════════════════════════
+
+  function parseJSONData(text) {
+    let json;
+    try {
+      json = JSON.parse(text.trim());
+    } catch {
+      return null;
+    }
+
+    let labels = [];
+    let datasets = [];
+    let isTimeSeries = false;
+    let dateObjects = null;
+    let dateRange = null;
+
+    // Format 1: { labels: [...], datasets: [{ name, values }] }
+    if (json.labels && Array.isArray(json.datasets)) {
+      labels = json.labels.map(String);
+      datasets = json.datasets.map((ds, i) => ({
+        name: ds.name || ds.label || `Series ${i + 1}`,
+        values: (ds.values || ds.data || []).map(v => smartParseNumber(v))
+      }));
+    }
+    // Format 2: { labels: [...], values: [...] } — single series
+    else if (json.labels && Array.isArray(json.values)) {
+      labels = json.labels.map(String);
+      datasets = [{
+        name: json.name || json.label || 'Value',
+        values: json.values.map(v => smartParseNumber(v))
+      }];
+    }
+    // Format 3: Array of objects [{ label, value, ... }]
+    else if (Array.isArray(json) && json.length > 0 && typeof json[0] === 'object' && !Array.isArray(json[0])) {
+      const keys = Object.keys(json[0]);
+      const labelKey = keys.find(k => ['label', 'name', 'category', 'month', 'year', 'date', 'x'].includes(k.toLowerCase())) || keys[0];
+      const valueKeys = keys.filter(k => k !== labelKey);
+
+      labels = json.map(item => String(item[labelKey] ?? ''));
+      datasets = valueKeys.map(key => ({
+        name: key,
+        values: json.map(item => smartParseNumber(item[key]))
+      }));
+    }
+    // Format 4: Array of arrays [[label, val1, val2], ...]
+    else if (Array.isArray(json) && json.length > 0 && Array.isArray(json[0])) {
+      labels = json.map(row => String(row[0]));
+      const maxCols = Math.max(...json.map(r => r.length));
+      datasets = [];
+      for (let i = 1; i < maxCols; i++) {
+        datasets.push({
+          name: `Series ${i}`,
+          values: json.map(row => smartParseNumber(row[i]))
+        });
+      }
+    }
+    // Format 5: Simple array of numbers
+    else if (Array.isArray(json) && json.length > 0 && typeof json[0] === 'number') {
+      labels = json.map((_, i) => String(i + 1));
+      datasets = [{ name: 'Value', values: json }];
+    }
+    else {
+      return null;
+    }
+
+    if (datasets.length === 0) return null;
+    if (!datasets.some(ds => ds.values.some(v => v !== null))) return null;
+
+    // Time series detection
+    isTimeSeries = isDateColumn(labels);
+    if (isTimeSeries) {
+      dateObjects = labels.map(l => tryParseDate(l));
+      const validDates = dateObjects.filter(Boolean);
+      if (validDates.length > 0) {
+        dateRange = {
+          min: new Date(Math.min(...validDates.map(d => d.getTime()))),
+          max: new Date(Math.max(...validDates.map(d => d.getTime())))
+        };
+        const indices = labels.map((_, i) => i);
+        indices.sort((a, b) => {
+          const da = dateObjects[a], db = dateObjects[b];
+          if (!da && !db) return 0;
+          if (!da) return 1;
+          if (!db) return -1;
+          return da.getTime() - db.getTime();
+        });
+        labels = indices.map(i => labels[i]);
+        dateObjects = indices.map(i => dateObjects[i]);
+        datasets = datasets.map(ds => ({
+          ...ds,
+          values: indices.map(i => ds.values[i])
+        }));
+      }
+    }
+
+    return { labels, datasets, isTimeSeries, dateObjects, dateRange };
+  }
 
   function smartParseNumber(v) {
     if (typeof v === 'number') return isNaN(v) ? null : v;
@@ -1015,9 +1114,35 @@
     updateZoomLabels();
   }
 
+  // Format toggle
+  let dataFormat = 'csv';
+  if (dom.formatToggle) {
+    dom.formatToggle.querySelectorAll('.format-opt').forEach(btn => {
+      btn.addEventListener('click', () => {
+        dom.formatToggle.querySelectorAll('.format-opt').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        dataFormat = btn.dataset.format;
+      });
+    });
+  }
+
+  function parseInputText(text) {
+    if (dataFormat === 'json') {
+      return parseJSONData(text);
+    }
+    // Auto-detect: try JSON first if text starts with { or [
+    const trimmed = text.trim();
+    if ((trimmed.startsWith('{') || trimmed.startsWith('[')) && dataFormat !== 'csv') {
+      const jsonResult = parseJSONData(text);
+      if (jsonResult) return Promise.resolve(jsonResult);
+    }
+    return parseDataFromText(text);
+  }
+
   dom.parseDataBtn.addEventListener('click', async () => {
-    rawParsedData = await parseDataFromText(dom.dataTextarea.value);
-    if (rawParsedData) {
+    const result = await parseInputText(dom.dataTextarea.value);
+    if (result) {
+      rawParsedData = result;
       parsedData = rawParsedData;
       zoomRange = [0, 100];
       updateAfterDataLoad();
@@ -1046,7 +1171,7 @@
     e.preventDefault();
     dom.fileDropZone.classList.remove('dragover');
     const file = e.dataTransfer?.files?.[0];
-    if (file && file.name.match(/\.(csv|tsv|txt)$/i)) {
+    if (file && file.name.match(/\.(csv|tsv|txt|json)$/i)) {
       handleCSVFile(file);
     }
   });
@@ -1061,7 +1186,17 @@
     reader.onload = async (e) => {
       const text = e.target.result;
       dom.dataTextarea.value = text.substring(0, 50000);
-      rawParsedData = await parseDataFromText(text);
+
+      const isJson = file.name.endsWith('.json');
+      const trimmed = text.trim();
+      let result;
+      if (isJson || trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        result = parseJSONData(text) || await parseDataFromText(text);
+      } else {
+        result = await parseDataFromText(text);
+      }
+
+      rawParsedData = result;
       if (rawParsedData) {
         const parent = dom.dataTextarea.closest('.panel-section');
         parent.querySelectorAll('.tab-btn').forEach(b => {
@@ -3236,12 +3371,22 @@
     if (!text) return;
 
     dom.dataTextarea.value = text;
-    rawParsedData = await parseDataFromText(text);
-    if (rawParsedData) {
+
+    const trimmed = text.trim();
+    let result;
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      result = parseJSONData(text) || await parseDataFromText(text);
+    } else {
+      result = await parseDataFromText(text);
+    }
+
+    if (result) {
+      rawParsedData = result;
       parsedData = rawParsedData;
       zoomRange = [0, 100];
       updateAfterDataLoad();
-      showToast('Data pasted and parsed!', 'success');
+      const fmt = (trimmed.startsWith('{') || trimmed.startsWith('[')) && parseJSONData(text) ? 'JSON' : 'CSV';
+      showToast(`Data pasted and parsed (${fmt})!`, 'success');
     }
   });
 

@@ -296,6 +296,52 @@ body {
   margin-top: var(--sp-2);
 }
 
+.parse-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+
+.parse-row .btn-secondary {
+  flex: 1;
+  justify-content: center;
+}
+
+.format-toggle {
+  display: flex;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.format-toggle .format-opt {
+  padding: var(--sp-1) var(--sp-2);
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  font-weight: 500;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: none;
+  cursor: pointer;
+  transition: all var(--duration) var(--ease-out);
+}
+
+.format-toggle .format-opt + .format-opt {
+  border-left: 1px solid var(--border-primary);
+}
+
+.format-toggle .format-opt:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.format-toggle .format-opt.active {
+  background: var(--brand-orange);
+  color: #fff;
+}
+
 .btn-secondary.btn-compact {
   padding: var(--sp-2) var(--sp-3);
 }

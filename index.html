@@ -586,19 +586,25 @@
         </div>
 
         <div class="tab-content active" id="tab-paste">
-          <textarea id="dataTextarea" class="data-textarea" placeholder="Paste your data here…&#10;&#10;Format: Label, Value&#10;or: Label, Series1, Series2&#10;&#10;Example:&#10;Jan, 120&#10;Feb, 340&#10;Mar, 280"></textarea>
-          <button class="btn-secondary full-width" id="parseDataBtn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-            Parse Data
-          </button>
+          <textarea id="dataTextarea" class="data-textarea" placeholder="Paste your data here…&#10;&#10;CSV: Label, Value&#10;or: Label, Series1, Series2&#10;&#10;JSON: {&quot;labels&quot;:[...],&quot;datasets&quot;:[...]}&#10;or: [{&quot;label&quot;:&quot;Jan&quot;,&quot;value&quot;:120},...]"></textarea>
+          <div class="parse-row">
+            <div class="format-toggle" id="formatToggle">
+              <button class="format-opt active" data-format="csv">CSV</button>
+              <button class="format-opt" data-format="json">JSON</button>
+            </div>
+            <button class="btn-secondary" id="parseDataBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+              Parse Data
+            </button>
+          </div>
         </div>
 
         <div class="tab-content" id="tab-csv">
           <div class="file-drop-zone" id="fileDropZone">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            <p>Drop CSV file here</p>
+            <p>Drop CSV or JSON file here</p>
             <span>or click to browse</span>
-            <input type="file" id="csvFileInput" accept=".csv,.tsv,.txt" hidden>
+            <input type="file" id="csvFileInput" accept=".csv,.tsv,.txt,.json" hidden>
           </div>
         </div>
 
