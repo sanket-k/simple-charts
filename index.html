@@ -155,15 +155,15 @@
       <!-- Timeline Events (shown for timeline chart) -->
       <div class="panel-section" id="timelineSettings" style="display:none;">
         <h3 class="panel-title">Timeline Events</h3>
-        <div class="input-group checkbox-group" style="margin-bottom:6px;">
+        <div class="input-group checkbox-group mb-2">
           <input type="checkbox" id="showEventMarkers" checked>
           <label for="showEventMarkers">Show event markers</label>
         </div>
-        <div class="swatch-row" style="margin-bottom:8px;">
-          <label style="font-size:0.72rem;min-width:42px;">Marker</label>
+        <div class="swatch-row mb-2">
+          <label class="inline-label">Marker</label>
           <input type="color" class="color-input" id="eventMarkerColor" value="#F7931A">
         </div>
-        <p class="hint-text" style="margin-bottom:8px;">Add markers for key events. Use dates matching your data (e.g. 2024-03-15).</p>
+        <p class="hint-text mb-2">Add markers for key events. Use dates matching your data (e.g. 2024-03-15).</p>
         <div class="timeline-input-tabs">
           <button class="tab-btn small active" data-tltab="manual">Manual</button>
           <button class="tab-btn small" data-tltab="bulk">Bulk / Paste</button>
@@ -194,6 +194,17 @@
             <input type="text" id="innovatorYLabel" value="Performance / Quality">
           </div>
         </div>
+        <div class="input-group-row">
+          <div class="input-group">
+            <label for="innovatorYMin">Y-Axis Min</label>
+            <input type="number" id="innovatorYMin" value="0" min="-100" max="200">
+          </div>
+          <div class="input-group">
+            <label for="innovatorYMax">Y-Axis Max</label>
+            <input type="number" id="innovatorYMax" value="0" min="0" max="500" placeholder="Auto">
+          </div>
+        </div>
+        <div class="input-group-separator"></div>
         <div class="input-group">
           <label for="innovatorTiers">Market Tiers (Sustaining)</label>
           <input type="range" id="innovatorTiers" min="1" max="6" step="1" value="3">
@@ -201,42 +212,62 @@
         </div>
         <div id="innovatorTierNames"></div>
         <div class="input-group">
+          <label for="innovatorMarketTop">Market Tier Top (Y)</label>
+          <input type="range" id="innovatorMarketTop" min="20" max="120" step="1" value="70">
+          <span class="range-value" id="innovatorMarketTopValue">70</span>
+        </div>
+        <div class="input-group">
+          <label for="innovatorMarketBottom">Market Tier Bottom (Y)</label>
+          <input type="range" id="innovatorMarketBottom" min="0" max="60" step="1" value="20">
+          <span class="range-value" id="innovatorMarketBottomValue">20</span>
+        </div>
+        <div class="input-group">
           <label for="innovatorSustainingPace">Pace of Sustaining Innovation</label>
           <input type="range" id="innovatorSustainingPace" min="0.2" max="3" step="0.1" value="1.2">
           <span class="range-value" id="innovatorSustainingPaceValue">1.2</span>
         </div>
+        <div class="input-group-separator"></div>
         <div class="input-group checkbox-group">
           <input type="checkbox" id="innovatorShowIncumbent" checked>
           <label for="innovatorShowIncumbent">Incumbent Technology</label>
         </div>
+        <div class="input-group mt-n1">
+          <label for="innovatorIncumbentName">Incumbent Name</label>
+          <input type="text" id="innovatorIncumbentName" value="Incumbent Technology" placeholder="Incumbent Technology">
+        </div>
+        <div class="input-group">
+          <label for="innovatorIncumbentBase">Incumbent Start Level (Y)</label>
+          <input type="range" id="innovatorIncumbentBase" min="20" max="120" step="1" value="75">
+          <span class="range-value" id="innovatorIncumbentBaseValue">75</span>
+        </div>
+        <div class="input-group">
+          <label for="innovatorIncumbentSlope">Incumbent Slope (Rise over full X)</label>
+          <input type="range" id="innovatorIncumbentSlope" min="0" max="40" step="0.5" value="11">
+          <span class="range-value" id="innovatorIncumbentSlopeValue">11</span>
+        </div>
+        <div class="input-group-separator"></div>
         <div class="input-group checkbox-group">
           <input type="checkbox" id="innovatorShowDisruptive" checked>
           <label for="innovatorShowDisruptive">Disruptive Technology</label>
         </div>
+        <div class="input-group mt-n1">
+          <label for="innovatorDisruptiveName">Disruptive Name</label>
+          <input type="text" id="innovatorDisruptiveName" value="Disruptive Technology" placeholder="Disruptive Technology">
+        </div>
         <div class="input-group">
           <label for="innovatorDisruptionPace">Pace of Disruption</label>
-          <input type="range" id="innovatorDisruptionPace" min="0.3" max="4" step="0.1" value="2.0">
+          <input type="range" id="innovatorDisruptionPace" min="0.3" max="6" step="0.1" value="2.0">
           <span class="range-value" id="innovatorDisruptionPaceValue">2.0</span>
         </div>
         <div class="input-group">
           <label for="innovatorDisruptiveStart">Disruptive Start Level</label>
-          <input type="range" id="innovatorDisruptiveStart" min="0" max="40" step="1" value="3">
+          <input type="range" id="innovatorDisruptiveStart" min="0" max="60" step="1" value="3">
           <span class="range-value" id="innovatorDisruptiveStartValue">3</span>
         </div>
         <div class="input-group">
           <label for="innovatorDisruptivePeak">Disruptive Peak Level</label>
-          <input type="range" id="innovatorDisruptivePeak" min="50" max="100" step="1" value="90">
+          <input type="range" id="innovatorDisruptivePeak" min="30" max="200" step="1" value="90">
           <span class="range-value" id="innovatorDisruptivePeakValue">90</span>
-        </div>
-        <div class="input-group">
-          <label for="innovatorIncumbentLead">Incumbent Lead</label>
-          <input type="range" id="innovatorIncumbentLead" min="0" max="20" step="1" value="5">
-          <span class="range-value" id="innovatorIncumbentLeadValue">5</span>
-        </div>
-        <div class="input-group">
-          <label for="innovatorMarketSpread">Market Tier Spread</label>
-          <input type="range" id="innovatorMarketSpread" min="10" max="70" step="1" value="50">
-          <span class="range-value" id="innovatorMarketSpreadValue">50</span>
         </div>
         <div class="input-group">
           <label for="innovatorCurveType">Disruption Curve Shape</label>
@@ -247,6 +278,7 @@
             <option value="power">Power Law</option>
           </select>
         </div>
+        <div class="input-group-separator"></div>
         <div class="input-group">
           <label for="innovatorTimeMode">Time Axis</label>
           <select id="innovatorTimeMode">
@@ -509,13 +541,13 @@
             <input type="text" class="swatch-hex-input" id="colorFifthHex" value="#A78BFA" maxlength="7">
           </div>
         </div>
-        <button class="btn-secondary full-width" id="resetColorsBtn" style="margin-top:6px;">Reset to Brand</button>
-        <div class="swatch-row" style="margin-top:8px;">
-          <label style="font-size:0.72rem;min-width:42px;">Chart BG</label>
+        <button class="btn-secondary full-width mt-1" id="resetColorsBtn">Reset to Brand</button>
+        <div class="swatch-row mt-2">
+          <label class="inline-label">Chart BG</label>
           <input type="color" class="color-input" id="chartBgColor" value="#111622">
         </div>
         <div class="swatch-row">
-          <label style="font-size:0.72rem;min-width:42px;">Grid</label>
+          <label class="inline-label">Grid</label>
           <input type="color" class="color-input" id="chartGridColor" value="#334155">
         </div>
       </div>
@@ -653,7 +685,7 @@
               </svg>
             </div>
             <button class="btn-secondary" id="brandLogoBtn">Upload</button>
-            <button class="btn-secondary" id="brandLogoClearBtn" title="Remove logo" aria-label="Remove logo" style="padding:6px 10px;">×</button>
+            <button class="btn-secondary btn-compact" id="brandLogoClearBtn" title="Remove logo" aria-label="Remove logo">×</button>
             <input type="file" id="brandLogoFile" accept="image/*" hidden>
           </div>
         </div>

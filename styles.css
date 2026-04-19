@@ -28,6 +28,7 @@
   --sp-10: 40px;
 
   /* Border radius */
+  --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
@@ -295,6 +296,10 @@ body {
   margin-top: var(--sp-2);
 }
 
+.btn-secondary.btn-compact {
+  padding: var(--sp-2) var(--sp-3);
+}
+
 .btn-icon {
   display: flex;
   align-items: center;
@@ -381,7 +386,7 @@ body {
   padding: 1px 6px;
   background: var(--brand-orange-soft);
   color: var(--brand-orange);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-size: 0.65rem;
   font-weight: 600;
   font-family: var(--font-mono);
@@ -402,7 +407,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: var(--sp-1);
   padding: var(--sp-2) var(--sp-1);
   background: var(--bg-tertiary);
   border: 1px solid transparent;
@@ -500,7 +505,7 @@ body {
   appearance: none;
   height: 4px;
   background: var(--border-primary);
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
   outline: none;
   margin-top: var(--sp-1);
 }
@@ -522,7 +527,7 @@ body {
   font-size: 0.7rem;
   color: var(--text-muted);
   font-family: var(--font-mono);
-  margin-top: 2px;
+  margin-top: var(--sp-1);
 }
 
 /* Checkbox */
@@ -548,7 +553,7 @@ body {
   min-width: 16px;
   background: var(--bg-tertiary);
   border: 1px solid var(--border-primary);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   cursor: pointer;
   position: relative;
   transition: all var(--duration);
@@ -694,7 +699,7 @@ body {
 .zoom-handle::-webkit-slider-runnable-track {
   height: 4px;
   background: var(--border-primary);
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
 }
 
 .zoom-handle-min::-webkit-slider-runnable-track {
@@ -721,10 +726,10 @@ body {
   font-weight: 600;
   font-family: var(--font-sans);
   font-size: 0.68rem;
-  padding: 2px 8px;
+  padding: var(--sp-1) var(--sp-2);
   border: none;
   background: none;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   transition: all var(--duration);
 }
 
@@ -750,7 +755,7 @@ body {
   padding: var(--sp-1) var(--sp-2);
   background: transparent;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   color: var(--text-tertiary);
   font-family: var(--font-sans);
   font-size: 0.75rem;
@@ -859,7 +864,7 @@ body {
   padding: var(--sp-1) var(--sp-2);
   background: var(--bg-tertiary);
   border: 1px solid var(--border-primary);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: 0.72rem;
@@ -979,7 +984,7 @@ body {
   padding: var(--sp-1) var(--sp-2);
   background: var(--bg-tertiary);
   border: 1px solid var(--border-primary);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: 0.7rem;
@@ -1011,7 +1016,7 @@ body {
   gap: 1px;
   padding: 3px;
   border: 2px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all var(--duration);
   background: var(--bg-tertiary);
@@ -1034,6 +1039,10 @@ body {
 }
 
 /* ── Input Group Row (side by side) ── */
+.input-group-separator {
+  height: var(--sp-2);
+}
+
 .input-group-row {
   display: flex;
   gap: var(--sp-2);
@@ -1081,7 +1090,7 @@ body {
   padding: var(--sp-1) var(--sp-2);
   background: var(--bg-tertiary);
   border: 1px solid var(--border-primary);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: 0.75rem;
@@ -1105,7 +1114,7 @@ body {
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   font-size: 1rem;
   transition: all var(--duration);
 }
@@ -1205,7 +1214,7 @@ body {
   padding: var(--sp-1) var(--sp-2);
   background: var(--bg-tertiary);
   border: 1px solid var(--border-primary);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: 0.72rem;
@@ -1223,7 +1232,7 @@ body {
   padding: var(--sp-1) var(--sp-2);
   background: var(--bg-tertiary);
   border: 1px solid var(--border-primary);
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: 0.72rem;
@@ -1271,7 +1280,7 @@ body {
 
 .toast {
   position: fixed;
-  bottom: 24px;
+  bottom: var(--sp-6);
   left: 50%;
   transform: translateX(-50%) translateY(20px);
   background: var(--bg-tertiary);
@@ -1374,6 +1383,22 @@ body {
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* ═══════════════════════════════════════════
+   Spacing Utilities
+   ═══════════════════════════════════════════ */
+
+.mb-1 { margin-bottom: var(--sp-1); }
+.mb-2 { margin-bottom: var(--sp-2); }
+.mb-3 { margin-bottom: var(--sp-3); }
+.mt-1 { margin-top: var(--sp-1); }
+.mt-2 { margin-top: var(--sp-2); }
+.mt-n1 { margin-top: calc(-1 * var(--sp-1)); }
+
+.inline-label {
+  font-size: 0.72rem;
+  min-width: 42px;
 }
 
 /* ═══════════════════════════════════════════

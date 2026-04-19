@@ -223,16 +223,24 @@
     innovatorSustainingPaceValue: $('#innovatorSustainingPaceValue'),
     innovatorShowIncumbent: $('#innovatorShowIncumbent'),
     innovatorShowDisruptive: $('#innovatorShowDisruptive'),
+    innovatorIncumbentName: $('#innovatorIncumbentName'),
+    innovatorDisruptiveName: $('#innovatorDisruptiveName'),
     innovatorDisruptionPace: $('#innovatorDisruptionPace'),
     innovatorDisruptionPaceValue: $('#innovatorDisruptionPaceValue'),
     innovatorDisruptiveStart: $('#innovatorDisruptiveStart'),
     innovatorDisruptiveStartValue: $('#innovatorDisruptiveStartValue'),
     innovatorDisruptivePeak: $('#innovatorDisruptivePeak'),
     innovatorDisruptivePeakValue: $('#innovatorDisruptivePeakValue'),
-    innovatorIncumbentLead: $('#innovatorIncumbentLead'),
-    innovatorIncumbentLeadValue: $('#innovatorIncumbentLeadValue'),
-    innovatorMarketSpread: $('#innovatorMarketSpread'),
-    innovatorMarketSpreadValue: $('#innovatorMarketSpreadValue'),
+    innovatorMarketTop: $('#innovatorMarketTop'),
+    innovatorMarketTopValue: $('#innovatorMarketTopValue'),
+    innovatorMarketBottom: $('#innovatorMarketBottom'),
+    innovatorMarketBottomValue: $('#innovatorMarketBottomValue'),
+    innovatorIncumbentBase: $('#innovatorIncumbentBase'),
+    innovatorIncumbentBaseValue: $('#innovatorIncumbentBaseValue'),
+    innovatorIncumbentSlope: $('#innovatorIncumbentSlope'),
+    innovatorIncumbentSlopeValue: $('#innovatorIncumbentSlopeValue'),
+    innovatorYMin: $('#innovatorYMin'),
+    innovatorYMax: $('#innovatorYMax'),
     innovatorTierNames: $('#innovatorTierNames'),
     innovatorCurveType: $('#innovatorCurveType'),
     innovatorTimeMode: $('#innovatorTimeMode'),
@@ -681,7 +689,7 @@
       const row = document.createElement('div');
       row.className = 'swatch-row';
       const label = document.createElement('label');
-      label.style.fontSize = '0.72rem';
+      label.className = 'inline-label';
       label.style.minWidth = '18px';
       label.textContent = `${t + 1}`;
       const input = document.createElement('input');
@@ -1189,7 +1197,7 @@
     container.appendChild(nameRowRight);
 
     const spacer = document.createElement('div');
-    spacer.style.height = '6px';
+    spacer.className = 'input-group-separator';
     container.appendChild(spacer);
 
     rawParsedData.datasets.forEach((ds, i) => {
@@ -1465,9 +1473,13 @@
     dom.innovatorXLabel, dom.innovatorYLabel,
     dom.innovatorTiers, dom.innovatorSustainingPace,
     dom.innovatorShowIncumbent, dom.innovatorShowDisruptive,
+    dom.innovatorIncumbentName, dom.innovatorDisruptiveName,
     dom.innovatorDisruptionPace,
     dom.innovatorDisruptiveStart, dom.innovatorDisruptivePeak,
-    dom.innovatorIncumbentLead, dom.innovatorMarketSpread,
+    dom.innovatorDisruptiveStart, dom.innovatorDisruptivePeak,
+    dom.innovatorMarketTop, dom.innovatorMarketBottom,
+    dom.innovatorIncumbentBase, dom.innovatorIncumbentSlope,
+    dom.innovatorYMin, dom.innovatorYMax,
     dom.innovatorCurveType, dom.innovatorTimeMode,
     dom.innovatorStartYear, dom.innovatorEndYear,
     dom.innovatorStartMonth, dom.innovatorEndMonth,
@@ -1506,11 +1518,17 @@
       if (el === dom.innovatorDisruptivePeak && dom.innovatorDisruptivePeakValue) {
         dom.innovatorDisruptivePeakValue.textContent = dom.innovatorDisruptivePeak.value;
       }
-      if (el === dom.innovatorIncumbentLead && dom.innovatorIncumbentLeadValue) {
-        dom.innovatorIncumbentLeadValue.textContent = dom.innovatorIncumbentLead.value;
+      if (el === dom.innovatorMarketTop && dom.innovatorMarketTopValue) {
+        dom.innovatorMarketTopValue.textContent = dom.innovatorMarketTop.value;
       }
-      if (el === dom.innovatorMarketSpread && dom.innovatorMarketSpreadValue) {
-        dom.innovatorMarketSpreadValue.textContent = dom.innovatorMarketSpread.value;
+      if (el === dom.innovatorMarketBottom && dom.innovatorMarketBottomValue) {
+        dom.innovatorMarketBottomValue.textContent = dom.innovatorMarketBottom.value;
+      }
+      if (el === dom.innovatorIncumbentBase && dom.innovatorIncumbentBaseValue) {
+        dom.innovatorIncumbentBaseValue.textContent = dom.innovatorIncumbentBase.value;
+      }
+      if (el === dom.innovatorIncumbentSlope && dom.innovatorIncumbentSlopeValue) {
+        dom.innovatorIncumbentSlopeValue.textContent = dom.innovatorIncumbentSlope.value;
       }
       debouncedRender();
     });
@@ -2515,6 +2533,8 @@
     const sustainingPace = safeFloat(dom.innovatorSustainingPace?.value, 1.2);
     const showIncumbent = dom.innovatorShowIncumbent?.checked ?? true;
     const showDisruptive = dom.innovatorShowDisruptive?.checked ?? true;
+    const incumbentName = dom.innovatorIncumbentName?.value?.trim() || 'Incumbent Technology';
+    const disruptiveName = dom.innovatorDisruptiveName?.value?.trim() || 'Disruptive Technology';
     const disruptionPace = safeFloat(dom.innovatorDisruptionPace?.value, 2.0);
     const curveType = dom.innovatorCurveType?.value || 'exponential';
     const timeMode = dom.innovatorTimeMode?.value || 'abstract';
@@ -2523,11 +2543,14 @@
 
     const disruptiveStart = safeFloat(dom.innovatorDisruptiveStart?.value, 3);
     const disruptivePeak = safeFloat(dom.innovatorDisruptivePeak?.value, 90);
-    const incumbentLead = safeFloat(dom.innovatorIncumbentLead?.value, 5);
-    const marketSpread = safeFloat(dom.innovatorMarketSpread?.value, 50);
+    const incumbentBase = safeFloat(dom.innovatorIncumbentBase?.value, 75);
+    const incumbentSlope = safeFloat(dom.innovatorIncumbentSlope?.value, 11);
+    const marketTop = safeFloat(dom.innovatorMarketTop?.value, 70);
+    const marketBottom = safeFloat(dom.innovatorMarketBottom?.value, 20);
 
-    const marketTop = 20 + marketSpread;
-    const marketBottom = 20;
+    const yAxisMinVal = dom.innovatorYMin?.value !== '' ? safeFloat(dom.innovatorYMin.value, 0) : 0;
+    const yAxisMaxVal = dom.innovatorYMax?.value > 0 ? safeFloat(dom.innovatorYMax.value, undefined) : undefined;
+
     const disruptiveRange = Math.max(disruptivePeak - disruptiveStart, 1);
     const slopePerUnit = sustainingPace * 0.8;
 
@@ -2596,7 +2619,7 @@
     if (showDisruptive) {
       const data = labels.map((_, i) => disruptiveValue(normX(i))).slice(startIndex, endIndex);
       datasets.push({
-        label: 'Disruptive Technology',
+        label: disruptiveName,
         data,
         borderColor: colors[0] || c.hero,
         backgroundColor: hexToRgba(colors[0] || c.hero, 0.06),
@@ -2609,10 +2632,9 @@
     }
 
     if (showIncumbent) {
-      const incumbentBase = marketTop + incumbentLead + (tiers > 1 ? tierSpacing * 0.3 : 0);
-      const data = labels.map((_, i) => incumbentBase + normX(i) * 10 * slopePerUnit * 1.15).slice(startIndex, endIndex);
+      const data = labels.map((_, i) => incumbentBase + normX(i) * incumbentSlope).slice(startIndex, endIndex);
       datasets.push({
-        label: 'Incumbent Technology',
+        label: incumbentName,
         data,
         borderColor: colors[1] || '#60A5FA',
         backgroundColor: 'transparent',
@@ -2624,6 +2646,8 @@
         order: 1,
       });
     }
+
+    const tierAnnotations = {};
 
     for (let t = 0; t < tiers; t++) {
       const baseY = tiers === 1
@@ -2646,6 +2670,23 @@
         fill: false,
         order: 2 + t,
       });
+
+      const labelIdx = Math.max(0, Math.floor(displayLabels.length * 0.82));
+      if (labelIdx < displayLabels.length && data.length > labelIdx) {
+        tierAnnotations[`tierLabel_${t}`] = {
+          type: 'label',
+          xValue: displayLabels[labelIdx],
+          yValue: data[labelIdx],
+          content: [tierName],
+          color: hexToRgba(c.textSecondary, 0.65 + t * 0.05),
+          font: { size: 10, weight: '500', family: "'Inter', sans-serif" },
+          backgroundColor: hexToRgba(c.bg, 0.75),
+          padding: { top: 2, bottom: 2, left: 4, right: 4 },
+          xAdjust: 0,
+          yAdjust: -12,
+          callout: { display: false },
+        };
+      }
     }
 
     const animDuration = safeInt(dom.animationSpeed?.value, 600);
@@ -2662,7 +2703,7 @@
             top: dom.chartTitle.value ? 8 : 4,
             bottom: dom.chartSource.value ? 24 : 8,
             left: 4,
-            right: 4,
+            right: 20,
           },
         },
         plugins: {
@@ -2709,7 +2750,7 @@
             },
           },
           datalabels: { display: false },
-          annotation: { annotations: {} },
+          annotation: { annotations: tierAnnotations },
         },
         scales: {
           x: {
@@ -2745,7 +2786,8 @@
               padding: 8,
             },
             border: { display: false },
-            min: 0,
+            min: yAxisMinVal,
+            ...(yAxisMaxVal != null ? { max: yAxisMaxVal } : {}),
           },
         },
       },
@@ -3130,8 +3172,10 @@
     if (dom.innovatorDisruptionPaceValue) dom.innovatorDisruptionPaceValue.textContent = dom.innovatorDisruptionPace.value;
     if (dom.innovatorDisruptiveStartValue) dom.innovatorDisruptiveStartValue.textContent = dom.innovatorDisruptiveStart.value;
     if (dom.innovatorDisruptivePeakValue) dom.innovatorDisruptivePeakValue.textContent = dom.innovatorDisruptivePeak.value;
-    if (dom.innovatorIncumbentLeadValue) dom.innovatorIncumbentLeadValue.textContent = dom.innovatorIncumbentLead.value;
-    if (dom.innovatorMarketSpreadValue) dom.innovatorMarketSpreadValue.textContent = dom.innovatorMarketSpread.value;
+    if (dom.innovatorIncumbentBaseValue) dom.innovatorIncumbentBaseValue.textContent = dom.innovatorIncumbentBase.value;
+    if (dom.innovatorIncumbentSlopeValue) dom.innovatorIncumbentSlopeValue.textContent = dom.innovatorIncumbentSlope.value;
+    if (dom.innovatorMarketTopValue) dom.innovatorMarketTopValue.textContent = dom.innovatorMarketTop.value;
+    if (dom.innovatorMarketBottomValue) dom.innovatorMarketBottomValue.textContent = dom.innovatorMarketBottom.value;
 
     renderInnovatorTierNames();
 
