@@ -519,7 +519,7 @@
     picker.addEventListener('input', () => {
       hex.value = picker.value.toUpperCase();
       userColors[idx] = picker.value.toUpperCase();
-      renderChart();
+      debouncedRender();
     });
 
     hex.addEventListener('input', () => {
@@ -528,7 +528,7 @@
       if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
         picker.value = val;
         userColors[idx] = val.toUpperCase();
-        renderChart();
+        debouncedRender();
       }
     });
 
@@ -1313,7 +1313,7 @@
     dom.zoomMin.value = min;
     zoomRange = [min, max];
     updateZoomLabels();
-    renderChart();
+    debouncedRender();
   });
 
   dom.zoomMax.addEventListener('input', () => {
@@ -1323,7 +1323,7 @@
     dom.zoomMax.value = max;
     zoomRange = [min, max];
     updateZoomLabels();
-    renderChart();
+    debouncedRender();
   });
 
   dom.zoomResetBtn.addEventListener('click', () => {
