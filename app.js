@@ -6,6 +6,9 @@
   'use strict';
 
   // ── Constants ──
+
+  /** Theme color palettes — colors used for chart backgrounds, grid lines, text, and borders.
+   *  `hero` is the primary accent (orange), `secondary` is used for secondary data series. */
   const PALETTE = {
     dark: {
       hero: '#F7931A',
@@ -29,9 +32,12 @@
     }
   };
 
+  /** Default 5-color palette assigned to data series when no custom colors are set */
   const DEFAULT_COLORS = ['#F7931A', '#60A5FA', '#34D399', '#F472B6', '#A78BFA'];
+  /** Additional colors used when more than 5 data series need distinct colors */
   const EXTRA_COLORS = ['#FBBF24', '#FB923C', '#2DD4BF', '#818CF8', '#F87171'];
 
+  /** Named preset palettes the user can switch between via the UI */
   const PRESET_PALETTES = {
     default: ['#F7931A', '#60A5FA', '#34D399', '#F472B6', '#A78BFA'],
     warm: ['#F59E0B', '#EF4444', '#F97316', '#EC4899', '#D97706'],
@@ -41,8 +47,10 @@
     mono: ['#F8FAFC', '#CBD5E1', '#94A3B8', '#64748B', '#475569']
   };
 
+  /** Semantic colors for positive (up) and negative (down) values, used in waterfall charts */
   const SEMANTIC = { up: '#34D399', down: '#F87171' };
 
+  /** Global configuration limits and thresholds */
   const CONFIG = {
     warnRowLimit: 10000,
     hardRowLimit: 50000,
@@ -54,49 +62,85 @@
   };
 
   // ── State ──
-  let currentTheme = 'dark';
-  let currentChartType = 'line';
-  let chartInstance = null;
-  let parsedData = null;
-  let rawParsedData = null;
-  let currentInnovatorLabels = [];
-  let timelineEvents = [];
-  let userColors = [...DEFAULT_COLORS];
-  let userBgColor = null;
-  let userGridColor = null;
-  let brandLogoUrl = null;
-  let brandLogoImg = null;
-  let dualAxisEnabled = false;
-  let axisAssignments = [];
-  let axisNames = {};
-  let datasetChartTypes = [];
-  let zoomRange = [0, 100];
+  let currentTheme = 'dark';         // Current color theme: 'dark' or 'light'
+  let currentChartType = 'line';     // Active chart type (e.g., 'line', 'bar', 'pie', etc.)
+  let chartInstance = null;          // Reference to the Chart.js instance (destroyed & recreated on re-render)
+  let parsedData = null;             // Parsed data array after format detection (may be downsampled/zoomed)
+  let rawParsedData = null;          // Original parsed data before any downsampling or zoom — used for reset
+  let currentInnovatorLabels = [];   // Tier labels for the Innovator's Dilemma chart
+  let timelineEvents = [];           // User-defined events to overlay as vertical markers on the chart
+  let userColors = [...DEFAULT_COLORS]; // Custom colors chosen by the user (defaults to DEFAULT_COLORS)
+  let userBgColor = null;            // Custom chart background color override (null = use theme default)
+  let userGridColor = null;          // Custom grid line color override (null = use theme default)
+  let brandLogoUrl = null;           // Data URL of the uploaded brand logo image
+  let brandLogoImg = null;           // HTMLImageElement of the brand logo (preloaded for canvas drawing)
+  let dualAxisEnabled = false;       // Whether dual Y-axis mode is active (left + right axis)
+  let axisAssignments = [];          // Which Y-axis (0 or 1) each dataset is assigned to
+  let axisNames = {};                // Custom labels for each Y-axis, keyed by axis index
+  let datasetChartTypes = [];        // For combo charts: the chart type (line/bar) of each dataset
+  let zoomRange = [0, 100];          // Current zoom range as percentages [start%, end%] of the full dataset
 
   // ── Utilities ──
+
+  /** Shorthand for document.querySelector — selects the first matching element */
   const $ = (sel) => document.querySelector(sel);
+  /** Shorthand for document.querySelectorAll — selects all matching elements as a NodeList */
   const $$ = (sel) => document.querySelectorAll(sel);
 
+  /**
+   * Creates a debounced version of a function that delays invocation until `ms` milliseconds
+   * have elapsed since the last call. Used to batch rapid UI changes (e.g., slider drags)
+   * into a single chart re-render.
+   * @param {Function} fn - The function to debounce
+   * @param {number} ms - Delay in milliseconds
+   * @returns {Function} Debounced function
+   */
   function debounce(fn, ms) {
     let timer;
     return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
   }
 
+  /**
+   * Safely converts a value to an integer, returning `fallback` if the value is NaN or Infinity.
+   * @param {*} val - Value to convert
+   * @param {number} fallback - Default value if conversion fails
+   * @returns {number}
+   */
   function safeInt(val, fallback) {
     const n = Number(val);
     return Number.isFinite(n) ? n : fallback;
   }
 
+  /**
+   * Safely converts a value to a float, returning `fallback` if the value is NaN or Infinity.
+   * @param {*} val - Value to convert
+   * @param {number} fallback - Default value if conversion fails
+   * @returns {number}
+   */
   function safeFloat(val, fallback) {
     const n = parseFloat(val);
     return Number.isFinite(n) ? n : fallback;
   }
 
+  /**
+   * Escapes HTML special characters in a string to prevent XSS when inserting user input into the DOM.
+   * Uses the browser's built-in textContent → innerHTML escaping.
+   * @param {string} str - Raw string to escape
+   * @returns {string} HTML-safe string
+   */
   function escapeHtml(str) {
     const el = document.createElement('span');
     el.textContent = str;
     return el.innerHTML;
   }
 
+  /**
+   * Converts a hex color string to an rgba() string with the given opacity.
+   * Supports 3-digit (#FFF) and 6-digit (#FFFFFF) hex formats.
+   * @param {string} hex - Hex color code (with or without #)
+   * @param {number} alpha - Opacity from 0 (transparent) to 1 (opaque)
+   * @returns {string} rgba color string, e.g., 'rgba(247, 147, 26, 1)'
+   */
   function hexToRgba(hex, alpha = 1) {
     if (!hex) return `rgba(0,0,0,${alpha})`;
     hex = hex.replace('#', '');
@@ -107,6 +151,14 @@
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
+  /**
+   * Wraps a text string into multiple lines, each no longer than `maxChars`.
+   * Splits on word boundaries and caps output at 3 lines (truncating the rest).
+   * Used for chart titles and annotations that need to fit in fixed-width areas.
+   * @param {string} text - The text to wrap
+   * @param {number} maxChars - Maximum characters per line
+   * @returns {string[]} Array of lines (max 3)
+   */
   function wrapText(text, maxChars) {
     if (!text) return [''];
     if (text.length <= maxChars) return [text];
@@ -126,6 +178,8 @@
   }
 
   // ── DOM Refs ──
+  /** Cached DOM references — avoids repeated querySelector calls throughout the app.
+   *  Each key maps to a single DOM element selected by its ID. */
   const dom = {
     themeToggle: $('#themeToggle'),
     exportBtn: $('#exportBtn'),
@@ -254,6 +308,7 @@
     innovatorEndMonth: $('#innovatorEndMonth'),
   };
 
+  /** Color picker input → hex display pairs for the 5-color palette editor */
   const colorPairs = [
     { picker: $('#colorHero'), hex: $('#colorHeroHex'), idx: 0 },
     { picker: $('#colorSecondary'), hex: $('#colorSecondaryHex'), idx: 1 },
@@ -266,6 +321,22 @@
   //  Number Formatting
   // ═══════════════════════════════════════════
 
+  /**
+   * Formats a numeric value for display in chart axes and tooltips.
+   * Supports 6 modes:
+   *   'auto'/'short' — abbreviates with K/M/B/T suffixes (e.g., 1.5M, 3.2B)
+   *   'raw'          — returns the number as-is with no formatting
+   *   'comma'        — adds thousand separators (e.g., 1,234,567)
+   *   'currency'     — like 'short' but prefixed with the configured currency symbol
+   *   'percent'      — appends a % symbol
+   *
+   * The `dp()` helper decides decimal places: if the user picked a fixed value, use that;
+   * otherwise, use more decimals for small numbers and fewer for large ones.
+   *
+   * @param {number|null} value - The number to format
+   * @param {string} [format] - Override format mode (defaults to UI dropdown value)
+   * @returns {string} Formatted string, or '—' for null/NaN
+   */
   function formatNumber(value, format) {
     if (value == null || isNaN(value)) return '\u2014';
     const fmt = format || dom.numberFormat.value;
@@ -273,6 +344,7 @@
     const decimals = dom.decimalPlaces ? dom.decimalPlaces.value : 'auto';
     const currency = dom.currencyPrefix ? dom.currencyPrefix.value || '$' : '$';
 
+    /** Decide decimal places: user-fixed or adaptive based on magnitude */
     function dp(defaultSmall, defaultLarge) {
       if (decimals !== 'auto') return parseInt(decimals);
       return abs < 10 ? defaultSmall : defaultLarge;
@@ -307,10 +379,19 @@
   //  Date Utilities
   // ═══════════════════════════════════════════
 
+  /**
+   * Attempts to parse a string as a Date using strict pattern matching.
+   * Only matches well-known date formats (YYYY-MM-DD, MM/DD/YYYY, Month YYYY, etc.)
+   * to avoid false positives on numeric columns. Returns null if the string doesn't
+   * look like a date.
+   * @param {string} str - String to parse
+   * @returns {Date|null} Parsed Date or null
+   */
   function tryParseDate(str) {
     if (!str || typeof str !== 'string') return null;
     str = str.trim();
 
+    // Only attempt parsing if the string matches a known date pattern
     const strictPatterns = [
       /^\d{4}-\d{1,2}-\d{1,2}$/,
       /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/,
@@ -325,6 +406,7 @@
     const d = new Date(str);
     if (!isNaN(d.getTime()) && str.match(/\d{2,4}/)) return d;
 
+    // Fallback: manually split on delimiters and handle YYYY-first vs DD-first formats
     const parts = str.split(/[\/\-\.]/);
     if (parts.length === 3) {
       const [a, b, c] = parts.map(Number);
@@ -334,6 +416,12 @@
     return null;
   }
 
+  /**
+   * Heuristic: checks if a column contains dates by sampling the first 20 values.
+   * If >70% parse as dates, the column is treated as a date axis.
+   * @param {Array} values - Column values to check
+   * @returns {boolean}
+   */
   function isDateColumn(values) {
     if (!values || values.length === 0) return false;
     let dateCount = 0;
@@ -344,6 +432,12 @@
     return dateCount / sample.length > 0.7;
   }
 
+  /**
+   * Formats a Date object into a human-readable label based on the chosen format.
+   * @param {Date} date - The date to format
+   * @param {string} format - One of: 'yyyy', 'MMM yyyy', 'MMM yy', 'MM/yyyy', 'MMM', 'DD MMM', 'auto'
+   * @returns {string} Formatted date string
+   */
   function formatDateLabel(date, format) {
     if (!date || !(date instanceof Date)) return String(date);
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -363,6 +457,12 @@
     }
   }
 
+  /**
+   * Picks an appropriate date format based on the time span of the data.
+   * Wider ranges get coarser labels (years only), narrower ranges get finer labels (day + month).
+   * @param {{ min: Date, max: Date }} dateRange - The earliest and latest dates in the dataset
+   * @returns {string} A format string for formatDateLabel()
+   */
   function getAutoDateFormat(dateRange) {
     if (!dateRange) return 'MMM yyyy';
     const diffDays = (dateRange.max - dateRange.min) / (1000 * 60 * 60 * 24);
@@ -374,8 +474,19 @@
 
   // ═══════════════════════════════════════════
   //  Downsampling
+  //  Reduces the number of data points in large time-series datasets by averaging
+  //  values within time buckets (week, month, quarter, or year). This keeps the
+  //  chart readable and performant when the raw data has thousands of rows.
   // ═══════════════════════════════════════════
 
+  /**
+   * Downsamples time-series data by grouping points into time-based buckets and averaging.
+   * 'auto' mode picks a bucket size based on total row count:
+   *   ≤500 rows → no downsampling, ≤2000 → monthly, >2000 → quarterly
+   * @param {object} data - Parsed data object with labels, datasets, dateObjects, isTimeSeries
+   * @param {string} mode - 'none', 'auto', 'weekly', 'monthly', 'quarterly', or 'yearly'
+   * @returns {object} New data object with reduced point count
+   */
   function downsampleData(data, mode) {
     if (!data || !data.isTimeSeries || !data.dateObjects) return data;
     if (mode === 'none') return data;
@@ -389,6 +500,7 @@
       else mode = 'quarterly';
     }
 
+    /** Generates a bucket key string for a given date based on the downsampling mode */
     function getBucket(date) {
       const y = date.getFullYear();
       const m = date.getMonth();
@@ -405,6 +517,7 @@
       }
     }
 
+    // Group data points into buckets and average the values within each bucket
     const buckets = new Map();
 
     dateObjects.forEach((date, i) => {
@@ -448,8 +561,16 @@
 
   // ═══════════════════════════════════════════
   //  Zoom
+  //  Slices the dataset to show only the portion within the user's zoom range.
+  //  The range is stored as percentages [0–100] and converted to array indices.
   // ═══════════════════════════════════════════
 
+  /**
+   * Applies the current zoom range to the data, returning a sliced subset.
+   * If zoom is at [0, 100] (full range), returns data unchanged.
+   * @param {object} data - Full parsed dataset
+   * @returns {object} Sliced data within the zoom range
+   */
   function applyZoom(data) {
     if (!data) return data;
     if (zoomRange[0] === 0 && zoomRange[1] === 100) return data;
@@ -470,6 +591,10 @@
     };
   }
 
+  /**
+   * Updates the zoom slider UI labels to show the first and last visible data points,
+   * and repositions the range highlight bar between the two thumb handles.
+   */
   function updateZoomLabels() {
     let lbls = [];
     if (currentChartType === 'innovator') {
@@ -493,8 +618,15 @@
 
   // ═══════════════════════════════════════════
   //  Theme
+  //  Toggles between dark and light color schemes. Updates the CSS data-theme
+  //  attribute on <html> and resets background/grid colors to the theme defaults
+  //  (unless the user has set custom overrides).
   // ═══════════════════════════════════════════
 
+  /**
+   * Switches the app to the given theme and re-renders the chart.
+   * @param {'dark'|'light'} theme
+   */
   function setTheme(theme) {
     currentTheme = theme;
     document.documentElement.setAttribute('data-theme', theme);
@@ -513,6 +645,8 @@
 
   // ═══════════════════════════════════════════
   //  Color Pickers
+  //  Each of the 5 color slots has a native <input type="color"> picker and a
+  //  hex text input. Changes are synced bidirectionally and trigger a debounced re-render.
   // ═══════════════════════════════════════════
 
   colorPairs.forEach(({ picker, hex, idx }) => {
@@ -579,8 +713,15 @@
 
   // ═══════════════════════════════════════════
   //  Chart Type Selection & Settings Visibility
+  //  Shows/hides settings controls based on which chart type is active.
+  //  Not all settings apply to all chart types (e.g., curve tension is irrelevant for pie charts).
   // ═══════════════════════════════════════════
 
+  /**
+   * Updates which settings panels are visible based on the current chart type.
+   * Uses `toggle()` to show/hide individual controls by finding their closest
+   * `.input-group` container and setting its display property.
+   */
   function updateSettingsVisibility() {
     const t = currentChartType;
     const isAxisChart = ['line', 'timeline', 'bar', 'vbar', 'area', 'scatter', 'waterfall', 'combo'].includes(t);
@@ -729,6 +870,8 @@
 
   // ═══════════════════════════════════════════
   //  Data Input Tabs
+  //  Tab switching logic for the Paste/Upload/Manual data entry modes,
+  //  and the timeline event entry tabs (single vs bulk).
   // ═══════════════════════════════════════════
 
   $$('.data-input-tabs .tab-btn').forEach(btn => {
@@ -760,10 +903,20 @@
 
   // ═══════════════════════════════════════════
   //  Data Parsing
-  // ═══════════════════════════════════════════
-  //  JSON Data Parsing
+  //  Accepts user input in multiple formats (JSON, CSV, manual grid) and
+  //  normalizes it into a common structure: { labels, datasets, isTimeSeries, ... }
   // ═══════════════════════════════════════════
 
+  /**
+   * Parses JSON data into the app's internal format. Supports 5 JSON structures:
+   *   1. { labels, datasets: [{ name, values }] } — multi-series with explicit labels
+   *   2. { labels, values } — single series shortcut
+   *   3. [{ label, value1, value2, ... }] — array of objects (keys auto-detected)
+   *   4. [[label, val1, val2], ...] — array of arrays (first column = labels)
+   *   5. [1, 2, 3, ...] — simple numeric array (auto-numbered labels)
+   * @param {string} text - Raw JSON string from the user
+   * @returns {object|null} Parsed data object, or null if parsing fails
+   */
   function parseJSONData(text) {
     let json;
     try {
@@ -860,6 +1013,13 @@
     return { labels, datasets, isTimeSeries, dateObjects, dateRange };
   }
 
+  /**
+   * Parses a value that might be a formatted number string into an actual number.
+   * Handles: K/M/B suffixes, parenthetical negatives like (1,234), currency symbols,
+   * percent signs, and thousands separators. Returns null for non-numeric values.
+   * @param {*} v - Value to parse (string, number, or anything)
+   * @returns {number|null} Parsed number or null
+   */
   function smartParseNumber(v) {
     if (typeof v === 'number') return isNaN(v) ? null : v;
     if (!v || typeof v !== 'string') return null;
@@ -890,6 +1050,17 @@
     return (isNegative ? -1 : 1) * parsed * multiplier;
   }
 
+  /**
+   * Main data parser — accepts tab-separated or comma-separated text (from paste or CSV).
+   * Uses PapaParse for robust CSV parsing, then:
+   *   1. Detects header row (if first row's data cells are strings, not numbers)
+   *   2. Detects if the label column contains dates (enables time-series mode)
+   *   3. Sorts rows chronologically if it's a time series
+   *   4. Parses numeric values via smartParseNumber
+   * Returns the standard { labels, datasets, isTimeSeries, dateObjects, dateRange } structure.
+   * @param {string} text - Raw pasted or CSV text
+   * @returns {Promise<object|null>} Parsed data or null on failure
+   */
   async function parseDataFromText(text) {
     if (!text.trim()) return null;
 
@@ -989,6 +1160,11 @@
     return { labels, datasets, isTimeSeries: isTS, dateObjects, dateRange };
   }
 
+  /**
+   * Loads built-in sample datasets appropriate for the current chart type.
+   * Each chart type has a predefined CSV-like sample string. Also pre-populates
+   * timeline events for timeline and innovator chart types.
+   */
   async function loadSampleData() {
     const samplesByType = {
       line: "Month, Revenue, Costs\nJan, 4200, 3100\nFeb, 5100, 3400\nMar, 4800, 3200\nApr, 6200, 3800\nMay, 7100, 4100\nJun, 6800, 3900\nJul, 7800, 4300\nAug, 8200, 4500",
@@ -1027,6 +1203,8 @@
     updateAfterDataLoad();
   }
 
+  /** Called after any data load (sample, paste, CSV, manual). Runs the full pipeline:
+   *  downsample → update UI → render chart */
   function updateAfterDataLoad() {
     applyDownsampling();
     updateSettingsVisibility();
@@ -1037,12 +1215,14 @@
     renderChart();
   }
 
+  /** Applies the selected downsampling mode to rawParsedData and stores result in parsedData */
   function applyDownsampling() {
     if (!rawParsedData) { parsedData = null; return; }
     const mode = dom.downsampleSelect.value;
     parsedData = downsampleData(rawParsedData, mode);
   }
 
+  /** Updates the data info bar (top center) showing row count, downsampling status, and date range */
   function updateDataInfo() {
     if (!parsedData) {
       dom.dataInfo.textContent = '';
@@ -1063,6 +1243,7 @@
     dom.rowCountBadge.textContent = count;
   }
 
+  /** Shows/hides data options panel (downsampling, column selector) based on data size and series count */
   function updateDataOptions() {
     if (!rawParsedData) {
       dom.dataOptionsSection.style.display = 'none';
@@ -1112,6 +1293,7 @@
     }
   }
 
+  /** Shows the zoom slider for large line/timeline/area datasets (50+ points) and innovator charts */
   function updateZoomSlider() {
     const isInnovator = currentChartType === 'innovator';
     if (!parsedData && !isInnovator) {
@@ -1130,7 +1312,8 @@
     updateZoomLabels();
   }
 
-  // Format toggle
+  // Format toggle — switches between CSV and JSON parsing mode for the text area
+  // When set to CSV, forces PapaParse; when JSON, uses parseJSONData; auto tries JSON first
   let dataFormat = 'csv';
   if (dom.formatToggle) {
     dom.formatToggle.querySelectorAll('.format-opt').forEach(btn => {
@@ -1142,6 +1325,12 @@
     });
   }
 
+  /**
+   * Dispatches to the appropriate parser based on the format toggle (CSV/JSON/Auto).
+   * In auto mode, tries JSON first if the text starts with { or [.
+   * @param {string} text - Raw user input
+   * @returns {Promise<object|null>} Parsed data or null
+   */
   function parseInputText(text) {
     if (dataFormat === 'json') {
       return parseJSONData(text);
@@ -1170,6 +1359,8 @@
 
   // ═══════════════════════════════════════════
   //  CSV File Upload
+  //  Handles drag-and-drop and click-to-upload for CSV/TSV/TXT/JSON files.
+  //  Reads the file as text, auto-detects format, and parses via the same pipeline.
   // ═══════════════════════════════════════════
 
   dom.fileDropZone.addEventListener('click', () => dom.csvFileInput.click());
@@ -1197,6 +1388,10 @@
     if (file) handleCSVFile(file);
   });
 
+  /**
+   * Reads a file, auto-detects JSON vs CSV format, parses it, and loads the result.
+   * @param {File} file - The uploaded file object
+   */
   function handleCSVFile(file) {
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -1236,6 +1431,8 @@
 
   // ═══════════════════════════════════════════
   //  Manual Data Entry
+  //  Provides an editable grid where users can type labels and values directly.
+  //  Supports adding rows and additional data series (columns).
   // ═══════════════════════════════════════════
 
   let seriesCount = 1;
@@ -1259,6 +1456,7 @@
     });
   });
 
+  /** Appends a new empty row to the manual data entry grid */
   function addManualRow() {
     const row = document.createElement('div');
     row.className = 'manual-row';
@@ -1275,6 +1473,8 @@
     if (e.target.tagName === 'INPUT') parseManualDataDebounced();
   });
 
+  /** Reads the manual grid inputs and converts them into the standard data format.
+   *  Triggered on every keystroke (debounced) for live chart updates. */
   function parseManualData() {
     const rows = dom.manualRows.querySelectorAll('.manual-row');
     const labels = [];
@@ -1310,6 +1510,7 @@
   //  Downsample & Column Select Listeners
   // ═══════════════════════════════════════════
 
+  /** When the user changes the downsampling mode, reapply and re-render */
   dom.downsampleSelect.addEventListener('change', () => {
     applyDownsampling();
     updateDataInfo();
@@ -1321,6 +1522,10 @@
     renderChart();
   });
 
+  /**
+   * Renders the dual-axis assignment UI: lets the user pick which dataset goes on the
+   * left Y-axis, right Y-axis, or is hidden. Also provides custom axis name inputs.
+   */
   function renderAxisAssignments() {
     if (!dom.axisAssignmentList || !rawParsedData) return;
     if (!dualAxisEnabled) {
@@ -1410,6 +1615,10 @@
     });
   }
 
+  /**
+   * Renders the combo chart dataset type toggles — lets the user switch each dataset
+   * between line and bar rendering within a single combo chart.
+   */
   function renderComboDatasetTypes() {
     const container = document.getElementById('comboDatasetList');
     if (!container || !rawParsedData) return;
@@ -1467,6 +1676,8 @@
   });
 
   // ── Branding ──
+  // Logo upload, brand name, and positioning controls.
+  // The logo is read as a data URL and preloaded into an Image object for canvas rendering.
 
   dom.brandLogoBtn.addEventListener('click', () => dom.brandLogoFile.click());
 
@@ -1507,6 +1718,8 @@
 
   // ═══════════════════════════════════════════
   //  Zoom Slider
+  //  Dual-handle range slider for zooming into a subset of the data.
+  //  Min/max are enforced to have at least 2% gap to prevent degenerate ranges.
   // ═══════════════════════════════════════════
 
   dom.zoomMin.addEventListener('input', () => {
@@ -1540,6 +1753,8 @@
 
   // ═══════════════════════════════════════════
   //  Timeline Events
+  //  Allows adding vertical event markers to timeline and innovator charts.
+  //  Events can be added one at a time or in bulk (one per line: "date, label").
   // ═══════════════════════════════════════════
 
   dom.addTimelineEvent.addEventListener('click', () => {
@@ -1566,6 +1781,7 @@
     }
   });
 
+  /** Renders the timeline events list in the sidebar with editable inputs and delete buttons */
   function renderTimelineEvents() {
     dom.timelineEventsList.innerHTML = '';
     timelineEvents.forEach((evt, i) => {
@@ -1665,6 +1881,7 @@
   //  Chart Settings Listeners (debounced)
   // ═══════════════════════════════════════════
 
+  /** Debounced version of renderChart — batches rapid UI changes into a single re-render */
   const debouncedRender = debounce(renderChart, CONFIG.debounceMs);
 
   const settingsInputs = [
@@ -1747,16 +1964,21 @@
 
   // ═══════════════════════════════════════════
   //  Chart Rendering
+  //  The core of the app: builds Chart.js configurations, registers custom plugins
+  //  for background/source/branding, and dispatches to chart-type-specific builders.
   // ═══════════════════════════════════════════
 
+  /** Returns the color palette object for the current theme (dark or light) */
   function getThemeColors() {
     return PALETTE[currentTheme];
   }
 
+  /** Returns user colors + extra colors as a combined palette for charts with many series */
   function getMultiColors() {
     return [...userColors, ...EXTRA_COLORS];
   }
 
+  /** Creates a Y-axis tick formatting function using the current number format settings */
   function buildYTickCallback() {
     const fmt = dom.numberFormat.value;
     const decimals = dom.decimalPlaces ? dom.decimalPlaces.value : 'auto';
@@ -1764,10 +1986,13 @@
     return (value) => formatNumber(value, fmt);
   }
 
+  /** Creates a data label formatter — same as formatNumber but without explicit format override */
   function buildDataLabelFormatter() {
     return (value) => formatNumber(value);
   }
 
+  /** Creates a tooltip label callback that shows the series name and formatted value.
+   *  For pie/donut charts, uses the data label instead of the dataset label. */
   function buildTooltipCallback() {
     return (ctx) => {
       let label = ctx.dataset.label || '';
@@ -1779,6 +2004,13 @@
     };
   }
 
+  /**
+   * Builds the base Chart.js options object shared by all chart types.
+   * Includes: theme-aware colors, grid/legend/tooltip config, axis scales (with dual-axis
+   * support), reference line annotations, data labels, and title/subtitle/source text.
+   * Individual chart builders merge/override specific fields on top of this base.
+   * @returns {object} Chart.js options configuration
+   */
   function getBaseChartOptions() {
     const c = getThemeColors();
     const showGrid = dom.showGrid.checked;
@@ -2055,6 +2287,7 @@
   }
 
   // ── Source Footer Plugin ──
+  /** Chart.js plugin that draws "Source: ..." text at the bottom-left of the chart canvas */
   const sourceFooterPlugin = {
     id: 'sourceFooter',
     afterDraw(chart) {
@@ -2072,6 +2305,7 @@
   };
 
   // ── BG Plugin ──
+  /** Chart.js plugin that fills the entire canvas background with the theme color before drawing */
   const bgPlugin = {
     id: 'customBg',
     beforeDraw(chart) {
@@ -2086,6 +2320,8 @@
   };
 
   // ── Brand Plugin (uses cached Image) ──
+  /** Chart.js plugin that draws the brand logo and/or name as a watermark overlay.
+   *  Position and opacity are configurable. The logo Image is preloaded on upload. */
   const brandPlugin = {
     id: 'brandWatermark',
     afterDraw(chart) {
@@ -2148,6 +2384,7 @@
     }
   };
 
+  /** Returns true if the X-axis should use Chart.js 'time' scale type */
   function isTimeXAxis() {
     const v = dom.xAxisType?.value || 'auto';
     if (v === 'time') return true;
@@ -2155,6 +2392,11 @@
     return false;
   }
 
+  /**
+   * Main chart render function. Destroys any existing Chart.js instance, applies the current
+   * zoom range, picks the right builder based on chart type, and creates a new chart.
+   * Also registers custom plugins (background, source footer, brand watermark, data labels).
+   */
   function renderChart() {
     if (chartInstance) {
       chartInstance.destroy();
@@ -2230,8 +2472,16 @@
 
   // ═══════════════════════════════════════════
   //  Chart Builders
+  //  Each function returns a Chart.js config object { type, data, options } for a specific chart type.
+  //  All builders use the shared base options from getBaseChartOptions() and customize as needed.
   // ═══════════════════════════════════════════
 
+  /**
+   * Returns the Y-axis ID for a dataset when dual-axis mode is enabled.
+   * Returns undefined if the dataset is hidden or dual-axis is off (Chart.js defaults to 'y').
+   * @param {number} i - Dataset index
+   * @returns {string|undefined} 'y', 'y1', or undefined
+   */
   function getYAxisID(i) {
     if (!dualAxisEnabled) return undefined;
     const assign = axisAssignments[i] || 'left';
@@ -2239,6 +2489,11 @@
     return assign === 'right' ? 'y1' : 'y';
   }
 
+  /**
+   * Builds a standard line dataset config with all user-controlled settings applied:
+   * color, tension, point size, line width, fill, span gaps, dual-axis, and time axis data format.
+   * @returns {object} Chart.js dataset object
+   */
   function getLineDatasetDefaults(ds, i, c, colors, tension, useTimeAxis, displayData) {
     const pointRadius = safeInt(dom.pointSize.value, 3);
     const lineWidth = safeFloat(dom.lineWidth.value, 2.5);
@@ -2274,6 +2529,7 @@
     };
   }
 
+  /** Builds a line chart config — standard multi-series line chart with optional time axis */
   function buildLineChart(labels, datasets, c, colors, tension, useTimeAxis, displayData) {
     return {
       type: 'line',
@@ -2285,6 +2541,7 @@
     };
   }
 
+  /** Builds a combo chart config — mixes bar and line datasets on the same chart */
   function buildComboChart(labels, datasets, c, colors, tension, useTimeAxis, displayData) {
     const opts = getBaseChartOptions();
     const borderRadius = parseInt(dom.barBorderRadius?.value) || 4;
@@ -2331,6 +2588,7 @@
     };
   }
 
+  /** Builds a timeline chart config — line chart with vertical event marker annotations */
   function buildTimelineChart(labels, datasets, c, colors, tension, displayData, useTimeAxis) {
     const opts = getBaseChartOptions();
     const eventColor = dom.eventMarkerColor?.value || userColors[0] || c.hero;
@@ -2420,6 +2678,7 @@
     };
   }
 
+  /** Builds a bar chart config — used for both horizontal (indexAxis='y') and vertical (indexAxis='x') bars */
   function buildBarChart(labels, datasets, c, colors, indexAxis) {
     const opts = getBaseChartOptions();
     const borderRadius = safeInt(dom.barBorderRadius?.value, 4);
@@ -2478,6 +2737,7 @@
     };
   }
 
+  /** Builds a pie chart config — shows proportional slices for a single dataset */
   function buildPieChart(labels, datasets, c, colors) {
     const opts = getBaseChartOptions();
     delete opts.scales;
@@ -2521,6 +2781,7 @@
     };
   }
 
+  /** Builds a donut chart config — like pie but with a hollow center */
   function buildDonutChart(labels, datasets, c, colors) {
     const opts = getBaseChartOptions();
     delete opts.scales;
@@ -2566,6 +2827,7 @@
     };
   }
 
+  /** Builds a stacked area chart config — filled line chart with stacked datasets */
   function buildAreaChart(labels, datasets, c, colors, tension, useTimeAxis, displayData) {
     const opts = getBaseChartOptions();
     const gaps = dom.spanGaps.checked;
@@ -2613,6 +2875,7 @@
     };
   }
 
+  /** Builds a radar/spider chart config — plots multiple metrics on radial axes */
   function buildRadarChart(labels, datasets, c, colors) {
     const opts = getBaseChartOptions();
     delete opts.scales;
@@ -2653,6 +2916,7 @@
     };
   }
 
+  /** Builds a scatter chart config — plots individual (x, y) points without connecting lines */
   function buildScatterChart(labels, datasets, c, colors) {
     const opts = getBaseChartOptions();
 
@@ -2685,6 +2949,8 @@
     };
   }
 
+  /** Builds a waterfall chart config — shows cumulative positive/negative contributions
+   *  using stacked bars with transparent bases to create the floating bar effect */
   function buildWaterfallChart(labels, datasets, c, colors) {
     const opts = getBaseChartOptions();
     const values = datasets[0].values;
@@ -2797,6 +3063,12 @@
   //  Innovator's Dilemma Chart
   // ═══════════════════════════════════════════
 
+  /**
+   * Renders the Innovator's Dilemma chart — a parametric visualization of disruptive innovation.
+   * Generates sustaining technology tiers (S-curves at increasing performance levels),
+   * an incumbent trajectory, and a disruptive technology curve that starts low but overtakes.
+   * Uses abstract or real time units, with event markers overlaid as vertical annotations.
+   */
   function renderInnovatorsDilemmaChart() {
     const c = getThemeColors();
     const colors = getMultiColors();
@@ -3165,10 +3437,16 @@
 
   // ═══════════════════════════════════════════
   //  Export
+  //  Handles chart export as PNG, JPG, WebP, or SVG at user-selected sizes and quality.
+  //  Creates an offscreen canvas at the target resolution for high-DPI output.
   // ═══════════════════════════════════════════
 
   dom.exportBtn.addEventListener('click', exportChart);
 
+  /**
+   * Opens the export modal and triggers the download once the user confirms the filename.
+   * Supports PNG, JPG, WebP, and SVG formats.
+   */
   function exportChart() {
     if (!chartInstance) {
       showToast('No chart to export', 'error');
@@ -3184,6 +3462,7 @@
     });
   }
 
+  /** Shows a modal dialog with a filename input for the user to confirm/edit before export */
   function showExportModal(suggestedName, onConfirm) {
     document.querySelectorAll('.export-modal-overlay').forEach(m => m.remove());
 
@@ -3250,6 +3529,11 @@
     });
   }
 
+  /**
+   * Performs the actual chart export. Creates a high-resolution offscreen canvas,
+   * re-renders the chart at export size with scaled fonts, and triggers a download.
+   * The `quality` parameter (1x/2x/3x) scales canvas pixels and font sizes for retina output.
+   */
   function doExport(filename, format, ext) {
     const sizeStr = dom.exportSize.value;
     const [w, h] = sizeStr.split('x').map(Number);
@@ -3351,6 +3635,7 @@
     });
   }
 
+  /** Exports chart as SVG by wrapping the canvas PNG in an SVG <image> element */
   function exportAsSVG(w, h, filename) {
     const dataUrl = dom.chartCanvas.toDataURL('image/png', 1.0);
     const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
@@ -3371,11 +3656,13 @@
 
   // ═══════════════════════════════════════════
   //  Clipboard Copy
+  //  Copy chart as PNG image or JSON data to the system clipboard.
   // ═══════════════════════════════════════════
 
   dom.copyClipboardBtn.addEventListener('click', copyToClipboard);
   dom.copyJsonBtn.addEventListener('click', copyAsJSON);
 
+  /** Copies the current chart data (labels, datasets, colors, theme) to clipboard as formatted JSON */
   async function copyAsJSON() {
     if (!parsedData) {
       showToast('No data to copy', 'error');
@@ -3405,6 +3692,7 @@
     }
   }
 
+  /** Copies the chart canvas as a PNG image to the clipboard. Falls back to download if clipboard API unavailable */
   async function copyToClipboard() {
     if (!chartInstance) {
       showToast('No chart to copy', 'error');
@@ -3438,6 +3726,12 @@
   //  Utilities
   // ═══════════════════════════════════════════
 
+  /**
+   * Generates a filename for export based on chart content: dataset names, title, or subtitle.
+   * Appends the current date and the file extension.
+   * @param {string} ext - File extension (e.g., 'png', 'svg')
+   * @returns {string} Sanitized filename
+   */
   function getExportFilename(ext) {
     const dateStr = new Date().toISOString().slice(0, 10);
     const legendNames = parsedData ? parsedData.datasets.map(ds => ds.name).filter(Boolean) : [];
@@ -3458,6 +3752,12 @@
     return `${base}-${dateStr}.${ext}`;
   }
 
+  /**
+   * Displays a brief toast notification at the bottom of the screen.
+   * Auto-dismisses after 2.5 seconds. Only one toast is visible at a time.
+   * @param {string} message - Text to display
+   * @param {'success'|'error'|'warning'} type - Visual style
+   */
   function showToast(message, type = 'success') {
     document.querySelectorAll('.toast').forEach(t => t.remove());
 
@@ -3478,6 +3778,8 @@
 
   // ═══════════════════════════════════════════
   //  Clipboard Paste
+  //  Intercepts global paste events (Ctrl+V) when not focused on an input/textarea,
+  //  and auto-parses the pasted text as chart data.
   // ═══════════════════════════════════════════
 
   document.addEventListener('paste', async (e) => {
@@ -3509,6 +3811,7 @@
 
   // ═══════════════════════════════════════════
   //  Keyboard Shortcuts
+  //  Ctrl+E → Export, Ctrl+Shift+D → Toggle theme, Ctrl+C → Copy chart PNG
   // ═══════════════════════════════════════════
 
   document.addEventListener('keydown', (e) => {
@@ -3534,6 +3837,8 @@
 
   // ═══════════════════════════════════════════
   //  Init
+  //  Application entry point. Registers Chart.js plugins, syncs UI value displays,
+  //  sets config defaults, and loads the initial sample dataset.
   // ═══════════════════════════════════════════
 
   function init() {
