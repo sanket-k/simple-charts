@@ -69,6 +69,7 @@
   let dualAxisEnabled = false;
   let axisAssignments = [];
   let axisNames = {};
+  let datasetChartTypes = [];
   let zoomRange = [0, 100];
 
   // ── Utilities ──
@@ -582,8 +583,8 @@
 
   function updateSettingsVisibility() {
     const t = currentChartType;
-    const isAxisChart = ['line', 'timeline', 'bar', 'vbar', 'area', 'scatter', 'waterfall'].includes(t);
-    
+    const isAxisChart = ['line', 'timeline', 'bar', 'vbar', 'area', 'scatter', 'waterfall', 'combo'].includes(t);
+
     if (dom.timelineSettings) dom.timelineSettings.style.display = (t === 'timeline' || t === 'innovator') ? 'block' : 'none';
     if (dom.innovatorSettings) dom.innovatorSettings.style.display = t === 'innovator' ? 'block' : 'none';
 
@@ -602,21 +603,21 @@
     };
 
     // Style
-    toggle(dom.chartCurve, ['line', 'timeline', 'area', 'radar'].includes(t));
-    toggle(dom.pointSize, ['line', 'timeline', 'scatter', 'radar', 'innovator'].includes(t));
-    toggle(dom.lineWidth, ['line', 'timeline', 'area', 'radar', 'innovator'].includes(t));
-    
-    const hasGrid = ['line', 'timeline', 'bar', 'vbar', 'area', 'scatter', 'waterfall'].includes(t);
+    toggle(dom.chartCurve, ['line', 'timeline', 'area', 'radar', 'combo'].includes(t));
+    toggle(dom.pointSize, ['line', 'timeline', 'scatter', 'radar', 'innovator', 'combo'].includes(t));
+    toggle(dom.lineWidth, ['line', 'timeline', 'area', 'radar', 'innovator', 'combo'].includes(t));
+
+    const hasGrid = ['line', 'timeline', 'bar', 'vbar', 'area', 'scatter', 'waterfall', 'combo'].includes(t);
     toggle(dom.showGrid, hasGrid);
     toggle(dom.gridStyle, hasGrid);
     toggle(dom.chartGridColor, hasGrid);
 
     toggle(dom.fillArea, ['line', 'timeline'].includes(t));
     toggle(dom.spanGaps, ['line', 'timeline', 'area'].includes(t));
-    toggle(dom.barBorderRadius, ['bar', 'vbar', 'waterfall'].includes(t));
+    toggle(dom.barBorderRadius, ['bar', 'vbar', 'waterfall', 'combo'].includes(t));
 
     // Display
-    toggle(dom.legendPosition, t !== 'innovator'); // Innovator doesn't have a standard dataset layout for legend sometimes, but let's just keep pie/donut logic out
+    toggle(dom.legendPosition, t !== 'innovator');
 
     // Formatting
     toggle(dom.xAxisType, isAxisChart);
@@ -639,6 +640,17 @@
         dom.dualAxisSection.style.display = 'none';
       } else {
         dom.dualAxisSection.style.display = 'block';
+      }
+    }
+
+    // Combo dataset type toggles
+    const comboEl = document.getElementById('comboSettings');
+    if (comboEl) {
+      if (t === 'combo' && rawParsedData && rawParsedData.datasets.length >= 2) {
+        comboEl.style.display = 'block';
+        renderComboDatasetTypes();
+      } else {
+        comboEl.style.display = 'none';
       }
     }
   }
@@ -1089,6 +1101,10 @@
         axisAssignments = rawParsedData.datasets.map((_, i) => i === 0 ? 'left' : 'right');
       }
       renderAxisAssignments();
+      if (datasetChartTypes.length !== rawParsedData.datasets.length) {
+        datasetChartTypes = rawParsedData.datasets.map((_, i) => i === 0 ? 'bar' : 'line');
+      }
+      if (currentChartType === 'combo') renderComboDatasetTypes();
     } else {
       dom.dualAxisSection.style.display = 'none';
       dualAxisEnabled = false;
@@ -1102,7 +1118,7 @@
       dom.zoomSliderContainer.style.display = 'none';
       return;
     }
-    const isLineChart = ['line', 'timeline', 'area', 'innovator'].includes(currentChartType);
+    const isLineChart = ['line', 'timeline', 'area', 'innovator', 'combo'].includes(currentChartType);
     const len = isInnovator ? currentInnovatorLabels.length : (parsedData ? parsedData.labels.length : 0);
     if (!isLineChart && len < 50) {
       dom.zoomSliderContainer.style.display = 'none';
@@ -1391,6 +1407,58 @@
       dualAxisEnabled = dom.dualAxisToggle.checked;
       renderAxisAssignments();
       renderChart();
+    });
+  }
+
+  function renderComboDatasetTypes() {
+    const container = document.getElementById('comboDatasetList');
+    if (!container || !rawParsedData) return;
+
+    if (datasetChartTypes.length !== rawParsedData.datasets.length) {
+      datasetChartTypes = rawParsedData.datasets.map((_, i) => i === 0 ? 'bar' : 'line');
+    }
+
+    container.innerHTML = '';
+    rawParsedData.datasets.forEach((ds, i) => {
+      const currentType = datasetChartTypes[i] || (i === 0 ? 'bar' : 'line');
+      const row = document.createElement('div');
+      row.className = 'axis-assign-row';
+      row.style.marginBottom = '6px';
+
+      const label = document.createElement('span');
+      label.className = 'axis-assign-label';
+      label.textContent = ds.name;
+      row.appendChild(label);
+
+      const btnGroup = document.createElement('div');
+      btnGroup.style.display = 'flex';
+      btnGroup.style.gap = '0';
+
+      ['line', 'bar'].forEach(type => {
+        const btn = document.createElement('button');
+        btn.textContent = type === 'line' ? 'Line' : 'Bar';
+        btn.dataset.dsIndex = i;
+        btn.dataset.dsType = type;
+        btn.style.cssText = `
+          padding: 4px 10px;
+          font-size: 12px;
+          border: 1px solid var(--border);
+          background: ${currentType === type ? 'var(--accent)' : 'var(--card)'};
+          color: ${currentType === type ? '#fff' : 'var(--text-muted)'};
+          cursor: pointer;
+          border-radius: ${type === 'line' ? '6px 0 0 6px' : '0 6px 6px 0'};
+          font-family: inherit;
+        `;
+        btn.addEventListener('click', () => {
+          datasetChartTypes[i] = type;
+          renderComboDatasetTypes();
+          renderChart();
+        });
+        btnGroup.appendChild(btn);
+      });
+
+      row.appendChild(btnGroup);
+      container.appendChild(row);
     });
   }
 
@@ -2130,6 +2198,9 @@
       case 'vbar':
         config = buildBarChart(labels, datasets, c, colors, 'x');
         break;
+      case 'combo':
+        config = buildComboChart(timeLabels, datasets, c, colors, tension, useTimeAxis, displayData);
+        break;
       case 'pie':
         config = buildPieChart(labels, datasets, c, colors);
         break;
@@ -2211,6 +2282,52 @@
         datasets: datasets.map((ds, i) => getLineDatasetDefaults(ds, i, c, colors, tension, useTimeAxis, displayData))
       },
       options: getBaseChartOptions()
+    };
+  }
+
+  function buildComboChart(labels, datasets, c, colors, tension, useTimeAxis, displayData) {
+    const opts = getBaseChartOptions();
+    const borderRadius = parseInt(dom.barBorderRadius?.value) || 4;
+
+    const chartDatasets = datasets.map((ds, i) => {
+      const dsType = datasetChartTypes[i] || (i === 0 ? 'bar' : 'line');
+      const color = colors[i % colors.length];
+
+      if (dsType === 'bar') {
+        let data = ds.values;
+        if (useTimeAxis && displayData?.dateObjects) {
+          data = ds.values.map((v, j) => ({
+            x: displayData.dateObjects[j] ? displayData.dateObjects[j].getTime() : null,
+            y: v
+          }));
+        }
+
+        let yAxisID = getYAxisID(i);
+        const hidden = dualAxisEnabled && axisAssignments[i] === 'hidden';
+
+        return {
+          type: 'bar',
+          label: ds.name,
+          data,
+          backgroundColor: hexToRgba(color, 0.85),
+          borderColor: color,
+          borderWidth: 1,
+          borderRadius,
+          borderSkipped: false,
+          barPercentage: 0.7,
+          categoryPercentage: 0.85,
+          yAxisID,
+          hidden
+        };
+      }
+
+      return getLineDatasetDefaults(ds, i, c, colors, tension, useTimeAxis, displayData);
+    });
+
+    return {
+      type: 'bar',
+      data: { labels, datasets: chartDatasets },
+      options: opts
     };
   }
 
