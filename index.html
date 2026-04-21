@@ -21,10 +21,19 @@
   <header class="topbar">
     <div class="topbar-left">
       <div class="logo">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <rect x="2" y="2" width="20" height="20" rx="4" fill="currentColor" opacity="0.1"/>
-          <path d="M6 18L10 10L14 14L18 6" stroke="#F7931A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <div class="logo-icon">
+          <svg
+            class="logo-svg"
+            fill="currentColor"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linejoin="round"
+            viewBox="-2 -4 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M10 1L18.66 15H1.34L10 1z" />
+          </svg>
+        </div>
         <span class="logo-text">Simple Charts</span>
       </div>
     </div>
@@ -748,16 +757,26 @@
         </div>
         <div class="input-group">
           <label for="brandLogoFile">Brand Logo</label>
-          <div class="brand-logo-row">
-            <div class="brand-logo-preview" id="brandLogoPreview">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <rect x="2" y="2" width="20" height="20" rx="4" fill="currentColor" opacity="0.1"/>
-                <path d="M6 18L10 10L14 14L18 6" stroke="#F7931A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+          <div class="brand-logo-tabs">
+            <button class="brand-logo-tab active" id="logoTabFile" data-tab="file">File</button>
+            <button class="brand-logo-tab" id="logoTabSvg" data-tab="svg">SVG Code</button>
+          </div>
+          <div class="brand-logo-panel" id="logoPanelFile">
+            <div class="brand-logo-row">
+              <div class="brand-logo-preview" id="brandLogoPreview">
+                <svg width="16" height="16" viewBox="-2 -4 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M10 1L18.66 15H1.34L10 1z"/></svg>
+              </div>
+              <button class="btn-secondary" id="brandLogoBtn">Upload</button>
+              <button class="btn-secondary btn-compact" id="brandLogoClearBtn" title="Remove logo" aria-label="Remove logo">×</button>
+              <input type="file" id="brandLogoFile" accept="image/*" hidden>
             </div>
-            <button class="btn-secondary" id="brandLogoBtn">Upload</button>
-            <button class="btn-secondary btn-compact" id="brandLogoClearBtn" title="Remove logo" aria-label="Remove logo">×</button>
-            <input type="file" id="brandLogoFile" accept="image/*" hidden>
+          </div>
+          <div class="brand-logo-panel" id="logoPanelSvg" style="display:none;">
+            <textarea id="brandLogoSvgInput" class="svg-code-input" rows="4" placeholder='Paste SVG code, e.g. <svg viewBox="0 0 24 24">...</svg>'></textarea>
+            <div class="svg-code-actions">
+              <button class="btn-secondary" id="brandLogoSvgApply">Apply SVG</button>
+              <button class="btn-secondary btn-compact" id="brandLogoSvgClear" title="Clear SVG" aria-label="Clear SVG">×</button>
+            </div>
           </div>
         </div>
         <div class="input-group">
@@ -767,6 +786,15 @@
             <option value="bottom-left">Bottom Left</option>
             <option value="top-right">Top Right</option>
             <option value="top-left">Top Left</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="brandLogoPlacement">Logo Placement</label>
+          <select id="brandLogoPlacement">
+            <option value="left">Left of Name</option>
+            <option value="right">Right of Name</option>
+            <option value="top">Above Name</option>
+            <option value="bottom">Below Name</option>
           </select>
         </div>
         <div class="input-group">

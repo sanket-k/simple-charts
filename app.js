@@ -264,7 +264,15 @@
     brandLogoBtn: $('#brandLogoBtn'),
     brandLogoClearBtn: $('#brandLogoClearBtn'),
     brandLogoPreview: $('#brandLogoPreview'),
+    logoTabFile: $('#logoTabFile'),
+    logoTabSvg: $('#logoTabSvg'),
+    logoPanelFile: $('#logoPanelFile'),
+    logoPanelSvg: $('#logoPanelSvg'),
+    brandLogoSvgInput: $('#brandLogoSvgInput'),
+    brandLogoSvgApply: $('#brandLogoSvgApply'),
+    brandLogoSvgClear: $('#brandLogoSvgClear'),
     brandPosition: $('#brandPosition'),
+    brandLogoPlacement: $('#brandLogoPlacement'),
     brandOpacity: $('#brandOpacity'),
     brandOpacityValue: $('#brandOpacityValue'),
     dualAxisToggle: $('#dualAxisToggle'),
@@ -1879,11 +1887,63 @@
     brandLogoUrl = null;
     brandLogoImg = null;
     dom.brandLogoFile.value = '';
-    dom.brandLogoPreview.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="4" fill="currentColor" opacity="0.1"/><path d="M6 18L10 10L14 14L18 6" stroke="#F7931A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    dom.brandLogoPreview.innerHTML = `<svg width="16" height="16" viewBox="-2 -4 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M10 1L18.66 15H1.34L10 1z"/></svg>`;
     renderChart();
   });
 
-  [dom.brandName, dom.brandPosition, dom.brandOpacity].forEach(el => {
+  // Tab switching between File upload and SVG code input
+  [dom.logoTabFile, dom.logoTabSvg].forEach(tab => {
+    tab.addEventListener('click', () => {
+      const isSvg = tab.dataset.tab === 'svg';
+      dom.logoTabFile.classList.toggle('active', !isSvg);
+      dom.logoTabSvg.classList.toggle('active', isSvg);
+      dom.logoPanelFile.style.display = isSvg ? 'none' : '';
+      dom.logoPanelSvg.style.display = isSvg ? '' : 'none';
+    });
+  });
+
+  // Apply SVG code as brand logo
+  dom.brandLogoSvgApply.addEventListener('click', () => {
+    const raw = dom.brandLogoSvgInput.value.trim();
+    if (!raw) return;
+
+    // Basic validation: must contain <svg
+    if (!/<svg[\s>]/i.test(raw)) {
+      alert('Please paste valid SVG code starting with <svg>');
+      return;
+    }
+
+    // Sanitize: strip script tags and event handlers
+    const sanitized = raw
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/\bon\w+\s*=\s*["'][^"']*["']/gi, '');
+
+    const blob = new Blob([sanitized], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      brandLogoUrl = url;
+      brandLogoImg = img;
+      dom.brandLogoPreview.innerHTML = `<img src="${url}" alt="Logo">`;
+      renderChart();
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      alert('Could not render the SVG. Please check the code and try again.');
+    };
+    img.src = url;
+  });
+
+  // Clear SVG code input
+  dom.brandLogoSvgClear.addEventListener('click', () => {
+    dom.brandLogoSvgInput.value = '';
+    brandLogoUrl = null;
+    brandLogoImg = null;
+    dom.brandLogoPreview.innerHTML = `<svg width="16" height="16" viewBox="-2 -4 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M10 1L18.66 15H1.34L10 1z"/></svg>`;
+    renderChart();
+  });
+
+  [dom.brandName, dom.brandPosition, dom.brandLogoPlacement, dom.brandOpacity].forEach(el => {
     if (!el) return;
     el.addEventListener('input', () => {
       if (el === dom.brandOpacity && dom.brandOpacityValue) {
@@ -2510,13 +2570,15 @@
 
   // ── Brand Plugin (uses cached Image) ──
   /** Chart.js plugin that draws the brand logo and/or name as a watermark overlay.
-   *  Position and opacity are configurable. The logo Image is preloaded on upload. */
+   *  Position (corner), logo placement relative to name (left/right/top/bottom),
+   *  and opacity are configurable. The logo Image is preloaded on upload. */
   const brandPlugin = {
     id: 'brandWatermark',
     afterDraw(chart) {
       const brandNameVal = dom.brandName?.value || '';
       const opacity = safeFloat(dom.brandOpacity?.value, 0.7);
       const position = dom.brandPosition?.value || 'bottom-right';
+      const placement = dom.brandLogoPlacement?.value || 'left';
       if (!brandNameVal && !brandLogoImg) return;
 
       const ctx = chart.ctx;
@@ -2525,48 +2587,130 @@
 
       const area = chart.chartArea;
       const margin = 12;
-      let x, y, textAlign;
+      let anchorX, anchorY, hAlign;
 
+      // Determine the anchor point based on corner position
       switch (position) {
         case 'bottom-left':
-          x = area.left + margin;
-          y = area.bottom - margin;
-          textAlign = 'left';
+          anchorX = area.left + margin;
+          anchorY = area.bottom - margin;
+          hAlign = 'left';
           break;
         case 'top-right':
-          x = area.right - margin;
-          y = area.top + margin + 4;
-          textAlign = 'right';
+          anchorX = area.right - margin;
+          anchorY = area.top + margin + 4;
+          hAlign = 'right';
           break;
         case 'top-left':
-          x = area.left + margin;
-          y = area.top + margin + 4;
-          textAlign = 'left';
+          anchorX = area.left + margin;
+          anchorY = area.top + margin + 4;
+          hAlign = 'left';
           break;
-        default:
-          x = area.right - margin;
-          y = area.bottom - margin;
-          textAlign = 'right';
+        default: // bottom-right
+          anchorX = area.right - margin;
+          anchorY = area.bottom - margin;
+          hAlign = 'right';
       }
 
-      let logoH = 0;
+      const hasLogo = brandLogoImg && brandLogoImg.complete && brandLogoImg.naturalWidth;
+      const gap = 4;
 
-      if (brandLogoImg && brandLogoImg.complete && brandLogoImg.naturalWidth) {
-        const drawH = 16;
-        const drawW = (brandLogoImg.naturalWidth / brandLogoImg.naturalHeight) * drawH;
-        const imgX = textAlign === 'right' ? x - drawW : x;
-        const imgY = brandNameVal ? y - drawH - 2 : y - drawH;
-        ctx.drawImage(brandLogoImg, imgX, imgY, drawW, drawH);
-        logoH = drawH + 2;
+      // Measure text dimensions
+      ctx.font = `600 10px 'Inter', sans-serif`;
+      const textW = brandNameVal ? ctx.measureText(brandNameVal).width : 0;
+      const textH = 10;
+
+      // Logo dimensions
+      const logoDrawH = hasLogo ? 16 : 0;
+      const logoDrawW = hasLogo ? (brandLogoImg.naturalWidth / brandLogoImg.naturalHeight) * logoDrawH : 0;
+
+      // Compute the bounding box of the logo+name group depending on placement
+      let groupW, groupH;
+      if (!hasLogo) {
+        groupW = textW;
+        groupH = textH;
+      } else if (!brandNameVal) {
+        groupW = logoDrawW;
+        groupH = logoDrawH;
+      } else if (placement === 'left' || placement === 'right') {
+        groupW = logoDrawW + gap + textW;
+        groupH = Math.max(logoDrawH, textH);
+      } else { // top or bottom
+        groupW = Math.max(logoDrawW, textW);
+        groupH = logoDrawH + gap + textH;
       }
 
-      if (brandNameVal) {
+      // Position the group so its anchor corner sits at (anchorX, anchorY)
+      let groupX = hAlign === 'right' ? anchorX - groupW : anchorX;
+      let groupBottom = anchorY;
+
+      // Draw logo and text based on placement
+      let logoX, logoY, textX, textY;
+
+      if (!hasLogo) {
+        // Text only
         const c = getThemeColors();
-        ctx.font = `600 10px 'Inter', sans-serif`;
         ctx.fillStyle = c.textSecondary;
-        ctx.textAlign = textAlign;
+        ctx.textAlign = 'left';
         ctx.textBaseline = 'bottom';
-        ctx.fillText(brandNameVal, x, y - logoH);
+        ctx.fillText(brandNameVal, groupX, groupBottom);
+      } else if (!brandNameVal) {
+        // Logo only
+        const lx = hAlign === 'right' ? anchorX - logoDrawW : anchorX;
+        ctx.drawImage(brandLogoImg, lx, groupBottom - logoDrawH, logoDrawW, logoDrawH);
+      } else if (placement === 'left') {
+        // [Logo] [Name]
+        logoX = groupX;
+        logoY = groupBottom - logoDrawH;
+        textX = groupX + logoDrawW + gap;
+        textY = groupBottom;
+        // Vertically center text to logo
+        const vOffset = (logoDrawH - textH) / 2;
+        ctx.drawImage(brandLogoImg, logoX, logoY, logoDrawW, logoDrawH);
+        const c = getThemeColors();
+        ctx.fillStyle = c.textSecondary;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(brandNameVal, textX, textY - vOffset);
+      } else if (placement === 'right') {
+        // [Name] [Logo]
+        textX = groupX;
+        textY = groupBottom;
+        logoX = groupX + textW + gap;
+        logoY = groupBottom - logoDrawH;
+        const vOffset = (logoDrawH - textH) / 2;
+        const c = getThemeColors();
+        ctx.fillStyle = c.textSecondary;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(brandNameVal, textX, textY - vOffset);
+        ctx.drawImage(brandLogoImg, logoX, logoY, logoDrawW, logoDrawH);
+      } else if (placement === 'top') {
+        // [Logo]
+        // [Name]
+        logoX = groupX + (groupW - logoDrawW) / 2;
+        logoY = groupBottom - groupH;
+        textX = groupX + (groupW - textW) / 2;
+        textY = groupBottom;
+        ctx.drawImage(brandLogoImg, logoX, logoY, logoDrawW, logoDrawH);
+        const c = getThemeColors();
+        ctx.fillStyle = c.textSecondary;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(brandNameVal, textX, textY);
+      } else { // bottom
+        // [Name]
+        // [Logo]
+        textX = groupX + (groupW - textW) / 2;
+        textY = groupBottom - logoDrawH - gap;
+        logoX = groupX + (groupW - logoDrawW) / 2;
+        logoY = groupBottom - logoDrawH;
+        const c = getThemeColors();
+        ctx.fillStyle = c.textSecondary;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(brandNameVal, textX, textY);
+        ctx.drawImage(brandLogoImg, logoX, logoY, logoDrawW, logoDrawH);
       }
 
       ctx.restore();
