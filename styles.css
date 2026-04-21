@@ -1171,6 +1171,125 @@ body {
 }
 
 /* ═══════════════════════════════════════════
+   Segmented Bar — Segment Editor Rows
+   ═══════════════════════════════════════════ */
+
+.segment-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.segment-item:last-child {
+  border-bottom: none;
+}
+
+.segment-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.segment-row--top {
+  /* color + label + remove */
+}
+
+.segment-row--bottom {
+  padding-left: 34px; /* align with text after color picker */
+}
+
+.segment-item input[type="text"],
+.segment-item input[type="number"] {
+  padding: var(--sp-1) var(--sp-2);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-xs);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  outline: none;
+  min-width: 0;
+  transition: border-color var(--duration);
+}
+
+.segment-item input[type="text"]:focus,
+.segment-item input[type="number"]:focus {
+  border-color: var(--brand-orange);
+}
+
+.segment-item input[type="text"]::placeholder {
+  color: var(--text-muted);
+}
+
+.segment-item input[type="number"] {
+  width: 58px;
+  min-width: 50px;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+
+.segment-item input[type="number"]::-webkit-outer-spin-button,
+.segment-item input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.segment-item input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--border-primary);
+  border-radius: var(--radius-xs);
+  outline: none;
+}
+
+.segment-item input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--brand-orange);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--bg-secondary);
+  box-shadow: 0 0 0 1px var(--brand-orange);
+}
+
+.segment-item input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--brand-orange);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--bg-secondary);
+}
+
+.segment-item .btn-remove {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+  font-size: 1rem;
+  transition: all var(--duration);
+}
+
+.segment-item .btn-remove:hover {
+  color: #EF4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* ═══════════════════════════════════════════
    Data Size Info
    ═══════════════════════════════════════════ */
 

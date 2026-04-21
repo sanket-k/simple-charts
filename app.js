@@ -79,6 +79,7 @@
   let axisNames = {};                // Custom labels for each Y-axis, keyed by axis index
   let datasetChartTypes = [];        // For combo charts: the chart type (line/bar) of each dataset
   let zoomRange = [0, 100];          // Current zoom range as percentages [start%, end%] of the full dataset
+  let segmentedSegments = [];        // Segments for the segmented bar chart: [{ label, value, color }]
 
   // ── Utilities ──
 
@@ -306,6 +307,19 @@
     innovatorEndYear: $('#innovatorEndYear'),
     innovatorStartMonth: $('#innovatorStartMonth'),
     innovatorEndMonth: $('#innovatorEndMonth'),
+    segmentedSettings: $('#segmentedSettings'),
+    segmentedMode: $('#segmentedMode'),
+    segmentedOrientation: $('#segmentedOrientation'),
+    segmentedThickness: $('#segmentedThickness'),
+    segmentedThicknessValue: $('#segmentedThicknessValue'),
+    segmentedBorderRadius: $('#segmentedBorderRadius'),
+    segmentedBorderRadiusValue: $('#segmentedBorderRadiusValue'),
+    segmentedGap: $('#segmentedGap'),
+    segmentedGapValue: $('#segmentedGapValue'),
+    segmentedShowLabels: $('#segmentedShowLabels'),
+    segmentedShowPercent: $('#segmentedShowPercent'),
+    segmentedList: $('#segmentedList'),
+    addSegmentBtn: $('#addSegmentBtn'),
   };
 
   /** Color picker input → hex display pairs for the 5-color palette editor */
@@ -728,6 +742,7 @@
 
     if (dom.timelineSettings) dom.timelineSettings.style.display = (t === 'timeline' || t === 'innovator') ? 'block' : 'none';
     if (dom.innovatorSettings) dom.innovatorSettings.style.display = t === 'innovator' ? 'block' : 'none';
+    if (dom.segmentedSettings) dom.segmentedSettings.style.display = t === 'segmented' ? 'block' : 'none';
 
     const toggle = (el, show) => {
       if (el) {
@@ -748,7 +763,7 @@
     toggle(dom.pointSize, ['line', 'timeline', 'scatter', 'radar', 'innovator', 'combo'].includes(t));
     toggle(dom.lineWidth, ['line', 'timeline', 'area', 'radar', 'innovator', 'combo'].includes(t));
 
-    const hasGrid = ['line', 'timeline', 'bar', 'vbar', 'area', 'scatter', 'waterfall', 'combo'].includes(t);
+    const hasGrid = ['line', 'timeline', 'bar', 'vbar', 'area', 'scatter', 'waterfall', 'combo', 'segmented'].includes(t);
     toggle(dom.showGrid, hasGrid);
     toggle(dom.gridStyle, hasGrid);
     toggle(dom.chartGridColor, hasGrid);
@@ -760,15 +775,16 @@
     // Display
     toggle(dom.legendPosition, t !== 'innovator');
 
-    // Formatting
-    toggle(dom.xAxisType, isAxisChart);
-    toggle(dom.xAxisLabel, isAxisChart);
-    toggle(dom.yAxisLabel, isAxisChart);
-    toggle(dom.dateFormat, isAxisChart);
-    toggle(dom.maxTicks, isAxisChart);
-    toggle(dom.yAxisScale, isAxisChart);
-    toggleRow(dom.yAxisMin, isAxisChart);
-    toggle(dom.xAxisRotation, isAxisChart);
+    // Formatting — hidden for segmented (has its own controls)
+    const isFormattingChart = isAxisChart;
+    toggle(dom.xAxisType, isFormattingChart);
+    toggle(dom.xAxisLabel, isFormattingChart);
+    toggle(dom.yAxisLabel, isFormattingChart);
+    toggle(dom.dateFormat, isFormattingChart);
+    toggle(dom.maxTicks, isFormattingChart);
+    toggle(dom.yAxisScale, isFormattingChart);
+    toggleRow(dom.yAxisMin, isFormattingChart);
+    toggle(dom.xAxisRotation, isFormattingChart);
 
     // Annotations
     if (dom.refLineY) {
@@ -806,6 +822,11 @@
     btn.classList.add('active');
     btn.setAttribute('aria-selected', 'true');
     currentChartType = btn.dataset.type;
+
+    if (currentChartType === 'segmented' && segmentedSegments.length === 0) {
+      segmentedSegments = getDefaultSegments();
+      renderSegmentList();
+    }
 
     updateSettingsVisibility();
     renderChart();
@@ -866,6 +887,138 @@
 
   dom.innovatorTiers.addEventListener('input', () => {
     renderInnovatorTierNames();
+  });
+
+  // ── Segmented Bar helpers ──
+
+  /** Returns default sample segments for the segmented bar chart */
+  function getDefaultSegments() {
+    return [
+      { label: 'DeFi', value: 35, color: '#F7931A' },
+      { label: 'NFTs', value: 22, color: '#60A5FA' },
+      { label: 'Infra', value: 18, color: '#34D399' },
+      { label: 'Gaming', value: 15, color: '#F472B6' },
+      { label: 'Social', value: 10, color: '#A78BFA' },
+    ];
+  }
+
+  /** Renders the dynamic segment editor list in the left panel */
+  function renderSegmentList() {
+    if (!dom.segmentedList) return;
+    dom.segmentedList.innerHTML = '';
+
+    segmentedSegments.forEach((seg, i) => {
+      // Container for one segment — two rows
+      const container = document.createElement('div');
+      container.className = 'segment-item';
+      container.dataset.segIndex = i;
+
+      // Row 1: color picker + label + remove
+      const topRow = document.createElement('div');
+      topRow.className = 'segment-row segment-row--top';
+
+      const colorInput = document.createElement('input');
+      colorInput.type = 'color';
+      colorInput.className = 'color-input';
+      colorInput.value = seg.color;
+      colorInput.dataset.field = 'color';
+      colorInput.dataset.index = i;
+      topRow.appendChild(colorInput);
+
+      const labelInput = document.createElement('input');
+      labelInput.type = 'text';
+      labelInput.placeholder = 'Label';
+      labelInput.value = seg.label;
+      labelInput.dataset.field = 'label';
+      labelInput.dataset.index = i;
+      labelInput.style.flex = '1';
+      topRow.appendChild(labelInput);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'btn-remove';
+      removeBtn.dataset.index = i;
+      removeBtn.setAttribute('aria-label', 'Remove segment');
+      removeBtn.textContent = '\u00D7';
+      topRow.appendChild(removeBtn);
+
+      container.appendChild(topRow);
+
+      // Row 2: value number input + slider
+      const bottomRow = document.createElement('div');
+      bottomRow.className = 'segment-row segment-row--bottom';
+
+      const valueInput = document.createElement('input');
+      valueInput.type = 'number';
+      valueInput.placeholder = 'Value';
+      valueInput.value = seg.value;
+      valueInput.dataset.field = 'value';
+      valueInput.dataset.index = i;
+      valueInput.min = '0';
+      valueInput.step = 'any';
+      bottomRow.appendChild(valueInput);
+
+      const valueSlider = document.createElement('input');
+      valueSlider.type = 'range';
+      valueSlider.min = '0';
+      valueSlider.max = '100';
+      valueSlider.step = '1';
+      valueSlider.value = seg.value;
+      valueSlider.dataset.field = 'value';
+      valueSlider.dataset.sliderIndex = i;
+      bottomRow.appendChild(valueSlider);
+
+      container.appendChild(bottomRow);
+
+      dom.segmentedList.appendChild(container);
+    });
+
+    // Input listeners for live editing
+    dom.segmentedList.querySelectorAll('input').forEach(input => {
+      input.addEventListener('input', (e) => {
+        const idx = parseInt(e.target.dataset.index ?? e.target.dataset.sliderIndex);
+        const field = e.target.dataset.field;
+        if (isNaN(idx) || !field) return;
+        if (field === 'value') {
+          const val = parseFloat(e.target.value) || 0;
+          segmentedSegments[idx].value = val;
+          // Sync number input and slider within the same segment container
+          const container = e.target.closest('[data-seg-index]');
+          if (container) {
+            const numInput = container.querySelector('input[type="number"]');
+            const sliderInput = container.querySelector('input[type="range"]');
+            if (e.target.type === 'number' && sliderInput) sliderInput.value = val;
+            if (e.target.type === 'range' && numInput) numInput.value = val;
+          }
+        } else if (field === 'color') {
+          segmentedSegments[idx].color = e.target.value;
+        } else {
+          segmentedSegments[idx][field] = e.target.value;
+        }
+        debouncedRender();
+      });
+    });
+
+    // Remove button listeners
+    dom.segmentedList.querySelectorAll('.btn-remove').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = parseInt(e.target.dataset.index);
+        segmentedSegments.splice(idx, 1);
+        renderSegmentList();
+        renderChart();
+      });
+    });
+  }
+
+  dom.addSegmentBtn.addEventListener('click', () => {
+    const colors = getMultiColors();
+    segmentedSegments.push({
+      label: `Segment ${segmentedSegments.length + 1}`,
+      value: 10,
+      color: colors[segmentedSegments.length % colors.length]
+    });
+    renderSegmentList();
+    renderChart();
   });
 
   // ═══════════════════════════════════════════
@@ -1179,10 +1332,19 @@
       waterfall: "Category, Value\nRevenue, 5000\nCOGS, -2100\nGross Profit, 2900\nSalaries, -1200\nMarketing, -400\nR&D, -350\nNet Income, 950"
     };
 
-    const sample = samplesByType[currentChartType] || samplesByType.line;
-    dom.dataTextarea.value = sample;
-    rawParsedData = await parseDataFromText(sample);
-    parsedData = rawParsedData;
+    if (currentChartType === 'segmented') {
+      const sample = "Segment, Value\nDeFi, 35\nNFTs, 22\nInfra, 18\nGaming, 15\nSocial, 10";
+      dom.dataTextarea.value = sample;
+      rawParsedData = await parseDataFromText(sample);
+      parsedData = rawParsedData;
+      segmentedSegments = getDefaultSegments();
+      renderSegmentList();
+    } else {
+      const sample = samplesByType[currentChartType] || samplesByType.line;
+      dom.dataTextarea.value = sample;
+      rawParsedData = await parseDataFromText(sample);
+      parsedData = rawParsedData;
+    }
 
     if (currentChartType === 'timeline') {
       timelineEvents = [
@@ -1205,7 +1367,22 @@
 
   /** Called after any data load (sample, paste, CSV, manual). Runs the full pipeline:
    *  downsample → update UI → render chart */
+  /** Converts parsed data (labels + first dataset) into segmentedSegments for the segmented bar chart */
+  function convertParsedDataToSegments(data) {
+    if (!data || !data.labels || !data.datasets || data.datasets.length === 0) return;
+    const colors = getMultiColors();
+    segmentedSegments = data.labels.map((label, i) => ({
+      label: String(label),
+      value: data.datasets[0].values[i] || 0,
+      color: colors[i % colors.length]
+    }));
+    renderSegmentList();
+  }
+
   function updateAfterDataLoad() {
+    if (currentChartType === 'segmented' && rawParsedData) {
+      convertParsedDataToSegments(rawParsedData);
+    }
     applyDownsampling();
     updateSettingsVisibility();
     updateDataPreview();
@@ -1911,6 +2088,9 @@
     dom.innovatorCurveType, dom.innovatorTimeMode,
     dom.innovatorStartYear, dom.innovatorEndYear,
     dom.innovatorStartMonth, dom.innovatorEndMonth,
+    dom.segmentedMode, dom.segmentedOrientation,
+    dom.segmentedThickness, dom.segmentedBorderRadius,
+    dom.segmentedGap, dom.segmentedShowLabels, dom.segmentedShowPercent,
   ];
 
   settingsInputs.forEach(el => {
@@ -1957,6 +2137,15 @@
       }
       if (el === dom.innovatorIncumbentSlope && dom.innovatorIncumbentSlopeValue) {
         dom.innovatorIncumbentSlopeValue.textContent = dom.innovatorIncumbentSlope.value;
+      }
+      if (el === dom.segmentedThickness && dom.segmentedThicknessValue) {
+        dom.segmentedThicknessValue.textContent = dom.segmentedThickness.value;
+      }
+      if (el === dom.segmentedBorderRadius && dom.segmentedBorderRadiusValue) {
+        dom.segmentedBorderRadiusValue.textContent = dom.segmentedBorderRadius.value;
+      }
+      if (el === dom.segmentedGap && dom.segmentedGapValue) {
+        dom.segmentedGapValue.textContent = dom.segmentedGap.value;
       }
       debouncedRender();
     });
@@ -2405,6 +2594,11 @@
 
     if (currentChartType === 'innovator') {
       renderInnovatorsDilemmaChart();
+      return;
+    }
+
+    if (currentChartType === 'segmented') {
+      renderSegmentedChart();
       return;
     }
 
@@ -3057,6 +3251,210 @@
         }
       }
     };
+  }
+
+  // ═══════════════════════════════════════════
+  //  Segmented Bar Chart (100% / Unit Stacked Bar)
+  // ═══════════════════════════════════════════
+
+  /**
+   * Builds a Chart.js config for a segmented bar chart.
+   * Uses stacked bar type where each segment is its own dataset stacked on a single category.
+   * Supports 100% normalized mode and unit (actual value) mode.
+   */
+  function buildSegmentedBarChart(c) {
+    const mode = dom.segmentedMode?.value || 'percent';
+    const orientation = dom.segmentedOrientation?.value || 'horizontal';
+    const thickness = safeFloat(dom.segmentedThickness?.value, 0.5);
+    const borderRadius = safeInt(dom.segmentedBorderRadius?.value, 6);
+    const gap = safeInt(dom.segmentedGap?.value, 0);
+    const showLabels = dom.segmentedShowLabels?.checked ?? false;
+    const showPercent = dom.segmentedShowPercent?.checked ?? true;
+
+    const indexAxis = orientation === 'horizontal' ? 'y' : 'x';
+
+    const total = segmentedSegments.reduce((sum, s) => sum + (s.value || 0), 0);
+    if (total === 0) {
+      return { type: 'bar', data: { labels: [''], datasets: [] }, options: { responsive: true, maintainAspectRatio: false }, plugins: [bgPlugin, sourceFooterPlugin, brandPlugin, ChartDataLabels] };
+    }
+
+    const values = segmentedSegments.map(s => {
+      if (mode === 'percent') {
+        return total > 0 ? (s.value / total) * 100 : 0;
+      }
+      return s.value || 0;
+    });
+
+    const chartBg = userBgColor || c.bg;
+
+    const datasets = segmentedSegments.map((seg, i) => {
+      const isFirst = i === 0;
+      const isLast = i === segmentedSegments.length - 1;
+
+      let segmentBorderRadius = 0;
+      if (orientation === 'horizontal') {
+        segmentBorderRadius = {
+          topLeft: isFirst ? borderRadius : 0,
+          bottomLeft: isFirst ? borderRadius : 0,
+          topRight: isLast ? borderRadius : 0,
+          bottomRight: isLast ? borderRadius : 0,
+        };
+      } else {
+        segmentBorderRadius = {
+          bottomLeft: isFirst ? borderRadius : 0,
+          bottomRight: isFirst ? borderRadius : 0,
+          topLeft: isLast ? borderRadius : 0,
+          topRight: isLast ? borderRadius : 0,
+        };
+      }
+
+      return {
+        label: seg.label,
+        data: [values[i]],
+        backgroundColor: hexToRgba(seg.color, 0.9),
+        borderColor: gap > 0 ? chartBg : seg.color,
+        borderWidth: gap,
+        borderRadius: segmentBorderRadius,
+        borderSkipped: false,
+        barPercentage: thickness,
+        categoryPercentage: 1.0,
+        stack: 'segStack',
+      };
+    });
+
+    const animSpeed = safeInt(dom.animationSpeed?.value, 600);
+    const animDurations = { none: 0, fast: 300, normal: 600, slow: 1000 };
+    const animDuration = animDurations[animSpeed] ?? 600;
+
+    const opts = {
+      responsive: true,
+      maintainAspectRatio: false,
+      indexAxis,
+      animation: { duration: animDuration, easing: 'easeOutQuart' },
+      layout: {
+        padding: {
+          top: dom.chartTitle?.value ? 8 : 4,
+          bottom: dom.chartSource?.value ? 24 : 8,
+          left: 4,
+          right: 4
+        }
+      },
+      plugins: {
+        title: {
+          display: !!dom.chartTitle?.value,
+          text: dom.chartTitle?.value || '',
+          color: c.text,
+          font: { size: 16, weight: '600', family: "'Inter', sans-serif" },
+          padding: { bottom: dom.chartSubtitle?.value ? 2 : 12 }
+        },
+        subtitle: {
+          display: !!dom.chartSubtitle?.value,
+          text: dom.chartSubtitle?.value || '',
+          color: c.textSecondary,
+          font: { size: 11, weight: '400', family: "'Inter', sans-serif" },
+          padding: { bottom: 16 }
+        },
+        legend: {
+          display: dom.showLegend?.checked ?? true,
+          position: dom.legendPosition?.value || 'top',
+          align: 'end',
+          labels: {
+            color: c.textSecondary,
+            font: { size: 11, family: "'Inter', sans-serif" },
+            boxWidth: 8, boxHeight: 8, borderRadius: 4,
+            padding: 16, usePointStyle: true, pointStyle: 'circle'
+          }
+        },
+        tooltip: {
+          backgroundColor: currentTheme === 'dark' ? '#1e293b' : '#fff',
+          titleColor: c.text,
+          bodyColor: c.textSecondary,
+          borderColor: c.border,
+          borderWidth: 1, cornerRadius: 8, padding: 10,
+          callbacks: {
+            label: (ctx) => {
+              const val = ctx.raw;
+              const pct = total > 0 ? ((segmentedSegments[ctx.datasetIndex].value / total) * 100).toFixed(1) : 0;
+              if (mode === 'percent') {
+                return `${ctx.dataset.label}: ${pct}%`;
+              }
+              return `${ctx.dataset.label}: ${formatNumber(val)} (${pct}%)`;
+            }
+          }
+        },
+        datalabels: {
+          display: showLabels || showPercent,
+          color: '#fff',
+          font: { size: 11, weight: '600', family: "'Inter', sans-serif" },
+          anchor: 'center',
+          align: 'center',
+          formatter: (value, ctx) => {
+            if (!value || value === 0) return '';
+            const pct = total > 0 ? ((segmentedSegments[ctx.datasetIndex].value / total) * 100).toFixed(1) : 0;
+            const pctNum = parseFloat(pct);
+            if (pctNum < 5) return '';
+            if (showLabels && showPercent) return `${ctx.dataset.label}\n${pct}%`;
+            if (showPercent) return `${pct}%`;
+            return ctx.dataset.label;
+          }
+        },
+        annotation: { annotations: {} }
+      },
+      scales: {
+        x: {
+          stacked: true,
+          grid: { display: false },
+          ticks: { display: false },
+          border: { display: false },
+        },
+        y: {
+          stacked: true,
+          grid: { display: false },
+          ticks: { display: false },
+          border: { display: false },
+        }
+      }
+    };
+
+    if (orientation === 'horizontal') {
+      opts.scales.x.max = mode === 'percent' ? 100 : undefined;
+      opts.scales.x.ticks = {
+        display: true,
+        color: c.textSecondary,
+        font: { size: 10, family: "'Inter', sans-serif" },
+        callback: (val) => mode === 'percent' ? val + '%' : formatNumber(val)
+      };
+      opts.scales.x.grid = { display: dom.showGrid?.checked ?? false, color: userGridColor || c.grid, lineWidth: 0.5 };
+    } else {
+      opts.scales.y.max = mode === 'percent' ? 100 : undefined;
+      opts.scales.y.ticks = {
+        display: true,
+        color: c.textSecondary,
+        font: { size: 10, family: "'Inter', sans-serif" },
+        callback: (val) => mode === 'percent' ? val + '%' : formatNumber(val)
+      };
+      opts.scales.y.grid = { display: dom.showGrid?.checked ?? false, color: userGridColor || c.grid, lineWidth: 0.5 };
+    }
+
+    return {
+      type: 'bar',
+      data: { labels: [''], datasets },
+      options: opts,
+      plugins: [bgPlugin, sourceFooterPlugin, brandPlugin, ChartDataLabels]
+    };
+  }
+
+  /** Renders the segmented bar chart by destroying any existing instance and creating a new one */
+  function renderSegmentedChart() {
+    if (chartInstance) {
+      chartInstance.destroy();
+      chartInstance = null;
+    }
+    if (!segmentedSegments || segmentedSegments.length === 0) return;
+
+    const c = getThemeColors();
+    const config = buildSegmentedBarChart(c);
+    chartInstance = new Chart(dom.chartCanvas, config);
   }
 
   // ═══════════════════════════════════════════
@@ -3857,6 +4255,9 @@
     if (dom.innovatorIncumbentSlopeValue) dom.innovatorIncumbentSlopeValue.textContent = dom.innovatorIncumbentSlope.value;
     if (dom.innovatorMarketTopValue) dom.innovatorMarketTopValue.textContent = dom.innovatorMarketTop.value;
     if (dom.innovatorMarketBottomValue) dom.innovatorMarketBottomValue.textContent = dom.innovatorMarketBottom.value;
+    if (dom.segmentedThicknessValue) dom.segmentedThicknessValue.textContent = dom.segmentedThickness.value;
+    if (dom.segmentedBorderRadiusValue) dom.segmentedBorderRadiusValue.textContent = dom.segmentedBorderRadius.value;
+    if (dom.segmentedGapValue) dom.segmentedGapValue.textContent = dom.segmentedGap.value;
 
     renderInnovatorTierNames();
 

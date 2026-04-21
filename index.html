@@ -136,6 +136,10 @@
             <svg viewBox="0 0 40 40" fill="none"><path d="M8 28L32 20" stroke="currentColor" stroke-width="1.2" opacity="0.35"/><path d="M8 20L32 12" stroke="currentColor" stroke-width="1.2" opacity="0.35"/><path d="M8 12L32 4" stroke="currentColor" stroke-width="1.2" opacity="0.35"/><path d="M8 34C14 30 22 18 28 10L34 4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <span>Innovator</span>
           </button>
+          <button class="chart-type-btn" data-type="segmented" title="Segmented Bar Chart" role="tab" aria-selected="false">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="14" width="12" height="12" rx="1" fill="currentColor" opacity="0.4"/><rect x="16" y="14" width="8" height="12" fill="currentColor" opacity="0.25"/><rect x="24" y="14" width="6" height="12" fill="currentColor" opacity="0.15"/><rect x="30" y="14" width="6" height="12" rx="1" fill="currentColor" opacity="0.1"/></svg>
+            <span>Segmented</span>
+          </button>
         </div>
       </div>
 
@@ -311,6 +315,57 @@
             <input type="text" id="innovatorEndMonth" value="Dec 2020" placeholder="e.g. Dec 2020">
           </div>
         </div>
+      </div>
+
+      <!-- Segmented Bar Settings -->
+      <div class="panel-section" id="segmentedSettings" style="display:none;">
+        <h3 class="panel-title">Segmented Bar</h3>
+        <div class="input-group">
+          <label for="segmentedMode">Mode</label>
+          <select id="segmentedMode">
+            <option value="percent" selected>100% (Normalized)</option>
+            <option value="unit">Unit (Actual Values)</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="segmentedOrientation">Orientation</label>
+          <select id="segmentedOrientation">
+            <option value="horizontal" selected>Horizontal</option>
+            <option value="vertical">Vertical</option>
+          </select>
+        </div>
+        <div class="input-group-separator"></div>
+        <div class="input-group">
+          <label for="segmentedThickness">Bar Thickness</label>
+          <input type="range" id="segmentedThickness" min="0.1" max="1" step="0.05" value="0.5">
+          <span class="range-value" id="segmentedThicknessValue">0.5</span>
+        </div>
+        <div class="input-group">
+          <label for="segmentedBorderRadius">Border Radius</label>
+          <input type="range" id="segmentedBorderRadius" min="0" max="16" step="1" value="6">
+          <span class="range-value" id="segmentedBorderRadiusValue">6</span>
+        </div>
+        <div class="input-group">
+          <label for="segmentedGap">Segment Gap</label>
+          <input type="range" id="segmentedGap" min="0" max="8" step="1" value="0">
+          <span class="range-value" id="segmentedGapValue">0</span>
+        </div>
+        <div class="input-group-separator"></div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="segmentedShowLabels">
+          <label for="segmentedShowLabels">Show Data Labels</label>
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="segmentedShowPercent" checked>
+          <label for="segmentedShowPercent">Show Percentages</label>
+        </div>
+        <div class="input-group-separator"></div>
+        <p class="hint-text" style="margin-bottom:8px;">Define segments below. Each has a label, value, and color.</p>
+        <div id="segmentedList"></div>
+        <button class="btn-secondary" id="addSegmentBtn" style="width:100%;margin-top:8px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Segment
+        </button>
       </div>
 
       <!-- Style -->
