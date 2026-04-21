@@ -30,7 +30,7 @@ A browser-based, publication-quality chart creation tool designed for producing 
 
 ## Overview
 
-Simple Charts lets you paste, upload, or manually enter data and instantly generate polished, branded charts. It supports 12 chart types, dark/light themes, social-media-optimized export sizes, and advanced features like dual axes, timeline event markers, a segmented bar chart editor, and a unique "Innovator's Dilemma" visualization.
+Simple Charts lets you paste, upload, or manually enter data and instantly generate polished, branded charts. It supports 13 chart types, dark/light themes, social-media-optimized export sizes, and advanced features like dual axes, timeline event markers, a segmented bar chart editor, and a unique "Innovator's Dilemma" visualization.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -349,11 +349,18 @@ graph LR
 Add a brand name and/or logo to exported charts:
 
 - **Brand Name** — rendered as small bold text
-- **Brand Logo** — uploaded image, rendered at 16px height
-- **Position** — Bottom Right, Bottom Left, Top Right, Top Left
+- **Brand Logo** — upload an image file **or** paste raw SVG code
+  - **File upload** — select an image from disk (PNG, JPG, SVG, etc.)
+  - **SVG Code** — paste SVG markup directly; includes basic sanitization (strips `<script>` tags and inline event handlers)
+- **Position** — which corner the brand group anchors to: Bottom Right, Bottom Left, Top Right, Top Left
+- **Logo Placement** — where the logo sits relative to the brand name:
+  - Left — logo to the left of the name (default)
+  - Right — logo to the right of the name
+  - Above — logo centered above the name
+  - Below — logo centered below the name
 - **Opacity** — 0.2 to 1.0 (default 0.7)
 
-Logo and name stack vertically when both are present. A clear button removes the logo.
+Logo and name are vertically centered when side-by-side and horizontally centered when stacked.
 
 ### Zoom & Pan
 
@@ -509,7 +516,7 @@ app.js (IIFE)
 ├── Theme System       # Color pickers, preset palettes, dark/light toggle
 ├── Data Parsing       # smartParseNumber, PapaParse, CSV upload
 ├── Manual Entry       # Dynamic grid with add/remove series & rows
-├── Chart Rendering    # Dispatcher + 12 type-specific builder functions
+├── Chart Rendering    # Dispatcher + 13 type-specific builder functions
 ├── Custom Plugins     # bgPlugin, sourceFooterPlugin, brandPlugin
 ├── Export System      # PNG/JPG/SVG/WebP download, clipboard, JSON copy
 ├── Toast System       # Success/error/warning notifications
