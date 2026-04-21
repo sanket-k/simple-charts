@@ -19,6 +19,7 @@ A browser-based, publication-quality chart creation tool designed for producing 
   - [Dual Y-Axis](#dual-y-axis)
   - [Timeline Events](#timeline-events)
   - [Innovator's Dilemma](#innovators-dilemma)
+  - [Segmented Bar Chart](#segmented-bar-chart)
   - [Export & Sharing](#export--sharing)
   - [Keyboard Shortcuts](#keyboard-shortcuts)
 - [Dependencies](#dependencies)
@@ -29,7 +30,7 @@ A browser-based, publication-quality chart creation tool designed for producing 
 
 ## Overview
 
-Simple Charts lets you paste, upload, or manually enter data and instantly generate polished, branded charts. It supports 11 chart types, dark/light themes, social-media-optimized export sizes, and advanced features like dual axes, timeline event markers, and a unique "Innovator's Dilemma" visualization.
+Simple Charts lets you paste, upload, or manually enter data and instantly generate polished, branded charts. It supports 12 chart types, dark/light themes, social-media-optimized export sizes, and advanced features like dual axes, timeline event markers, a segmented bar chart editor, and a unique "Innovator's Dilemma" visualization.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -117,7 +118,7 @@ graph TB
         State[State Variables]
         Utils[Utilities<br/>debounce, formatters]
         Parse[Data Parsing<br/>CSV, Manual, Paste]
-        Render[Chart Renderer<br/>11 chart builders]
+        Render[Chart Renderer<br/>12 chart builders]
         Plugins[Custom Plugins<br/>bg, source, brand]
         Export[Export Engine<br/>PNG, JPG, SVG, WebP]
     end
@@ -232,6 +233,24 @@ graph TD
     DT --> L
     DT --> P
 ```
+
+### Segmented Bar Chart
+
+A single bar divided into colored segments showing proportions or values. Supports both normalized (100%) and raw-value (unit) modes with a dedicated in-panel segment editor.
+
+**When to use:** Market share breakdown, budget allocation, survey results, any part-of-whole comparison where a single stacked bar communicates the composition.
+
+| Setting | Options | Description |
+|---|---|---|
+| Mode | 100% (Normalized) / Unit (Actual Values) | Show percentages or raw numbers |
+| Orientation | Horizontal / Vertical | Bar direction |
+| Bar Thickness | 0.1 – 1.0 | Height/width ratio of the bar |
+| Border Radius | 0 – 16 | Corner rounding on outer edges |
+| Segment Gap | 0 – 8 | Visual spacing between segments |
+| Show Data Labels | On/Off | Display values on each segment |
+| Show Percentages | On/Off | Display percentage on each segment |
+
+**Segment Editor:** Each segment has a color picker, label input, value number input, and range slider — all synced for live editing. Add or remove segments dynamically. Data can also be loaded from CSV/JSON/clipboard via the standard data input panel.
 
 ---
 
@@ -471,7 +490,7 @@ Data is auto-sorted chronologically with an appropriate date display format sele
 ```
 graphs/
 ├── index.html          # HTML layout, 3-column structure, all controls
-├── app.js              # Application logic (IIFE), 3300+ lines
+├── app.js              # Application logic (IIFE), 4200+ lines
 ├── styles.css          # Themes, design tokens, responsive layout
 └── *.csv               # Sample datasets
 ```
@@ -490,7 +509,7 @@ app.js (IIFE)
 ├── Theme System       # Color pickers, preset palettes, dark/light toggle
 ├── Data Parsing       # smartParseNumber, PapaParse, CSV upload
 ├── Manual Entry       # Dynamic grid with add/remove series & rows
-├── Chart Rendering    # Dispatcher + 11 type-specific builder functions
+├── Chart Rendering    # Dispatcher + 12 type-specific builder functions
 ├── Custom Plugins     # bgPlugin, sourceFooterPlugin, brandPlugin
 ├── Export System      # PNG/JPG/SVG/WebP download, clipboard, JSON copy
 ├── Toast System       # Success/error/warning notifications
