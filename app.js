@@ -80,6 +80,8 @@
   let datasetChartTypes = [];        // For combo charts: the chart type (line/bar) of each dataset
   let zoomRange = [0, 100];          // Current zoom range as percentages [start%, end%] of the full dataset
   let segmentedSegments = [];        // Segments for the segmented bar chart: [{ label, value, color }]
+  let segmentedGroups = [];          // Multi-group: [{ name, segments: [{ label, value, color }] }]
+  let activeGroupIndex = 0;          // Currently editing group index
 
   // ── Utilities ──
 
@@ -204,6 +206,7 @@
     showDataLabels: $('#showDataLabels'),
     fillArea: $('#fillArea'),
     spanGaps: $('#spanGaps'),
+    showHighLowPoints: $('#showHighLowPoints'),
     dataPreview: $('#dataPreview'),
     dataInfo: $('#dataInfo'),
     rowCountBadge: $('#rowCountBadge'),
@@ -328,6 +331,10 @@
     segmentedShowPercent: $('#segmentedShowPercent'),
     segmentedList: $('#segmentedList'),
     addSegmentBtn: $('#addSegmentBtn'),
+    segmentedGroupTabs: $('#segmentedGroupTabs'),
+    addGroupBtn: $('#addGroupBtn'),
+    removeGroupBtn: $('#removeGroupBtn'),
+    segmentedGroupName: $('#segmentedGroupName'),
   };
 
   /** Color picker input → hex display pairs for the 5-color palette editor */
@@ -778,6 +785,7 @@
 
     toggle(dom.fillArea, ['line', 'timeline'].includes(t));
     toggle(dom.spanGaps, ['line', 'timeline', 'area'].includes(t));
+    toggle(dom.showHighLowPoints, ['line', 'timeline', 'area', 'radar', 'combo'].includes(t));
     toggle(dom.barBorderRadius, ['bar', 'vbar', 'waterfall', 'combo'].includes(t));
 
     // Display
@@ -831,9 +839,14 @@
     btn.setAttribute('aria-selected', 'true');
     currentChartType = btn.dataset.type;
 
-    if (currentChartType === 'segmented' && segmentedSegments.length === 0) {
+    if (currentChartType === 'segmented' && segmentedSegments.length === 0 && segmentedGroups.length === 0) {
       segmentedSegments = getDefaultSegments();
+      ensureGroupStructure();
+      renderGroupTabs();
       renderSegmentList();
+    } else if (currentChartType === 'segmented') {
+      ensureGroupStructure();
+      renderGroupTabs();
     }
 
     updateSettingsVisibility();
@@ -910,12 +923,53 @@
     ];
   }
 
+  /** Ensures segmentedGroups is populated, bridging from legacy segmentedSegments */
+  function ensureGroupStructure() {
+    if (segmentedGroups.length === 0) {
+      const segs = segmentedSegments.length > 0 ? [...segmentedSegments] : getDefaultSegments();
+      segmentedGroups = [{ name: '', segments: segs }];
+      activeGroupIndex = 0;
+    }
+  }
+
+  /** Returns the segments array for the currently active group */
+  function getActiveGroupSegments() {
+    ensureGroupStructure();
+    return segmentedGroups[activeGroupIndex]?.segments || [];
+  }
+
+  /** Renders the group tab buttons */
+  function renderGroupTabs() {
+    if (!dom.segmentedGroupTabs) return;
+    ensureGroupStructure();
+    dom.segmentedGroupTabs.innerHTML = '';
+
+    segmentedGroups.forEach((group, i) => {
+      const tab = document.createElement('button');
+      tab.className = 'segmented-group-tab' + (i === activeGroupIndex ? ' active' : '');
+      tab.textContent = group.name || `Group ${i + 1}`;
+      tab.addEventListener('click', () => {
+        activeGroupIndex = i;
+        renderGroupTabs();
+        renderSegmentList();
+      });
+      dom.segmentedGroupTabs.appendChild(tab);
+    });
+
+    // Sync group name input
+    if (dom.segmentedGroupName) {
+      const g = segmentedGroups[activeGroupIndex];
+      dom.segmentedGroupName.value = g ? g.name : '';
+    }
+  }
+
   /** Renders the dynamic segment editor list in the left panel */
   function renderSegmentList() {
     if (!dom.segmentedList) return;
     dom.segmentedList.innerHTML = '';
 
-    segmentedSegments.forEach((seg, i) => {
+    const segs = getActiveGroupSegments();
+    segs.forEach((seg, i) => {
       // Container for one segment — two rows
       const container = document.createElement('div');
       container.className = 'segment-item';
@@ -987,9 +1041,10 @@
         const idx = parseInt(e.target.dataset.index ?? e.target.dataset.sliderIndex);
         const field = e.target.dataset.field;
         if (isNaN(idx) || !field) return;
+        const activeSegs = getActiveGroupSegments();
         if (field === 'value') {
           const val = parseFloat(e.target.value) || 0;
-          segmentedSegments[idx].value = val;
+          activeSegs[idx].value = val;
           // Sync number input and slider within the same segment container
           const container = e.target.closest('[data-seg-index]');
           if (container) {
@@ -999,9 +1054,9 @@
             if (e.target.type === 'range' && numInput) numInput.value = val;
           }
         } else if (field === 'color') {
-          segmentedSegments[idx].color = e.target.value;
+          activeSegs[idx].color = e.target.value;
         } else {
-          segmentedSegments[idx][field] = e.target.value;
+          activeSegs[idx][field] = e.target.value;
         }
         debouncedRender();
       });
@@ -1011,7 +1066,7 @@
     dom.segmentedList.querySelectorAll('.btn-remove').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const idx = parseInt(e.target.dataset.index);
-        segmentedSegments.splice(idx, 1);
+        getActiveGroupSegments().splice(idx, 1);
         renderSegmentList();
         renderChart();
       });
@@ -1019,14 +1074,48 @@
   }
 
   dom.addSegmentBtn.addEventListener('click', () => {
+    const activeSegs = getActiveGroupSegments();
     const colors = getMultiColors();
-    segmentedSegments.push({
-      label: `Segment ${segmentedSegments.length + 1}`,
+    activeSegs.push({
+      label: `Segment ${activeSegs.length + 1}`,
       value: 10,
-      color: colors[segmentedSegments.length % colors.length]
+      color: colors[activeSegs.length % colors.length]
     });
     renderSegmentList();
     renderChart();
+  });
+
+  // Group management
+  dom.addGroupBtn?.addEventListener('click', () => {
+    ensureGroupStructure();
+    const currentSegs = getActiveGroupSegments().map(s => ({ ...s, value: 0 }));
+    segmentedGroups.push({
+      name: '',
+      segments: currentSegs
+    });
+    activeGroupIndex = segmentedGroups.length - 1;
+    renderGroupTabs();
+    renderSegmentList();
+    renderChart();
+  });
+
+  dom.removeGroupBtn?.addEventListener('click', () => {
+    ensureGroupStructure();
+    if (segmentedGroups.length <= 1) return;
+    segmentedGroups.splice(activeGroupIndex, 1);
+    activeGroupIndex = Math.min(activeGroupIndex, segmentedGroups.length - 1);
+    renderGroupTabs();
+    renderSegmentList();
+    renderChart();
+  });
+
+  dom.segmentedGroupName?.addEventListener('input', () => {
+    ensureGroupStructure();
+    if (segmentedGroups[activeGroupIndex]) {
+      segmentedGroups[activeGroupIndex].name = dom.segmentedGroupName.value;
+      renderGroupTabs();
+      renderChart();
+    }
   });
 
   // ═══════════════════════════════════════════
@@ -1346,6 +1435,9 @@
       rawParsedData = await parseDataFromText(sample);
       parsedData = rawParsedData;
       segmentedSegments = getDefaultSegments();
+      segmentedGroups = [{ name: '', segments: [...segmentedSegments] }];
+      activeGroupIndex = 0;
+      renderGroupTabs();
       renderSegmentList();
     } else {
       const sample = samplesByType[currentChartType] || samplesByType.line;
@@ -1384,6 +1476,9 @@
       value: data.datasets[0].values[i] || 0,
       color: colors[i % colors.length]
     }));
+    segmentedGroups = [{ name: '', segments: [...segmentedSegments] }];
+    activeGroupIndex = 0;
+    renderGroupTabs();
     renderSegmentList();
   }
 
@@ -2125,7 +2220,7 @@
     dom.chartTitle, dom.chartSubtitle, dom.chartSource,
     dom.chartCurve, dom.pointSize, dom.lineWidth,
     dom.showLegend, dom.showGrid, dom.showDataLabels,
-    dom.fillArea, dom.spanGaps, dom.numberFormat,
+    dom.fillArea, dom.spanGaps, dom.showHighLowPoints, dom.numberFormat,
     dom.dateFormat, dom.maxTicks, dom.yAxisScale,
     dom.showEventMarkers, dom.eventMarkerColor,
     dom.gridStyle, dom.barBorderRadius,
@@ -2362,6 +2457,61 @@
       };
     }
 
+    // High/Low point annotations
+    if (dom.showHighLowPoints?.checked && parsedData && parsedData.datasets && !['pie', 'donut', 'radar', 'scatter', 'waterfall', 'segmented', 'innovator'].includes(currentChartType)) {
+      const useTimeAxis = parsedData.isTimeSeries && dom.xAxisType?.value !== 'category';
+      const totalPoints = parsedData.labels?.length || 0;
+      parsedData.datasets.forEach((ds, dsIdx) => {
+        // Skip annotations for hidden datasets (dual-axis hidden)
+        if (dualAxisEnabled && axisAssignments[dsIdx] === 'hidden') return;
+        const rawValues = ds.values.filter(v => v != null);
+        if (rawValues.length === 0) return;
+        const maxVal = Math.max(...rawValues);
+        const minVal = Math.min(...rawValues);
+        ds.values.forEach((v, idx) => {
+          if (v == null) return;
+          const xVal = (useTimeAxis && parsedData.dateObjects?.[idx])
+            ? parsedData.dateObjects[idx].getTime()
+            : parsedData.labels?.[idx];
+          if (xVal == null) return;
+          // Nudge labels at the first/last data point inward to stay in frame
+          const isFirst = idx === 0;
+          const isLast = idx === ds.values.length - 1;
+          const xAdj = isFirst ? 28 : isLast ? -28 : 0;
+          if (v === maxVal) {
+            annotations[`hl_high_${dsIdx}`] = {
+              type: 'label',
+              xValue: xVal,
+              yValue: v,
+              content: formatNumber(v),
+              color: '#34D399',
+              backgroundColor: 'rgba(52, 211, 153, 0.12)',
+              font: { size: 10, weight: '600', family: "'Inter', sans-serif" },
+              padding: { x: 5, y: 3 },
+              borderRadius: 4,
+              yAdjust: -20,
+              xAdjust: xAdj
+            };
+          }
+          if (v === minVal && minVal !== maxVal) {
+            annotations[`hl_low_${dsIdx}`] = {
+              type: 'label',
+              xValue: xVal,
+              yValue: v,
+              content: formatNumber(v),
+              color: '#F87171',
+              backgroundColor: 'rgba(248, 113, 113, 0.12)',
+              font: { size: 10, weight: '600', family: "'Inter', sans-serif" },
+              padding: { x: 5, y: 3 },
+              borderRadius: 4,
+              yAdjust: 20,
+              xAdjust: xAdj
+            };
+          }
+        });
+      });
+    }
+
     const resolvedXType = (() => {
       if (xAxisTypeVal === 'auto') {
         if (parsedData && parsedData.isTimeSeries) return 'time';
@@ -2459,7 +2609,7 @@
       },
       layout: {
         padding: {
-          top: dom.chartTitle.value ? 8 : 4,
+          top: dom.chartTitle.value ? (dom.showHighLowPoints?.checked ? 28 : 8) : (dom.showHighLowPoints?.checked ? 24 : 4),
           bottom: dom.chartSource.value ? 24 : 8,
           left: 4,
           right: 4
@@ -2493,6 +2643,24 @@
             padding: 16,
             usePointStyle: true,
             pointStyle: 'circle'
+          },
+          onClick: (e, legendItem, legend) => {
+            // Default behavior: toggle dataset visibility
+            const index = legendItem.datasetIndex;
+            const ci = legend.chart;
+            const meta = ci.getDatasetMeta(index);
+            meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null;
+            ci.update();
+            // Also toggle high/low annotations for this dataset
+            const ann = ci.options.plugins.annotation?.annotations;
+            if (ann) {
+              const isHidden = meta.hidden;
+              ['hl_high_', 'hl_low_'].forEach(prefix => {
+                const key = prefix + index;
+                if (ann[key]) ann[key].display = !isHidden;
+              });
+              ci.update('none');
+            }
           }
         },
         tooltip: tooltipOpts,
@@ -2833,12 +3001,13 @@
    * @returns {object} Chart.js dataset object
    */
   function getLineDatasetDefaults(ds, i, c, colors, tension, useTimeAxis, displayData) {
-    const pointRadius = safeInt(dom.pointSize.value, 3);
+    const baseRadius = safeInt(dom.pointSize.value, 3);
     const lineWidth = safeFloat(dom.lineWidth.value, 2.5);
     const fill = dom.fillArea.checked;
     const gaps = dom.spanGaps.checked;
     const yAxisID = getYAxisID(i);
     const hidden = dualAxisEnabled && axisAssignments[i] === 'hidden';
+    const showHL = dom.showHighLowPoints?.checked ?? false;
 
     let data = ds.values;
     if (useTimeAxis && displayData?.dateObjects) {
@@ -2848,16 +3017,46 @@
       });
     }
 
+    const color = colors[i % colors.length];
+    let pointRadius = baseRadius;
+    let pointBackgroundColor = color;
+    let pointBorderColor = c.bg;
+
+    if (showHL) {
+      const rawValues = ds.values.filter(v => v != null);
+      if (rawValues.length > 0) {
+        const maxVal = Math.max(...rawValues);
+        const minVal = Math.min(...rawValues);
+        const hlRadius = Math.max(baseRadius + 5, 8);
+        pointRadius = ds.values.map(v => {
+          if (v == null) return 0;
+          if (v === maxVal || v === minVal) return hlRadius;
+          return baseRadius;
+        });
+        pointBackgroundColor = ds.values.map(v => {
+          if (v == null) return 'transparent';
+          if (v === maxVal) return '#34D399';
+          if (v === minVal) return '#F87171';
+          return color;
+        });
+        pointBorderColor = ds.values.map(v => {
+          if (v == null) return 'transparent';
+          if (v === maxVal || v === minVal) return '#fff';
+          return c.bg;
+        });
+      }
+    }
+
     return {
       label: ds.name,
       data,
-      borderColor: colors[i % colors.length],
-      backgroundColor: hexToRgba(colors[i % colors.length], fill ? 0.08 : 0),
+      borderColor: color,
+      backgroundColor: hexToRgba(color, fill ? 0.08 : 0),
       borderWidth: lineWidth,
       pointRadius,
-      pointHoverRadius: pointRadius + 3,
-      pointBackgroundColor: colors[i % colors.length],
-      pointBorderColor: c.bg,
+      pointHoverRadius: baseRadius + 3,
+      pointBackgroundColor,
+      pointBorderColor,
       pointBorderWidth: 2,
       tension,
       fill,
@@ -3417,23 +3616,58 @@
 
     const indexAxis = orientation === 'horizontal' ? 'y' : 'x';
 
-    const total = segmentedSegments.reduce((sum, s) => sum + (s.value || 0), 0);
-    if (total === 0) {
+    ensureGroupStructure();
+
+    const isSingleGroup = segmentedGroups.length === 1;
+    const labels = isSingleGroup
+      ? ['']
+      : segmentedGroups.map((g, i) => g.name || `Group ${i + 1}`);
+
+    // Check if any group has data
+    const hasData = segmentedGroups.some(g => g.segments.some(s => (s.value || 0) > 0));
+    if (!hasData) {
       return { type: 'bar', data: { labels: [''], datasets: [] }, options: { responsive: true, maintainAspectRatio: false }, plugins: [bgPlugin, sourceFooterPlugin, brandPlugin, ChartDataLabels] };
     }
 
-    const values = segmentedSegments.map(s => {
-      if (mode === 'percent') {
-        return total > 0 ? (s.value / total) * 100 : 0;
-      }
-      return s.value || 0;
+    // Collect all unique segment labels across groups, preserving order from first group
+    const allSegmentLabels = [];
+    const seenLabels = new Set();
+    segmentedGroups.forEach(g => {
+      g.segments.forEach(s => {
+        if (!seenLabels.has(s.label)) {
+          seenLabels.add(s.label);
+          allSegmentLabels.push(s.label);
+        }
+      });
+    });
+
+    // Build a color map: label -> color (first definition wins)
+    const segmentColorMap = {};
+    segmentedGroups.forEach(g => {
+      g.segments.forEach(s => {
+        if (!segmentColorMap[s.label]) {
+          segmentColorMap[s.label] = s.color;
+        }
+      });
     });
 
     const chartBg = userBgColor || c.bg;
 
-    const datasets = segmentedSegments.map((seg, i) => {
-      const isFirst = i === 0;
-      const isLast = i === segmentedSegments.length - 1;
+    // Build datasets: one per unique segment label
+    const datasets = allSegmentLabels.map((segLabel, segIdx) => {
+      const data = segmentedGroups.map(g => {
+        const seg = g.segments.find(s => s.label === segLabel);
+        if (!seg) return 0;
+        if (mode === 'percent') {
+          const groupTotal = g.segments.reduce((sum, s) => sum + (s.value || 0), 0);
+          return groupTotal > 0 ? (seg.value / groupTotal) * 100 : 0;
+        }
+        return seg.value || 0;
+      });
+
+      const segColor = segmentColorMap[segLabel];
+      const isFirst = segIdx === 0;
+      const isLast = segIdx === allSegmentLabels.length - 1;
 
       let segmentBorderRadius = 0;
       if (orientation === 'horizontal') {
@@ -3453,15 +3687,15 @@
       }
 
       return {
-        label: seg.label,
-        data: [values[i]],
-        backgroundColor: hexToRgba(seg.color, 0.9),
-        borderColor: gap > 0 ? chartBg : seg.color,
+        label: segLabel,
+        data,
+        backgroundColor: hexToRgba(segColor, 0.9),
+        borderColor: gap > 0 ? chartBg : segColor,
         borderWidth: gap,
         borderRadius: segmentBorderRadius,
         borderSkipped: false,
         barPercentage: thickness,
-        categoryPercentage: 1.0,
+        categoryPercentage: isSingleGroup ? 1.0 : 0.8,
         stack: 'segStack',
       };
     });
@@ -3517,12 +3751,17 @@
           borderWidth: 1, cornerRadius: 8, padding: 10,
           callbacks: {
             label: (ctx) => {
-              const val = ctx.raw;
-              const pct = total > 0 ? ((segmentedSegments[ctx.datasetIndex].value / total) * 100).toFixed(1) : 0;
+              const segLabel = ctx.dataset.label;
+              const groupIdx = ctx.dataIndex;
+              const group = segmentedGroups[groupIdx];
+              const seg = group?.segments.find(s => s.label === segLabel);
+              const val = seg?.value || 0;
+              const groupTotal = group?.segments.reduce((sum, s) => sum + (s.value || 0), 0) || 0;
+              const pct = groupTotal > 0 ? ((val / groupTotal) * 100).toFixed(1) : 0;
               if (mode === 'percent') {
-                return `${ctx.dataset.label}: ${pct}%`;
+                return `${segLabel}: ${pct}%`;
               }
-              return `${ctx.dataset.label}: ${formatNumber(val)} (${pct}%)`;
+              return `${segLabel}: ${formatNumber(val)} (${pct}%)`;
             }
           }
         },
@@ -3534,12 +3773,18 @@
           align: 'center',
           formatter: (value, ctx) => {
             if (!value || value === 0) return '';
-            const pct = total > 0 ? ((segmentedSegments[ctx.datasetIndex].value / total) * 100).toFixed(1) : 0;
+            const segLabel = ctx.dataset.label;
+            const groupIdx = ctx.dataIndex;
+            const group = segmentedGroups[groupIdx];
+            const seg = group?.segments.find(s => s.label === segLabel);
+            const val = seg?.value || 0;
+            const groupTotal = group?.segments.reduce((sum, s) => sum + (s.value || 0), 0) || 0;
+            const pct = groupTotal > 0 ? ((val / groupTotal) * 100).toFixed(1) : 0;
             const pctNum = parseFloat(pct);
             if (pctNum < 5) return '';
-            if (showLabels && showPercent) return `${ctx.dataset.label}\n${pct}%`;
+            if (showLabels && showPercent) return `${segLabel}\n${pct}%`;
             if (showPercent) return `${pct}%`;
-            return ctx.dataset.label;
+            return segLabel;
           }
         },
         annotation: { annotations: {} }
@@ -3560,7 +3805,9 @@
       }
     };
 
+    // Configure axes: value axis gets numeric ticks, category axis gets group labels
     if (orientation === 'horizontal') {
+      // x = value axis, y = category axis
       opts.scales.x.max = mode === 'percent' ? 100 : undefined;
       opts.scales.x.ticks = {
         display: true,
@@ -3569,7 +3816,16 @@
         callback: (val) => mode === 'percent' ? val + '%' : formatNumber(val)
       };
       opts.scales.x.grid = { display: dom.showGrid?.checked ?? false, color: userGridColor || c.grid, lineWidth: 0.5 };
+      // Category axis: show group labels when multi-group
+      if (!isSingleGroup) {
+        opts.scales.y.ticks = {
+          display: true,
+          color: c.text,
+          font: { size: 11, weight: '500', family: "'Inter', sans-serif" },
+        };
+      }
     } else {
+      // y = value axis, x = category axis
       opts.scales.y.max = mode === 'percent' ? 100 : undefined;
       opts.scales.y.ticks = {
         display: true,
@@ -3578,11 +3834,19 @@
         callback: (val) => mode === 'percent' ? val + '%' : formatNumber(val)
       };
       opts.scales.y.grid = { display: dom.showGrid?.checked ?? false, color: userGridColor || c.grid, lineWidth: 0.5 };
+      // Category axis: show group labels when multi-group
+      if (!isSingleGroup) {
+        opts.scales.x.ticks = {
+          display: true,
+          color: c.text,
+          font: { size: 11, weight: '500', family: "'Inter', sans-serif" },
+        };
+      }
     }
 
     return {
       type: 'bar',
-      data: { labels: [''], datasets },
+      data: { labels, datasets },
       options: opts,
       plugins: [bgPlugin, sourceFooterPlugin, brandPlugin, ChartDataLabels]
     };
@@ -3594,7 +3858,9 @@
       chartInstance.destroy();
       chartInstance = null;
     }
-    if (!segmentedSegments || segmentedSegments.length === 0) return;
+    ensureGroupStructure();
+    const hasData = segmentedGroups.some(g => g.segments && g.segments.length > 0);
+    if (!hasData) return;
 
     const c = getThemeColors();
     const config = buildSegmentedBarChart(c);
