@@ -1,0 +1,28 @@
+import { DEFAULT_COLORS } from './constants.js';
+
+/** Single mutable state object shared across all modules */
+export const state = {
+  currentTheme: 'dark',
+  currentChartType: 'line',
+  chartInstance: null,
+  parsedData: null,
+  rawParsedData: null,
+  currentInnovatorLabels: [],
+  timelineEvents: [],
+  userColors: [...DEFAULT_COLORS],
+  userBgColor: null,
+  userGridColor: null,
+  brandLogoUrl: null,
+  brandLogoImg: null,
+  dualAxisEnabled: false,
+  axisAssignments: [],
+  axisNames: {},
+  datasetChartTypes: [],
+  zoomRange: [0, 100],
+  segmentedSegments: [],
+  segmentedGroups: [],
+  activeGroupIndex: 0,
+  innovatorTierCustomNames: [],
+  dataFormat: 'csv',
+  seriesCount: 1,
+};

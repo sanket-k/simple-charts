@@ -62,16 +62,24 @@ A modern browser (Chrome, Firefox, Safari, Edge). No installation, no build tool
 
 ### Run
 
+ES modules require an HTTP server (they won't work over `file://`). Use any local server:
+
 ```bash
 # Clone the repository
 git clone <repo-url>
 cd graphs
 
-# Open in browser
-open index.html
+# Option 1: Python
+python3 -m http.server 8080
+
+# Option 2: Node.js (npx)
+npx serve .
+
+# Option 3: PHP
+php -S localhost:8080
 ```
 
-That's it. All dependencies load via CDN.
+Then open `http://localhost:8080` in your browser. All dependencies load via CDN.
 
 ### Quick Start
 
@@ -88,12 +96,53 @@ Pasting data anywhere on the page (when not focused on an input) automatically p
 
 ## Architecture
 
+ES module architecture — no build tools, no bundler. Each module has a single responsibility.
+
 ```mermaid
 graph TB
-    subgraph Browser
+    subgraph Entry
         HTML[index.html<br/>Layout & Controls]
-        CSS[styles.css<br/>Themes & Design Tokens]
-        JS[app.js<br/>Application Logic - IIFE]
+        MAIN[src/main.js<br/>Entry Point]
+    end
+
+    subgraph Core
+        CONST[constants.js<br/>Palettes, Config]
+        STATE[state.js<br/>Mutable State Object]
+        DOM[dom.js<br/>DOM Cache, $, $$]
+        UTILS[utils.js<br/>debounce, hexToRgba, toast]
+        FORMAT[format.js<br/>Number Formatting]
+        DATE[date-utils.js<br/>Date Parse & Format]
+        DATA[data.js<br/>Parsing Pipeline]
+        RENDER[render.js<br/>Chart Dispatcher]
+    end
+
+    subgraph Charts
+        BASE[charts/base-options.js<br/>Theme, Colors, Plugins]
+        LINE[charts/line.js]
+        BAR[charts/bar.js]
+        PIE[charts/pie.js]
+        DONUT[charts/donut.js]
+        AREA[charts/area.js]
+        RADAR[charts/radar.js]
+        SCATTER[charts/scatter.js]
+        WATERFALL[charts/waterfall.js]
+        COMBO[charts/combo.js]
+        TIMELINE[charts/timeline.js]
+        SEGMENTED[charts/segmented.js]
+        INNOVATOR[charts/innovator.js]
+    end
+
+    subgraph UI Modules
+        THEME[ui/theme.js]
+        COLORS[ui/colors.js]
+        SETTINGS[ui/settings.js]
+        DUAL[ui/dual-axis.js]
+        COMBOUI[ui/combo-ui.js]
+        BRAND[ui/branding.js]
+        TLUI[ui/timeline-ui.js]
+        ZOOM[ui/zoom-ui.js]
+        EXPORT[ui/export.js]
+        CLIP[ui/clipboard.js]
     end
 
     subgraph CDN Dependencies
@@ -102,32 +151,21 @@ graph TB
         AN[chartjs-plugin-annotation]
         DL[chartjs-plugin-datalabels]
         PP[PapaParse 5.4.1]
-        GF[Google Fonts<br/>Inter + JetBrains Mono]
+        GF[Google Fonts]
     end
 
-    HTML --> JS
-    HTML --> CSS
-    JS --> CJ
-    JS --> DA
-    JS --> AN
-    JS --> DL
-    JS --> PP
+    HTML --> MAIN
+    HTML --> CSS[styles.css]
+    MAIN --> CORE
+    MAIN --> UI
+    MAIN --> DATA
+    RENDER --> Charts
+    BASE --> CDN
+    DATA --> PP
+    Charts --> CJ
+    Charts --> DA
+    Charts --> AN
     HTML --> GF
-
-    subgraph JS Internals
-        State[State Variables]
-        Utils[Utilities<br/>debounce, formatters]
-        Parse[Data Parsing<br/>CSV, Manual, Paste]
-        Render[Chart Renderer<br/>12 chart builders]
-        Plugins[Custom Plugins<br/>bg, source, brand]
-        Export[Export Engine<br/>PNG, JPG, SVG, WebP]
-    end
-
-    Parse --> State
-    State --> Render
-    Render --> Plugins
-    Render --> Export
-    Utils --> Render
 ```
 
 ### Data Flow
@@ -496,30 +534,72 @@ Data is auto-sorted chronologically with an appropriate date display format sele
 
 ```
 graphs/
-├── index.html          # HTML layout, 3-column structure, all controls
-├── app.js              # Application logic (IIFE), 4200+ lines
-├── styles.css          # Themes, design tokens, responsive layout
-└── *.csv               # Sample datasets
+├── index.html              # HTML layout, 3-column structure, all controls
+├── styles.css              # Themes, design tokens, responsive layout
+├── src/
+│   ├── main.js             # Entry point: imports all modules, calls init()
+│   ├── render.js           # Chart render dispatcher (routes to chart builders)
+│   ├── constants.js        # PALETTE, DEFAULT_COLORS, PRESET_PALETTES, CONFIG
+│   ├── state.js            # Single mutable state object
+│   ├── dom.js              # DOM cache ($, $$, dom object)
+│   ├── utils.js            # debounce, safeInt, safeFloat, hexToRgba, showToast
+│   ├── format.js           # formatNumber (6 modes)
+│   ├── date-utils.js       # tryParseDate, isDateColumn, formatDateLabel
+│   ├── data.js             # Parsing pipeline: CSV, JSON, manual, downsample, zoom
+│   ├── format-number.js    # Y-tick, data-label, tooltip formatters
+│   ├── charts/
+│   │   ├── base-options.js # getThemeColors, getMultiColors, bgPlugin, sourceFooterPlugin, brandPlugin
+│   │   ├── line.js         # Line chart builder
+│   │   ├── bar.js          # Vertical & horizontal bar chart builder
+│   │   ├── pie.js          # Pie chart builder
+│   │   ├── donut.js        # Donut chart builder
+│   │   ├── area.js         # Stacked area chart builder
+│   │   ├── radar.js        # Radar/spider chart builder
+│   │   ├── scatter.js      # Scatter plot builder
+│   │   ├── waterfall.js    # Waterfall chart builder
+│   │   ├── combo.js        # Combo (mixed) chart builder
+│   │   ├── timeline.js     # Timeline chart builder (with event markers)
+│   │   ├── segmented.js    # Segmented bar chart builder + segment editor
+│   │   └── innovator.js    # Innovator's Dilemma parametric chart builder
+│   └── ui/
+│       ├── theme.js        # Dark/light theme toggle
+│       ├── colors.js       # Color pickers, preset palette listeners
+│       ├── settings.js     # Chart type grid, settings panel visibility
+│       ├── dual-axis.js    # Dual Y-axis assignment UI
+│       ├── combo-ui.js     # Combo chart dataset type selector
+│       ├── branding.js     # Logo upload/clear, brand settings
+│       ├── timeline-ui.js  # Timeline event editor UI
+│       ├── zoom-ui.js      # Zoom slider controls
+│       ├── export.js       # Export modal: PNG, JPG, SVG, WebP
+│       └── clipboard.js    # Paste handler, keyboard shortcuts (Cmd+E/C/Shift+D)
+└── *.csv                   # Sample datasets
 ```
 
-### app.js Organization
+### Module Dependency Flow
 
 ```
-app.js (IIFE)
-├── Constants          # PALETTE, DEFAULT_COLORS, PRESET_PALETTES, CONFIG
-├── State Variables    # theme, chartType, chartInstance, parsedData, etc.
-├── Utilities          # $, debounce, safeInt, hexToRgba, wrapText
-├── Number Formatting  # 6 modes: auto, short, raw, comma, currency, percent
-├── Date Utilities     # tryParseDate, isDateColumn, formatDateLabel
-├── Downsampling       # Auto/weekly/monthly/quarterly/yearly bucketing
-├── Zoom Engine        # Range-based slicing with slider UI
-├── Theme System       # Color pickers, preset palettes, dark/light toggle
-├── Data Parsing       # smartParseNumber, PapaParse, CSV upload
-├── Manual Entry       # Dynamic grid with add/remove series & rows
-├── Chart Rendering    # Dispatcher + 13 type-specific builder functions
-├── Custom Plugins     # bgPlugin, sourceFooterPlugin, brandPlugin
-├── Export System      # PNG/JPG/SVG/WebP download, clipboard, JSON copy
-├── Toast System       # Success/error/warning notifications
-├── Keyboard Shortcuts # Cmd+E, Cmd+Shift+D, Cmd+C
-└── Init               # Plugin registration, sample data load
+main.js
+ ├── state.js ← constants.js
+ ├── dom.js
+ ├── utils.js
+ ├── render.js ← all charts/*
+ │                ← charts/base-options.js ← state.js, dom.js
+ │                ← data.js ← state.js, dom.js, utils.js, date-utils.js
+ ├── ui/theme.js ← state.js, dom.js
+ ├── ui/colors.js ← state.js, dom.js, constants.js
+ ├── ui/settings.js ← state.js, dom.js, render.js
+ ├── ui/dual-axis.js ← state.js, dom.js, render.js
+ ├── ui/combo-ui.js ← state.js, dom.js, render.js
+ ├── ui/branding.js ← state.js, dom.js, render.js
+ ├── ui/timeline-ui.js ← state.js, dom.js, render.js
+ ├── ui/zoom-ui.js ← state.js, dom.js, data.js, render.js
+ ├── ui/export.js ← state.js, dom.js
+ └── ui/clipboard.js ← state.js, dom.js, data.js
 ```
+
+### Key Design Decisions
+
+- **Shared mutable state** — All runtime state lives in a single `state` object exported from `state.js`. Any module can import and read/write it.
+- **CDN globals** — `Chart`, `ChartDataLabels`, `Papa` remain as `window` globals. No npm required.
+- **Window bridges** — `window.__renderChart`, `window.__debouncedRender`, `window.__updateAfterDataLoad` avoid circular imports between `main.js` and UI modules.
+- **No circular dependencies** — The module graph is a clean DAG (directed acyclic graph).
