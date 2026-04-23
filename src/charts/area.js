@@ -2,6 +2,7 @@ import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { safeInt, safeFloat, hexToRgba } from '../utils.js';
 import { getBaseChartOptions, getYAxisID } from './base-options.js';
+import { getLineDash } from '../ui/line-style-ui.js';
 
 export function buildAreaChart(labels, datasets, c, colors, tension, useTimeAxis, displayData) {
   const opts = getBaseChartOptions();
@@ -18,6 +19,8 @@ export function buildAreaChart(labels, datasets, c, colors, tension, useTimeAxis
       datasets: datasets.map((ds, i) => {
         const yAxisID = getYAxisID(i);
         const hidden = state.dualAxisEnabled && state.axisAssignments[i] === 'hidden';
+        const lineStyle = state.datasetLineStyles[i] || 'solid';
+        const borderDash = getLineDash(lineStyle);
 
         let data = ds.values;
         if (useTimeAxis && displayData?.dateObjects) {
@@ -33,6 +36,7 @@ export function buildAreaChart(labels, datasets, c, colors, tension, useTimeAxis
           borderColor: colors[i % colors.length],
           backgroundColor: hexToRgba(colors[i % colors.length], 0.2),
           borderWidth: 2,
+          borderDash,
           pointRadius: Math.min(safeInt(dom.pointSize.value, 2), ds.values.length > 200 ? 0 : 3),
           pointHoverRadius: 5,
           pointBackgroundColor: colors[i % colors.length],

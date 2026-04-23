@@ -5,6 +5,7 @@ import { renderGroupTabs, renderSegmentList, getDefaultSegments, ensureGroupStru
 import { renderInnovatorTierNames } from '../charts/innovator.js';
 import { renderComboDatasetTypes } from './combo-ui.js';
 import { renderAxisAssignments } from './dual-axis.js';
+import { renderLineStyleControls } from './line-style-ui.js';
 import { updateZoomSlider } from '../data.js';
 
 export function updateSettingsVisibility() {
@@ -76,6 +77,13 @@ export function updateSettingsVisibility() {
     } else {
       comboEl.style.display = 'none';
     }
+  }
+
+  const lineStyleSection = document.getElementById('lineStyleSection');
+  if (lineStyleSection) {
+    const showLineStyles = ['line', 'timeline', 'area', 'combo'].includes(t) && state.rawParsedData && state.rawParsedData.datasets.length >= 1;
+    lineStyleSection.style.display = showLineStyles ? 'block' : 'none';
+    if (showLineStyles) renderLineStyleControls();
   }
 }
 

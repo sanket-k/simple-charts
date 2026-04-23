@@ -2,6 +2,7 @@ import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { safeInt, safeFloat, hexToRgba } from '../utils.js';
 import { getBaseChartOptions, getMultiColors, getYAxisID } from './base-options.js';
+import { getLineDash } from '../ui/line-style-ui.js';
 
 export function getLineDatasetDefaults(ds, i, c, colors, tension, useTimeAxis, displayData) {
   const baseRadius = safeInt(dom.pointSize.value, 3);
@@ -11,6 +12,8 @@ export function getLineDatasetDefaults(ds, i, c, colors, tension, useTimeAxis, d
   const yAxisID = getYAxisID(i);
   const hidden = state.dualAxisEnabled && state.axisAssignments[i] === 'hidden';
   const showHL = dom.showHighLowPoints?.checked ?? false;
+  const lineStyle = state.datasetLineStyles[i] || 'solid';
+  const borderDash = getLineDash(lineStyle);
 
   let data = ds.values;
   if (useTimeAxis && displayData?.dateObjects) {
@@ -56,6 +59,7 @@ export function getLineDatasetDefaults(ds, i, c, colors, tension, useTimeAxis, d
     borderColor: color,
     backgroundColor: hexToRgba(color, fill ? 0.08 : 0),
     borderWidth: lineWidth,
+    borderDash,
     pointRadius,
     pointHoverRadius: baseRadius + 3,
     pointBackgroundColor,

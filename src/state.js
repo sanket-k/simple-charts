@@ -18,6 +18,7 @@ export const state = {
   axisAssignments: [],
   axisNames: {},
   datasetChartTypes: [],
+  datasetLineStyles: [],
   zoomRange: [0, 100],
   segmentedSegments: [],
   segmentedGroups: [],
