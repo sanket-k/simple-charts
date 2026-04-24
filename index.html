@@ -150,6 +150,10 @@
             <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="14" width="12" height="12" rx="1" fill="currentColor" opacity="0.4"/><rect x="16" y="14" width="8" height="12" fill="currentColor" opacity="0.25"/><rect x="24" y="14" width="6" height="12" fill="currentColor" opacity="0.15"/><rect x="30" y="14" width="6" height="12" rx="1" fill="currentColor" opacity="0.1"/></svg>
             <span>Segmented</span>
           </button>
+          <button class="chart-type-btn" data-type="kano" title="Kano Model" role="tab" aria-selected="false">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 34C14 30 22 18 28 10L34 6" stroke="currentColor" stroke-width="1.8" opacity="0.45"/><line x1="6" y1="34" x2="34" y2="6" stroke="currentColor" stroke-width="1.8"/><path d="M6 28C16 28 26 18 34 6" stroke="currentColor" stroke-width="1.8" opacity="0.45"/><circle cx="18" cy="12" r="2" fill="currentColor" opacity="0.7"/><circle cx="26" cy="18" r="2" fill="currentColor" opacity="0.7"/><circle cx="14" cy="22" r="2" fill="currentColor" opacity="0.7"/></svg>
+            <span>Kano</span>
+          </button>
         </div>
       </div>
 
@@ -394,6 +398,44 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Add Segment
         </button>
+      </div>
+
+      <!-- Kano Model Settings -->
+      <div class="panel-section" id="kanoSettings" style="display:none;">
+        <h3 class="panel-title">Kano Model</h3>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="kanoShowMustBe" checked>
+          <label for="kanoShowMustBe">Must-be Curve</label>
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="kanoShowPerformance" checked>
+          <label for="kanoShowPerformance">Performance Curve</label>
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="kanoShowAttractive" checked>
+          <label for="kanoShowAttractive">Attractive Curve</label>
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="kanoShowDecay">
+          <label for="kanoShowDecay">Feature Decay Arrow</label>
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="kanoShowQuadrantLabels" checked>
+          <label for="kanoShowQuadrantLabels">Quadrant Labels</label>
+        </div>
+        <div class="input-group-separator"></div>
+        <div class="input-group">
+          <label for="kanoBubbleSize">Bubble Size</label>
+          <input type="range" id="kanoBubbleSize" min="4" max="16" step="1" value="8">
+          <span class="range-value" id="kanoBubbleSizeValue">8</span>
+        </div>
+        <div class="input-group">
+          <label for="kanoAxisRange">Axis Range</label>
+          <input type="range" id="kanoAxisRange" min="5" max="20" step="1" value="10">
+          <span class="range-value" id="kanoAxisRangeValue">10</span>
+        </div>
+        <div class="input-group-separator"></div>
+        <p class="hint-text">Data format: Feature, Implementation, Satisfaction (values from -axis range to +axis range)</p>
       </div>
 
       <!-- Style -->

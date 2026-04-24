@@ -26,4 +26,5 @@ export const state = {
   innovatorTierCustomNames: [],
   dataFormat: 'csv',
   seriesCount: 1,
+  kanoFeatures: [],
 };

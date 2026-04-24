@@ -156,6 +156,16 @@ export const dom = {
   addGroupBtn: $('#addGroupBtn'),
   removeGroupBtn: $('#removeGroupBtn'),
   segmentedGroupName: $('#segmentedGroupName'),
+  kanoSettings: $('#kanoSettings'),
+  kanoShowMustBe: $('#kanoShowMustBe'),
+  kanoShowPerformance: $('#kanoShowPerformance'),
+  kanoShowAttractive: $('#kanoShowAttractive'),
+  kanoShowDecay: $('#kanoShowDecay'),
+  kanoShowQuadrantLabels: $('#kanoShowQuadrantLabels'),
+  kanoBubbleSize: $('#kanoBubbleSize'),
+  kanoBubbleSizeValue: $('#kanoBubbleSizeValue'),
+  kanoAxisRange: $('#kanoAxisRange'),
+  kanoAxisRangeValue: $('#kanoAxisRangeValue'),
 };
 
 /** Color picker input -> hex display pairs for the 5-color palette editor */

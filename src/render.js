@@ -15,6 +15,7 @@ import { buildComboChart } from './charts/combo.js';
 import { buildTimelineChart } from './charts/timeline.js';
 import { renderSegmentedChart } from './charts/segmented.js';
 import { renderInnovatorsDilemmaChart } from './charts/innovator.js';
+import { renderKanoChart } from './charts/kano.js';
 
 /** Main chart render function */
 export function renderChart() {
@@ -25,6 +26,11 @@ export function renderChart() {
 
   if (state.currentChartType === 'innovator') {
     renderInnovatorsDilemmaChart();
+    return;
+  }
+
+  if (state.currentChartType === 'kano') {
+    renderKanoChart();
     return;
   }
 

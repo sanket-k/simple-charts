@@ -15,6 +15,7 @@ export function updateSettingsVisibility() {
   if (dom.timelineSettings) dom.timelineSettings.style.display = (t === 'timeline' || t === 'innovator') ? 'block' : 'none';
   if (dom.innovatorSettings) dom.innovatorSettings.style.display = t === 'innovator' ? 'block' : 'none';
   if (dom.segmentedSettings) dom.segmentedSettings.style.display = t === 'segmented' ? 'block' : 'none';
+  if (dom.kanoSettings) dom.kanoSettings.style.display = t === 'kano' ? 'block' : 'none';
 
   const toggle = (el, show) => {
     if (el) {
@@ -110,6 +111,7 @@ export function initChartTypeGrid() {
     }
 
     updateSettingsVisibility();
+    if (window.__loadSampleForType) window.__loadSampleForType(state.currentChartType);
     if (window.__renderChart) window.__renderChart();
     updateZoomSlider();
   });
@@ -159,6 +161,9 @@ export function initSettingsListeners() {
     dom.segmentedMode, dom.segmentedOrientation,
     dom.segmentedThickness, dom.segmentedBorderRadius,
     dom.segmentedGap, dom.segmentedShowLabels, dom.segmentedShowPercent,
+    dom.kanoShowMustBe, dom.kanoShowPerformance, dom.kanoShowAttractive,
+    dom.kanoShowDecay, dom.kanoShowQuadrantLabels,
+    dom.kanoBubbleSize, dom.kanoAxisRange,
   ];
 
   settingsInputs.forEach(el => {
@@ -214,6 +219,12 @@ export function initSettingsListeners() {
       }
       if (el === dom.segmentedGap && dom.segmentedGapValue) {
         dom.segmentedGapValue.textContent = dom.segmentedGap.value;
+      }
+      if (el === dom.kanoBubbleSize && dom.kanoBubbleSizeValue) {
+        dom.kanoBubbleSizeValue.textContent = dom.kanoBubbleSize.value;
+      }
+      if (el === dom.kanoAxisRange && dom.kanoAxisRangeValue) {
+        dom.kanoAxisRangeValue.textContent = dom.kanoAxisRange.value;
       }
       if (window.__debouncedRender) window.__debouncedRender();
     });

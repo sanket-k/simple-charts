@@ -6,6 +6,7 @@ import { renderChart } from './render.js';
 import { parseJSONData, parseDataFromText, parseInputText, applyDownsampling, updateDataPreview, updateDataInfo, updateDataOptions, updateZoomSlider, updateZoomLabels, addManualRow, parseManualData, convertParsedDataToSegments } from './data.js';
 import { renderGroupTabs, renderSegmentList, getDefaultSegments, ensureGroupStructure, getActiveGroupSegments } from './charts/segmented.js';
 import { renderInnovatorTierNames } from './charts/innovator.js';
+import { parseKanoData } from './charts/kano.js';
 import { renderAxisAssignments } from './ui/dual-axis.js';
 import { renderComboDatasetTypes } from './ui/combo-ui.js';
 import { renderTimelineEvents } from './ui/timeline-ui.js';
@@ -24,10 +25,14 @@ import { initClipboard } from './ui/clipboard.js';
 const debouncedRender = debounce(() => renderChart(), CONFIG.debounceMs);
 window.__renderChart = renderChart;
 window.__debouncedRender = debouncedRender;
+window.__loadSampleForType = loadSampleData;
 
 function updateAfterDataLoad() {
   if (state.currentChartType === 'segmented' && state.rawParsedData) {
     convertParsedDataToSegments(state.rawParsedData);
+  }
+  if (state.currentChartType === 'kano') {
+    state.kanoFeatures = parseKanoData(dom.dataTextarea.value);
   }
   applyDownsampling();
   updateSettingsVisibility();
@@ -52,7 +57,8 @@ async function loadSampleData() {
     area: "Quarter, AI, Crypto, Fintech\nQ1 '24, 120, 80, 60\nQ2 '24, 180, 110, 75\nQ3 '24, 240, 150, 95\nQ4 '24, 310, 200, 120\nQ1 '25, 380, 260, 145",
     radar: "Metric, Us, Competitor\nSpeed, 90, 65\nCost, 75, 80\nAccuracy, 95, 70\nScale, 85, 60\nUX, 88, 72\nSupport, 92, 55",
     scatter: "X, Y\n10, 25\n22, 38\n35, 52\n18, 30\n42, 61\n28, 44\n55, 72\n15, 28\n48, 65\n33, 48\n60, 78\n25, 40\n38, 55\n45, 68\n12, 22",
-    waterfall: "Category, Value\nRevenue, 5000\nCOGS, -2100\nGross Profit, 2900\nSalaries, -1200\nMarketing, -400\nR&D, -350\nNet Income, 950"
+    waterfall: "Category, Value\nRevenue, 5000\nCOGS, -2100\nGross Profit, 2900\nSalaries, -1200\nMarketing, -400\nR&D, -350\nNet Income, 950",
+    kano: "Feature, Implementation, Satisfaction\nTouchscreen, 8, 9\nFast Charging, 6, 7\nUSB-C, 9, 3\nFaceID, 3, 8\nHeadphone Jack, 7, -2\nWireless Charging, 5, 8\nNFC Payments, 8, 2\n5G Connectivity, 6, 6\nIP68 Rating, 9, 4\nAlways-On Display, 4, 7"
   };
 
   if (state.currentChartType === 'segmented') {
@@ -320,6 +326,8 @@ function init() {
   if (dom.segmentedThicknessValue) dom.segmentedThicknessValue.textContent = dom.segmentedThickness.value;
   if (dom.segmentedBorderRadiusValue) dom.segmentedBorderRadiusValue.textContent = dom.segmentedBorderRadius.value;
   if (dom.segmentedGapValue) dom.segmentedGapValue.textContent = dom.segmentedGap.value;
+  if (dom.kanoBubbleSizeValue) dom.kanoBubbleSizeValue.textContent = dom.kanoBubbleSize.value;
+  if (dom.kanoAxisRangeValue) dom.kanoAxisRangeValue.textContent = dom.kanoAxisRange.value;
 
   renderInnovatorTierNames();
 

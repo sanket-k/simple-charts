@@ -20,6 +20,7 @@ A browser-based, publication-quality chart creation tool designed for producing 
   - [Timeline Events](#timeline-events)
   - [Innovator's Dilemma](#innovators-dilemma)
   - [Segmented Bar Chart](#segmented-bar-chart)
+  - [Kano Model](#kano-model)
   - [Export & Sharing](#export--sharing)
   - [Keyboard Shortcuts](#keyboard-shortcuts)
 - [Dependencies](#dependencies)
@@ -30,7 +31,7 @@ A browser-based, publication-quality chart creation tool designed for producing 
 
 ## Overview
 
-Simple Charts lets you paste, upload, or manually enter data and instantly generate polished, branded charts. It supports 13 chart types, dark/light themes, social-media-optimized export sizes, and advanced features like dual axes, timeline event markers, a segmented bar chart editor, and a unique "Innovator's Dilemma" visualization.
+Simple Charts lets you paste, upload, or manually enter data and instantly generate polished, branded charts. It supports 14 chart types, dark/light themes, social-media-optimized export sizes, and advanced features like dual axes, timeline event markers, a segmented bar chart editor, a Kano Model for feature prioritization, and a unique "Innovator's Dilemma" visualization.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -130,6 +131,7 @@ graph TB
         TIMELINE[charts/timeline.js]
         SEGMENTED[charts/segmented.js]
         INNOVATOR[charts/innovator.js]
+        KANO[charts/kano.js]
     end
 
     subgraph UI Modules
@@ -289,6 +291,26 @@ A single bar divided into colored segments showing proportions or values. Suppor
 | Show Percentages | On/Off | Display percentage on each segment |
 
 **Segment Editor:** Each segment has a color picker, label input, value number input, and range slider — all synced for live editing. Add or remove segments dynamically. Data can also be loaded from CSV/JSON/clipboard via the standard data input panel.
+
+### Kano Model
+
+A product management visualization that plots features on a 2D plane (Implementation vs. Satisfaction) with three signature curves representing different feature categories. Used to prioritize features based on customer satisfaction theory.
+
+**When to use:** Feature prioritization, product roadmap planning, customer satisfaction analysis.
+
+**Data format:** 3-column CSV — `Feature, Implementation, Satisfaction` (values from -axis range to +axis range).
+
+| Setting | Options | Description |
+|---|---|---|
+| Must-be Curve | On/Off | Show the "threshold" curve (steep dissatisfaction when unimplemented, flattens when met) |
+| Performance Curve | On/Off | Show the linear diagonal (satisfaction proportional to implementation) |
+| Attractive Curve | On/Off | Show the "delighter" curve (flat when unimplemented, steep satisfaction when delivered) |
+| Feature Decay Arrow | On/Off | Show diagonal arrow from Attractive → Must-be (features decay over time) |
+| Quadrant Labels | On/Off | Show Attractive / Performance / Must-be / Indifferent labels in quadrants |
+| Bubble Size | 4 – 16 | Feature point radius |
+| Axis Range | 5 – 20 | X/Y axis range (-range to +range) |
+
+The four quadrants represent: **Attractive** (low implementation, high satisfaction — delighters), **Performance** (high implementation, high satisfaction — proportional), **Must-be** (low implementation, low dissatisfaction — expected basics), and **Indifferent** (high implementation, low satisfaction — features users don't care about).
 
 ---
 
@@ -561,12 +583,14 @@ graphs/
 │   │   ├── timeline.js     # Timeline chart builder (with event markers)
 │   │   ├── segmented.js    # Segmented bar chart builder + segment editor
 │   │   └── innovator.js    # Innovator's Dilemma parametric chart builder
+│   │   └── kano.js         # Kano Model chart (feature prioritization scatter)
 │   └── ui/
 │       ├── theme.js        # Dark/light theme toggle
 │       ├── colors.js       # Color pickers, preset palette listeners
 │       ├── settings.js     # Chart type grid, settings panel visibility
 │       ├── dual-axis.js    # Dual Y-axis assignment UI
 │       ├── combo-ui.js     # Combo chart dataset type selector
+│       ├── line-style-ui.js # Per-series line style controls
 │       ├── branding.js     # Logo upload/clear, brand settings
 │       ├── timeline-ui.js  # Timeline event editor UI
 │       ├── zoom-ui.js      # Zoom slider controls
