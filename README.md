@@ -41,7 +41,7 @@ Simple Charts lets you paste, upload, or manually enter data and instantly gener
 │ Settings │       Chart Preview          │     Data Input        │
 │  Panel   │                              │      Panel            │
 │          │                              │                       │
-│ - Type   │    ┌──────────────────┐      │  [Paste] [CSV] [Manual│
+│ - Type   │    ┌──────────────────┐      │  [Paste][CSV][Manual] │
 │ - Labels │    │                  │      │                       │
 │ - Style  │    │   Rendered Chart │      │  Label, Value         │
 │ - Format │    │                  │      │  Jan,   120           │
@@ -49,7 +49,7 @@ Simple Charts lets you paste, upload, or manually enter data and instantly gener
 │ - Export │    └──────────────────┘      │  Mar,   180           │
 │          │                              │                       │
 ├──────────┴──────────────────────────────┴───────────────────────┤
-│  Source: ...                                                     │
+│  Source: ...                                                    │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
