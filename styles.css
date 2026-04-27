@@ -1129,6 +1129,21 @@ body {
   color: var(--text-primary);
 }
 
+.info-tip-label {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--brand-orange);
+  margin-bottom: var(--sp-1);
+  margin-top: var(--sp-2);
+}
+
+.info-tip-label:first-of-type {
+  margin-top: 0;
+}
+
 .info-tip-code {
   background: var(--bg-primary);
   border: 1px solid var(--border-primary);
