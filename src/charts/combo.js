@@ -40,7 +40,10 @@ export function buildComboChart(labels, datasets, c, colors, tension, useTimeAxi
       };
     }
 
-    return getLineDatasetDefaults(ds, i, c, colors, tension, useTimeAxis, displayData);
+    return {
+      type: 'line',
+      ...getLineDatasetDefaults(ds, i, c, colors, tension, useTimeAxis, displayData)
+    };
   });
 
   return {

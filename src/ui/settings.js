@@ -82,7 +82,9 @@ export function updateSettingsVisibility() {
 
   const lineStyleSection = document.getElementById('lineStyleSection');
   if (lineStyleSection) {
-    const showLineStyles = ['line', 'timeline', 'area', 'combo'].includes(t) && state.rawParsedData && state.rawParsedData.datasets.length >= 1;
+    const isLineStyleChart = ['line', 'timeline', 'area'].includes(t);
+    const comboHasLine = t === 'combo' && state.datasetChartTypes.some(dt => dt === 'line');
+    const showLineStyles = (isLineStyleChart || comboHasLine) && state.rawParsedData && state.rawParsedData.datasets.length >= 1;
     lineStyleSection.style.display = showLineStyles ? 'block' : 'none';
     if (showLineStyles) renderLineStyleControls();
   }

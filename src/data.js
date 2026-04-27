@@ -460,7 +460,7 @@ export function updateDataOptions() {
   }
   dom.dataSizeInfo.innerHTML = sizeHtml;
 
-  const isAxisChart = ['line', 'timeline', 'bar', 'vbar', 'area', 'scatter', 'waterfall'].includes(state.currentChartType);
+  const isAxisChart = ['line', 'timeline', 'bar', 'vbar', 'area', 'scatter', 'waterfall', 'combo'].includes(state.currentChartType);
   if (state.rawParsedData.datasets.length >= 2 && isAxisChart) {
     dom.dualAxisSection.style.display = 'block';
     if (state.axisAssignments.length !== state.rawParsedData.datasets.length) {
