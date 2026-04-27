@@ -500,6 +500,20 @@ export function getBaseChartOptions() {
           usePointStyle: true,
           pointStyle: 'circle',
           generateLabels: (chart) => {
+            const isPieOrDonut = chart.config.type === 'pie' || chart.config.type === 'doughnut';
+            if (isPieOrDonut) {
+              const ds = chart.data.datasets[0];
+              return (chart.data.labels || []).map((label, i) => ({
+                text: label,
+                fillStyle: Array.isArray(ds.backgroundColor) ? ds.backgroundColor[i] : ds.backgroundColor,
+                strokeStyle: Array.isArray(ds.borderColor) ? ds.borderColor[i] : ds.borderColor,
+                fontColor: c.textSecondary,
+                lineWidth: 2,
+                hidden: ds.data[i] == null,
+                index: i,
+                pointStyle: 'circle'
+              }));
+            }
             return chart.data.datasets.map((dataset, i) => {
               const hidden = !chart.isDatasetVisible(i);
               const color = dataset.borderColor;

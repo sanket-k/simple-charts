@@ -42,13 +42,14 @@ export function buildTimelineChart(labels, datasets, c, colors, tension, display
 
       if (labelIndex === -1) return;
 
+      const xVal = useTimeAxis ? labels[labelIndex] : labelIndex;
       const yAdj = 10 + (i % 4) * 20;
       const wrappedLabel = wrapText(evt.label, 18);
 
       annotations[`line_${i}`] = {
         type: 'line',
-        xMin: labelIndex,
-        xMax: labelIndex,
+        xMin: xVal,
+        xMax: xVal,
         borderColor: hexToRgba(eventColor, 0.7),
         borderWidth: 2.5,
         borderDash: [8, 4],
@@ -68,7 +69,7 @@ export function buildTimelineChart(labels, datasets, c, colors, tension, display
       if (datasets[0]?.values[labelIndex] != null) {
         annotations[`point_${i}`] = {
           type: 'point',
-          xValue: labelIndex,
+          xValue: xVal,
           yValue: datasets[0].values[labelIndex],
           backgroundColor: eventColor,
           borderColor: state.userBgColor || c.bg,
