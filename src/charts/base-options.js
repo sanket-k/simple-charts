@@ -509,7 +509,8 @@ export function getBaseChartOptions() {
                 strokeStyle: Array.isArray(ds.borderColor) ? ds.borderColor[i] : ds.borderColor,
                 fontColor: c.textSecondary,
                 lineWidth: 2,
-                hidden: ds.data[i] == null,
+                hidden: !chart.getDataVisibility(i),
+                datasetIndex: 0,
                 index: i,
                 pointStyle: 'circle'
               }));
@@ -524,6 +525,7 @@ export function getBaseChartOptions() {
                 fontColor: c.textSecondary,
                 lineWidth: 2,
                 hidden,
+                datasetIndex: i,
                 index: i,
                 pointStyle: 'circle'
               };
@@ -531,8 +533,17 @@ export function getBaseChartOptions() {
           }
         },
         onClick: (e, legendItem, legend) => {
-          const index = legendItem.datasetIndex;
           const ci = legend.chart;
+          const isPieOrDonut = ci.config.type === 'pie' || ci.config.type === 'doughnut';
+
+          if (isPieOrDonut) {
+            const index = legendItem.index;
+            ci.toggleDataVisibility(index);
+            ci.update();
+            return;
+          }
+
+          const index = legendItem.datasetIndex;
           const meta = ci.getDatasetMeta(index);
           meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null;
           ci.update();
