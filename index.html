@@ -333,7 +333,26 @@
 
       <!-- Segmented Bar Settings -->
       <div class="panel-section" id="segmentedSettings" style="display:none;">
-        <h3 class="panel-title">Segmented Bar</h3>
+        <h3 class="panel-title">Segmented Bar <button type="button" class="info-tip-btn" id="segmentedFormatTipBtn" aria-label="Show JSON format example">?</button></h3>
+        <div class="info-tip" id="segmentedFormatTip">
+          <div class="info-tip-header">
+            <span>JSON format for multi-group segmented charts</span>
+            <button type="button" class="info-tip-close" id="segmentedFormatTipClose">&times;</button>
+          </div>
+          <pre class="info-tip-code">{
+  "2020": {
+    "NMC": "~70%",
+    "LFP": "~25%",
+    "Other": "~5%"
+  },
+  "2025": {
+    "NMC": "~45%",
+    "LFP": "~50%",
+    "Other": "~5%"
+  }
+}</pre>
+          <p class="hint-text" style="margin-top:6px;margin-bottom:0;">Top-level keys become comparison groups. Inner keys become segment labels. Values support <code>~</code> and <code>%</code> prefixes/suffixes.</p>
+        </div>
         <div class="input-group">
           <label for="segmentedMode">Mode</label>
           <select id="segmentedMode">

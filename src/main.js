@@ -47,6 +47,30 @@ function updateAfterDataLoad() {
 window.__updateAfterDataLoad = updateAfterDataLoad;
 
 async function loadSampleData() {
+  const prevType = state.previousChartType;
+  const newType = state.currentChartType;
+
+  if (prevType && prevType !== newType && state.rawParsedData) {
+    state.chartDataStore[prevType] = {
+      textareaValue: dom.dataTextarea.value,
+      rawParsedData: state.rawParsedData,
+      zoomRange: [...state.zoomRange],
+    };
+  }
+
+  if (state.chartDataStore[newType]) {
+    const saved = state.chartDataStore[newType];
+    dom.dataTextarea.value = saved.textareaValue;
+    state.rawParsedData = saved.rawParsedData;
+    state.parsedData = state.rawParsedData;
+    state.zoomRange = saved.zoomRange || [0, 100];
+    state.previousChartType = newType;
+    updateAfterDataLoad();
+    return;
+  }
+
+  state.previousChartType = newType;
+
   const samplesByType = {
     line: "Month, Revenue, Costs\nJan, 4200, 3100\nFeb, 5100, 3400\nMar, 4800, 3200\nApr, 6200, 3800\nMay, 7100, 4100\nJun, 6800, 3900\nJul, 7800, 4300\nAug, 8200, 4500",
     timeline: "Month, Price\nJan 2024, 42000\nFeb 2024, 43500\nMar 2024, 51000\nApr 2024, 64000\nMay 2024, 61000\nJun 2024, 58000\nJul 2024, 63000\nAug 2024, 59000\nSep 2024, 55000\nOct 2024, 62000\nNov 2024, 72000\nDec 2024, 68000",
@@ -304,6 +328,16 @@ function initSegmentedGroupListeners() {
       renderChart();
     }
   });
+
+  const tipBtn = document.getElementById('segmentedFormatTipBtn');
+  const tipPanel = document.getElementById('segmentedFormatTip');
+  const tipClose = document.getElementById('segmentedFormatTipClose');
+  if (tipBtn && tipPanel) {
+    tipBtn.addEventListener('click', () => tipPanel.classList.toggle('visible'));
+  }
+  if (tipClose && tipPanel) {
+    tipClose.addEventListener('click', () => tipPanel.classList.remove('visible'));
+  }
 }
 
 function init() {

@@ -27,4 +27,6 @@ export const state = {
   dataFormat: 'csv',
   seriesCount: 1,
   kanoFeatures: [],
+  chartDataStore: {},
+  previousChartType: null,
 };

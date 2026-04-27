@@ -200,6 +200,23 @@ export function parseJSONData(text) {
   } else if (Array.isArray(json) && json.length > 0 && typeof json[0] === 'number') {
     labels = json.map((_, i) => String(i + 1));
     datasets = [{ name: 'Value', values: json }];
+  } else if (typeof json === 'object' && !Array.isArray(json)) {
+    const topKeys = Object.keys(json);
+    if (topKeys.length > 0 && topKeys.every(k => {
+      const v = json[k];
+      return v && typeof v === 'object' && !Array.isArray(v);
+    })) {
+      labels = topKeys.map(String);
+      const allSegKeys = new Set();
+      topKeys.forEach(k => Object.keys(json[k]).forEach(sk => allSegKeys.add(sk)));
+      const segKeys = [...allSegKeys];
+      datasets = segKeys.map(key => ({
+        name: key,
+        values: topKeys.map(gk => smartParseNumber(json[gk][key]))
+      }));
+      return { labels, datasets, isTimeSeries: false, dateObjects: null, dateRange: null };
+    }
+    return null;
   } else {
     return null;
   }
@@ -355,14 +372,29 @@ export { smartParseNumber };
 export function convertParsedDataToSegments(data) {
   if (!data || !data.labels || !data.datasets || data.datasets.length === 0) return;
   const colors = getMultiColors();
-  state.segmentedSegments = data.labels.map((label, i) => ({
-    label: String(label),
-    value: data.datasets[0].values[i] || 0,
-    color: colors[i % colors.length]
-  }));
-  state.segmentedGroups = [{ name: '', segments: [...state.segmentedSegments] }];
-  state.activeGroupIndex = 0;
-  // These will be imported from segmented module - handled in main.js wiring
+
+  if (data.labels.length > 1) {
+    state.segmentedGroups = data.labels.map((label, labelIdx) => ({
+      name: String(label),
+      segments: data.datasets
+        .map((ds, dsIdx) => ({
+          label: ds.name,
+          value: ds.values[labelIdx] || 0,
+          color: colors[dsIdx % colors.length]
+        }))
+        .filter(s => s.value > 0)
+    }));
+    state.activeGroupIndex = 0;
+    state.segmentedSegments = [...state.segmentedGroups[0].segments];
+  } else {
+    state.segmentedSegments = data.labels.map((label, i) => ({
+      label: String(label),
+      value: data.datasets[0].values[i] || 0,
+      color: colors[i % colors.length]
+    }));
+    state.segmentedGroups = [{ name: '', segments: [...state.segmentedSegments] }];
+    state.activeGroupIndex = 0;
+  }
 }
 
 export function applyDownsampling() {

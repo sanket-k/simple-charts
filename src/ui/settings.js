@@ -100,6 +100,7 @@ export function initChartTypeGrid() {
     });
     btn.classList.add('active');
     btn.setAttribute('aria-selected', 'true');
+    state.previousChartType = state.currentChartType;
     state.currentChartType = btn.dataset.type;
 
     if (state.currentChartType === 'segmented' && state.segmentedSegments.length === 0 && state.segmentedGroups.length === 0) {
