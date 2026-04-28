@@ -154,6 +154,17 @@ export function renderSegmentList() {
   });
 }
 
+function getSegmentPercent(ctx) {
+  const segLabel = ctx.dataset.label;
+  const groupIdx = ctx.dataIndex;
+  const group = state.segmentedGroups[groupIdx];
+  if (!group) return 0;
+  const seg = group.segments.find(s => s.label === segLabel);
+  const val = seg?.value || 0;
+  const total = group.segments.reduce((sum, s) => sum + (s.value || 0), 0);
+  return total > 0 ? (val / total) * 100 : 0;
+}
+
 export function buildSegmentedBarChart(c) {
   const mode = dom.segmentedMode?.value || 'percent';
   const orientation = dom.segmentedOrientation?.value || 'horizontal';
@@ -162,6 +173,8 @@ export function buildSegmentedBarChart(c) {
   const gap = safeInt(dom.segmentedGap?.value, 0);
   const showLabels = dom.segmentedShowLabels?.checked ?? false;
   const showPercent = dom.segmentedShowPercent?.checked ?? true;
+  const showNumbers = dom.segmentedShowNumbers?.checked ?? false;
+  const minInsidePct = safeInt(dom.segmentedMinLabelPct?.value, 8);
 
   const indexAxis = orientation === 'horizontal' ? 'y' : 'x';
 
@@ -257,9 +270,9 @@ export function buildSegmentedBarChart(c) {
     layout: {
       padding: {
         top: dom.chartTitle?.value ? 8 : 4,
-        bottom: dom.chartSource?.value ? 24 : 8,
+        bottom: dom.chartSource?.value ? 24 : (showNumbers && orientation === 'horizontal' ? 20 : 8),
         left: 4,
-        right: 4
+        right: (showNumbers && orientation === 'vertical') ? 48 : 4
       }
     },
     plugins: {
@@ -311,11 +324,37 @@ export function buildSegmentedBarChart(c) {
         }
       },
       datalabels: {
-        display: showLabels || showPercent,
-        color: '#fff',
-        font: { size: 11, weight: '600', family: "'Inter', sans-serif" },
-        anchor: 'center',
-        align: 'center',
+        display: showLabels || showPercent || showNumbers,
+        anchor: (ctx) => {
+          if (!showNumbers) return 'center';
+          const pct = getSegmentPercent(ctx);
+          return pct < minInsidePct ? 'center' : 'center';
+        },
+        align: (ctx) => {
+          if (!showNumbers) return 'center';
+          const pct = getSegmentPercent(ctx);
+          if (pct < minInsidePct) {
+            return orientation === 'horizontal' ? 'bottom' : 'right';
+          }
+          return 'center';
+        },
+        offset: (ctx) => {
+          if (!showNumbers) return 0;
+          const pct = getSegmentPercent(ctx);
+          return pct < minInsidePct ? 2 : 0;
+        },
+        color: (ctx) => {
+          if (!showNumbers) return '#fff';
+          const pct = getSegmentPercent(ctx);
+          return pct < minInsidePct ? c.text : '#fff';
+        },
+        font: (ctx) => {
+          const pct = getSegmentPercent(ctx);
+          if (pct >= 15) return { size: 11, weight: '600', family: "'Inter', sans-serif" };
+          if (pct >= 8) return { size: 10, weight: '600', family: "'Inter', sans-serif" };
+          if (pct >= 3) return { size: 9, weight: '500', family: "'Inter', sans-serif" };
+          return { size: 8, weight: '500', family: "'Inter', sans-serif" };
+        },
         formatter: (value, ctx) => {
           if (!value || value === 0) return '';
           const segLabel = ctx.dataset.label;
@@ -326,10 +365,19 @@ export function buildSegmentedBarChart(c) {
           const groupTotal = group?.segments.reduce((sum, s) => sum + (s.value || 0), 0) || 0;
           const pct = groupTotal > 0 ? ((val / groupTotal) * 100).toFixed(1) : 0;
           const pctNum = parseFloat(pct);
-          if (pctNum < 5) return '';
-          if (showLabels && showPercent) return `${segLabel}\n${pct}%`;
-          if (showPercent) return `${pct}%`;
-          return segLabel;
+          if (pctNum < 2) return '';
+          const parts = [];
+          if (showLabels) parts.push(segLabel);
+          if (showNumbers) {
+            if (pctNum >= 15) {
+              parts.push(formatNumber(val));
+            } else {
+              parts.push(formatNumber(val, 'auto'));
+            }
+          }
+          if (showPercent) parts.push(`${pct}%`);
+          if (parts.length === 0) return segLabel;
+          return parts.join('\n');
         }
       },
       annotation: { annotations: {} }
