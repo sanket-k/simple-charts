@@ -224,25 +224,6 @@ export function buildSegmentedBarChart(c) {
     });
 
     const segColor = segmentColorMap[segLabel];
-    const isFirst = segIdx === 0;
-    const isLast = segIdx === allSegmentLabels.length - 1;
-
-    let segmentBorderRadius = 0;
-    if (orientation === 'horizontal') {
-      segmentBorderRadius = {
-        topLeft: isFirst ? borderRadius : 0,
-        bottomLeft: isFirst ? borderRadius : 0,
-        topRight: isLast ? borderRadius : 0,
-        bottomRight: isLast ? borderRadius : 0,
-      };
-    } else {
-      segmentBorderRadius = {
-        bottomLeft: isFirst ? borderRadius : 0,
-        bottomRight: isFirst ? borderRadius : 0,
-        topLeft: isLast ? borderRadius : 0,
-        topRight: isLast ? borderRadius : 0,
-      };
-    }
 
     return {
       label: segLabel,
@@ -250,7 +231,29 @@ export function buildSegmentedBarChart(c) {
       backgroundColor: hexToRgba(segColor, 0.9),
       borderColor: gap > 0 ? chartBg : segColor,
       borderWidth: gap,
-      borderRadius: segmentBorderRadius,
+      borderRadius: (ctx) => {
+        const groupIdx = ctx.dataIndex;
+        const group = state.segmentedGroups[groupIdx];
+        if (!group) return 0;
+        const visibleLabels = group.segments.filter(s => (s.value || 0) > 0).map(s => s.label);
+        if (visibleLabels.length === 0) return 0;
+        const isFirst = segLabel === visibleLabels[0];
+        const isLast = segLabel === visibleLabels[visibleLabels.length - 1];
+        if (orientation === 'horizontal') {
+          return {
+            topLeft: isFirst ? borderRadius : 0,
+            bottomLeft: isFirst ? borderRadius : 0,
+            topRight: isLast ? borderRadius : 0,
+            bottomRight: isLast ? borderRadius : 0,
+          };
+        }
+        return {
+          bottomLeft: isFirst ? borderRadius : 0,
+          bottomRight: isFirst ? borderRadius : 0,
+          topLeft: isLast ? borderRadius : 0,
+          topRight: isLast ? borderRadius : 0,
+        };
+      },
       borderSkipped: false,
       barPercentage: thickness,
       categoryPercentage: isSingleGroup ? 1.0 : 0.8,
