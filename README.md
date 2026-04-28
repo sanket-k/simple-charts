@@ -67,7 +67,7 @@ ES modules require an HTTP server (they won't work over `file://`). Use any loca
 
 ```bash
 # Clone the repository
-git clone <repo-url>
+git clone https://github.com/sanket-k/simple-charts.git
 cd graphs
 
 # Option 1: Python
