@@ -30,6 +30,8 @@ window.__loadSampleForType = loadSampleData;
 function updateAfterDataLoad() {
   if (state.currentChartType === 'segmented' && state.rawParsedData) {
     convertParsedDataToSegments(state.rawParsedData);
+    renderGroupTabs();
+    renderSegmentList();
   }
   if (state.currentChartType === 'kano') {
     state.kanoFeatures = parseKanoData(dom.dataTextarea.value);
@@ -360,6 +362,7 @@ function init() {
   if (dom.segmentedThicknessValue) dom.segmentedThicknessValue.textContent = dom.segmentedThickness.value;
   if (dom.segmentedBorderRadiusValue) dom.segmentedBorderRadiusValue.textContent = dom.segmentedBorderRadius.value;
   if (dom.segmentedGapValue) dom.segmentedGapValue.textContent = dom.segmentedGap.value;
+  if (dom.segmentedMinLabelPctValue) dom.segmentedMinLabelPctValue.textContent = dom.segmentedMinLabelPct.value + '%';
   if (dom.kanoBubbleSizeValue) dom.kanoBubbleSizeValue.textContent = dom.kanoBubbleSize.value;
   if (dom.kanoAxisRangeValue) dom.kanoAxisRangeValue.textContent = dom.kanoAxisRange.value;
 

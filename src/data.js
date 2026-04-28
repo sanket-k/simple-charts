@@ -373,7 +373,7 @@ export function convertParsedDataToSegments(data) {
   if (!data || !data.labels || !data.datasets || data.datasets.length === 0) return;
   const colors = getMultiColors();
 
-  if (data.labels.length > 1) {
+  if (data.datasets.length >= 2 && data.labels.length > 1) {
     state.segmentedGroups = data.labels.map((label, labelIdx) => ({
       name: String(label),
       segments: data.datasets

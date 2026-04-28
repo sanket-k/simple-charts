@@ -163,7 +163,7 @@ export function initSettingsListeners() {
     dom.innovatorStartMonth, dom.innovatorEndMonth,
     dom.segmentedMode, dom.segmentedOrientation,
     dom.segmentedThickness, dom.segmentedBorderRadius,
-    dom.segmentedGap, dom.segmentedShowLabels, dom.segmentedShowPercent,
+    dom.segmentedGap, dom.segmentedShowLabels, dom.segmentedShowPercent, dom.segmentedShowNumbers, dom.segmentedMinLabelPct,
     dom.kanoShowMustBe, dom.kanoShowPerformance, dom.kanoShowAttractive,
     dom.kanoShowDecay, dom.kanoShowQuadrantLabels,
     dom.kanoBubbleSize, dom.kanoAxisRange,
@@ -222,6 +222,12 @@ export function initSettingsListeners() {
       }
       if (el === dom.segmentedGap && dom.segmentedGapValue) {
         dom.segmentedGapValue.textContent = dom.segmentedGap.value;
+      }
+      if (el === dom.segmentedMinLabelPct && dom.segmentedMinLabelPctValue) {
+        dom.segmentedMinLabelPctValue.textContent = dom.segmentedMinLabelPct.value + '%';
+      }
+      if (el === dom.segmentedShowNumbers && dom.segmentedMinLabelPctGroup) {
+        dom.segmentedMinLabelPctGroup.style.display = dom.segmentedShowNumbers.checked ? '' : 'none';
       }
       if (el === dom.kanoBubbleSize && dom.kanoBubbleSizeValue) {
         dom.kanoBubbleSizeValue.textContent = dom.kanoBubbleSize.value;
