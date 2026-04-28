@@ -229,6 +229,9 @@ export function initSettingsListeners() {
       if (el === dom.segmentedShowNumbers && dom.segmentedMinLabelPctGroup) {
         dom.segmentedMinLabelPctGroup.style.display = dom.segmentedShowNumbers.checked ? '' : 'none';
       }
+      if (el === dom.segmentedMode) {
+        renderSegmentList();
+      }
       if (el === dom.kanoBubbleSize && dom.kanoBubbleSizeValue) {
         dom.kanoBubbleSizeValue.textContent = dom.kanoBubbleSize.value;
       }

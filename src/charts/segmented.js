@@ -51,12 +51,33 @@ export function renderGroupTabs() {
   }
 }
 
+export function isPercentMode() {
+  return (dom.segmentedMode?.value || 'percent') === 'percent';
+}
+
+function getGroupTotal(segs) {
+  return segs.reduce((sum, s) => sum + (s.value || 0), 0);
+}
+
+function segToPercent(seg, total) {
+  return total > 0 ? parseFloat(((seg.value / total) * 100).toFixed(1)) : 0;
+}
+
+function percentToSegValue(pct, seg, total) {
+  return total > 0 ? (pct / 100) * total : 0;
+}
+
 export function renderSegmentList() {
   if (!dom.segmentedList) return;
   dom.segmentedList.innerHTML = '';
 
   const segs = getActiveGroupSegments();
+  const percentMode = isPercentMode();
+  const groupTotal = getGroupTotal(segs);
+
   segs.forEach((seg, i) => {
+    const displayValue = percentMode ? segToPercent(seg, groupTotal) : seg.value;
+
     const container = document.createElement('div');
     container.className = 'segment-item';
     container.dataset.segIndex = i;
@@ -96,20 +117,20 @@ export function renderSegmentList() {
 
     const valueInput = document.createElement('input');
     valueInput.type = 'number';
-    valueInput.placeholder = 'Value';
-    valueInput.value = seg.value;
+    valueInput.placeholder = percentMode ? '%' : 'Value';
+    valueInput.value = displayValue;
     valueInput.dataset.field = 'value';
     valueInput.dataset.index = i;
     valueInput.min = '0';
-    valueInput.step = 'any';
+    valueInput.step = percentMode ? '0.1' : 'any';
     bottomRow.appendChild(valueInput);
 
     const valueSlider = document.createElement('input');
     valueSlider.type = 'range';
     valueSlider.min = '0';
     valueSlider.max = '100';
-    valueSlider.step = '1';
-    valueSlider.value = seg.value;
+    valueSlider.step = percentMode ? '0.1' : '1';
+    valueSlider.value = displayValue;
     valueSlider.dataset.field = 'value';
     valueSlider.dataset.sliderIndex = i;
     bottomRow.appendChild(valueSlider);
@@ -125,14 +146,19 @@ export function renderSegmentList() {
       if (isNaN(idx) || !field) return;
       const activeSegs = getActiveGroupSegments();
       if (field === 'value') {
-        const val = parseFloat(e.target.value) || 0;
-        activeSegs[idx].value = val;
+        const displayVal = parseFloat(e.target.value) || 0;
+        if (percentMode) {
+          const currentTotal = getGroupTotal(activeSegs);
+          activeSegs[idx].value = percentToSegValue(displayVal, activeSegs[idx], currentTotal);
+        } else {
+          activeSegs[idx].value = displayVal;
+        }
         const container = e.target.closest('[data-seg-index]');
         if (container) {
           const numInput = container.querySelector('input[type="number"]');
           const sliderInput = container.querySelector('input[type="range"]');
-          if (e.target.type === 'number' && sliderInput) sliderInput.value = val;
-          if (e.target.type === 'range' && numInput) numInput.value = val;
+          if (e.target.type === 'number' && sliderInput) sliderInput.value = displayVal;
+          if (e.target.type === 'range' && numInput) numInput.value = displayVal;
         }
       } else if (field === 'color') {
         activeSegs[idx].color = e.target.value;
