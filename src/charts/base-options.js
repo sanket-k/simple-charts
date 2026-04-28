@@ -209,23 +209,72 @@ export function getBaseChartOptions() {
   let yAxisMaxVal = dom.yAxisMax?.value !== '' ? safeFloat(dom.yAxisMax.value, undefined) : undefined;
   const xRotation = safeInt(dom.xAxisRotation?.value, 45);
 
-  // Add 10% buffer to Y-axis when high/low points are enabled and no explicit min/max is set
+  // Add buffer to Y-axis when high/low points are enabled and no explicit min/max is set
   const showHL = dom.showHighLowPoints?.checked;
+  let y1MinVal, y1MaxVal;
   if (showHL && state.parsedData && yAxisMinVal == null && yAxisMaxVal == null) {
-    let allMin = Infinity, allMax = -Infinity;
-    state.parsedData.datasets.forEach((ds, i) => {
-      if (state.dualAxisEnabled && state.axisAssignments[i] === 'hidden') return;
-      ds.values.forEach(v => {
-        if (v != null) {
-          if (v < allMin) allMin = v;
-          if (v > allMax) allMax = v;
-        }
+    if (state.dualAxisEnabled) {
+      // Compute separate min/max for left and right axes
+      let leftMin = Infinity, leftMax = -Infinity;
+      let rightMin = Infinity, rightMax = -Infinity;
+      state.parsedData.datasets.forEach((ds, i) => {
+        const assign = state.axisAssignments[i] || 'left';
+        if (assign === 'hidden') return;
+        const target = assign === 'right' ? { min: () => rightMin, max: () => rightMax } : null;
+        ds.values.forEach(v => {
+          if (v == null) return;
+          if (assign === 'right') {
+            if (v < rightMin) rightMin = v;
+            if (v > rightMax) rightMax = v;
+          } else {
+            if (v < leftMin) leftMin = v;
+            if (v > leftMax) leftMax = v;
+          }
+        });
       });
-    });
-    if (allMin !== Infinity && allMax !== -Infinity) {
-      const range = allMax - allMin || Math.abs(allMax) || 1;
-      yAxisMinVal = allMin - range * 0.1;
-      yAxisMaxVal = allMax + range * 0.1;
+      // Buffer left axis (y)
+      if (leftMin !== Infinity && leftMax !== -Infinity) {
+        if (yScale === 'logarithmic' && leftMin > 0) {
+          yAxisMinVal = leftMin / 1.5;
+          yAxisMaxVal = leftMax * 1.5;
+        } else {
+          const range = leftMax - leftMin || Math.abs(leftMax) || 1;
+          yAxisMinVal = leftMin - range * 0.1;
+          yAxisMaxVal = leftMax + range * 0.1;
+        }
+      }
+      // Buffer right axis (y1)
+      if (rightMin !== Infinity && rightMax !== -Infinity) {
+        if (yScale === 'logarithmic' && rightMin > 0) {
+          y1MinVal = rightMin / 1.5;
+          y1MaxVal = rightMax * 1.5;
+        } else {
+          const range = rightMax - rightMin || Math.abs(rightMax) || 1;
+          y1MinVal = rightMin - range * 0.1;
+          y1MaxVal = rightMax + range * 0.1;
+        }
+      }
+    } else {
+      // Single axis: compute from all datasets
+      let allMin = Infinity, allMax = -Infinity;
+      state.parsedData.datasets.forEach((ds) => {
+        ds.values.forEach(v => {
+          if (v != null) {
+            if (v < allMin) allMin = v;
+            if (v > allMax) allMax = v;
+          }
+        });
+      });
+      if (allMin !== Infinity && allMax !== -Infinity) {
+        if (yScale === 'logarithmic' && allMin > 0) {
+          yAxisMinVal = allMin / 1.5;
+          yAxisMaxVal = allMax * 1.5;
+        } else {
+          const range = allMax - allMin || Math.abs(allMax) || 1;
+          yAxisMinVal = allMin - range * 0.1;
+          yAxisMaxVal = allMax + range * 0.1;
+        }
+      }
     }
   }
   const xAxisTypeVal = dom.xAxisType?.value || 'auto';
@@ -435,6 +484,24 @@ export function getBaseChartOptions() {
     xScaleBase.type = 'linear';
   }
 
+  // Generate nice logarithmic ticks at 1, 2, 5 pattern across orders of magnitude
+  const logAfterBuildTicks = (scale) => {
+    const min = scale.min;
+    const max = scale.max;
+    if (min <= 0 || max <= 0 || !isFinite(min) || !isFinite(max)) return;
+    const ticks = [];
+    const minPow = Math.floor(Math.log10(min));
+    const maxPow = Math.ceil(Math.log10(max));
+    const bases = [1, 2, 5];
+    for (let p = minPow; p <= maxPow; p++) {
+      for (const b of bases) {
+        const v = b * Math.pow(10, p);
+        if (v >= min && v <= max) ticks.push({ value: v });
+      }
+    }
+    if (ticks.length) scale.ticks = ticks;
+  };
+
   const yScaleBase = {
     type: yScale,
     position: 'left',
@@ -451,8 +518,10 @@ export function getBaseChartOptions() {
       color: c.textSecondary,
       font: { size: 10, family: "'Inter', sans-serif" },
       padding: 8,
+      maxTicksLimit: maxTicks,
       callback: tickCallback
     },
+    ...(yScale === 'logarithmic' ? { afterBuildTicks: logAfterBuildTicks } : {}),
     border: { display: false }
   };
 
@@ -574,27 +643,31 @@ export function getBaseChartOptions() {
     scales: {
       x: xScaleBase,
       y: yScaleBase,
-      y1: {
-        type: yScale,
-        position: 'right',
-        min: yAxisMinVal,
-        max: yAxisMaxVal,
-        title: {
-          display: !!rightAxisTitle,
-          text: rightAxisTitle,
-          color: c.textSecondary,
-          font: { size: 10, weight: '500', family: "'Inter', sans-serif" },
-          padding: { bottom: 4 }
-        },
-        grid: { display: false },
-        ticks: {
-          color: c.textSecondary,
-          font: { size: 10, family: "'Inter', sans-serif" },
-          padding: 8,
-          callback: tickCallback
-        },
-        border: { display: false }
-      }
+      ...(state.dualAxisEnabled ? {
+        y1: {
+          type: yScale,
+          position: 'right',
+          min: y1MinVal,
+          max: y1MaxVal,
+          title: {
+            display: !!rightAxisTitle,
+            text: rightAxisTitle,
+            color: c.textSecondary,
+            font: { size: 10, weight: '500', family: "'Inter', sans-serif" },
+            padding: { bottom: 4 }
+          },
+          grid: { display: false },
+          ticks: {
+            color: c.textSecondary,
+            font: { size: 10, family: "'Inter', sans-serif" },
+            padding: 8,
+            maxTicksLimit: maxTicks,
+            callback: tickCallback
+          },
+          ...(yScale === 'logarithmic' ? { afterBuildTicks: logAfterBuildTicks } : {}),
+          border: { display: false }
+        }
+      } : {})
     }
   };
 }
