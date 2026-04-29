@@ -1,4 +1,5 @@
 import { state } from '../state.js';
+import { dom } from '../dom.js';
 
 const LINE_STYLES = [
   { value: 'solid', label: 'Solid', dash: [] },
@@ -13,7 +14,7 @@ export function getLineDash(style) {
 }
 
 export function renderLineStyleControls() {
-  const container = document.getElementById('lineStyleList');
+  const container = dom.lineStyleList;
   if (!container || !state.rawParsedData) return;
 
   const datasets = state.rawParsedData.datasets;
