@@ -343,6 +343,19 @@ function initSegmentedGroupListeners() {
   if (tipClose && tipPanel) {
     tipClose.addEventListener('click', () => tipPanel.classList.remove('visible'));
   }
+
+  // Info-tip toggles for comparison charts
+  ['dumbbell', 'bubble', 'overlay'].forEach(prefix => {
+    const btn = document.getElementById(`${prefix}FormatTipBtn`);
+    const panel = document.getElementById(`${prefix}FormatTip`);
+    const close = document.getElementById(`${prefix}FormatTipClose`);
+    if (btn && panel) {
+      btn.addEventListener('click', () => panel.classList.toggle('visible'));
+    }
+    if (close && panel) {
+      close.addEventListener('click', () => panel.classList.remove('visible'));
+    }
+  });
 }
 
 function init() {
@@ -373,6 +386,8 @@ function init() {
   if (dom.bubbleMaxRadiusValue) dom.bubbleMaxRadiusValue.textContent = dom.bubbleMaxRadius.value;
   if (dom.bubbleGapSizeValue) dom.bubbleGapSizeValue.textContent = dom.bubbleGapSize.value;
   if (dom.overlayBarOpacityValue) dom.overlayBarOpacityValue.textContent = dom.overlayBarOpacity.value;
+  if (dom.bubbleMinRadiusValue) dom.bubbleMinRadiusValue.textContent = dom.bubbleMinRadius.value;
+  if (dom.overlayBorderRadiusValue) dom.overlayBorderRadiusValue.textContent = dom.overlayBorderRadius.value;
 
   renderInnovatorTierNames();
 

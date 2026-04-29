@@ -2,7 +2,7 @@ import { CONFIG } from '../constants.js';
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { safeInt, hexToRgba, wrapText } from '../utils.js';
-import { getBaseChartOptions } from './base-options.js';
+import { getBaseChartOptions, FONTS } from './base-options.js';
 import { getLineDatasetDefaults } from './line.js';
 import { tryParseDate } from '../date-utils.js';
 
@@ -59,7 +59,7 @@ export function buildTimelineChart(labels, datasets, c, colors, tension, display
           position: 'end',
           backgroundColor: hexToRgba(eventColor, 0.18),
           color: eventColor,
-          font: { size: 10, weight: '600', family: "'Inter', sans-serif" },
+          font: FONTS.annotation,
           padding: { x: 8, y: 4 },
           borderRadius: 6,
           yAdjust: yAdj

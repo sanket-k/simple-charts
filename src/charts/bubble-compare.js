@@ -1,7 +1,7 @@
 import { state } from '../state.js';
 import { dom } from '../dom.js';
-import { getThemeColors, bgPlugin, sourceFooterPlugin, brandPlugin } from './base-options.js';
-import { validateCompareData, calcRatios, getCompareColors, fitYAxis } from './compare-utils.js';
+import { getThemeColors, bgPlugin, sourceFooterPlugin, brandPlugin, FONTS, getTooltipBase, getLegendBase, ASPECT_RATIOS } from './base-options.js';
+import { validateCompareData, calcRatios, getCompareColors, getCategoryYAxis, drawRatioPill } from './compare-utils.js';
 
 export function renderBubbleCompareChart() {
   if (state.chartInstance) {
@@ -20,13 +20,15 @@ export function renderBubbleCompareChart() {
   const maxR = parseInt(dom.bubbleMaxRadius?.value) || 32;
   const minGapPx = parseInt(dom.bubbleGapSize?.value) || 30;
   const showRatio = dom.bubbleShowRatio?.checked !== false;
+  const showValues = dom.bubbleShowValues?.checked !== false;
+  const minR = parseInt(dom.bubbleMinRadius?.value) || 4;
 
   const allValues = [...ds1.values, ...ds2.values].filter(v => v > 0);
   const maxVal = Math.max(...allValues);
   const bScale = maxR / Math.sqrt(maxVal);
 
-  const earlyRadii = ds1.values.map(v => Math.max(4, Math.sqrt(Math.max(0, v)) * bScale));
-  const modernRadii = ds2.values.map(v => Math.max(4, Math.sqrt(Math.max(0, v)) * bScale));
+  const earlyRadii = ds1.values.map(v => Math.max(minR, Math.sqrt(Math.max(0, v)) * bScale));
+  const modernRadii = ds2.values.map(v => Math.max(minR, Math.sqrt(Math.max(0, v)) * bScale));
 
   const bubbleGapPlugin = {
     id: 'bubbleGap',
@@ -81,7 +83,7 @@ export function renderBubbleCompareChart() {
         ctx.setLineDash([4, 4]);
         ctx.moveTo(startX, y);
         ctx.lineTo(endX, y);
-        ctx.strokeStyle = `${c.muted}66`;
+        ctx.strokeStyle = `${c.textMuted}99`;
         ctx.lineWidth = 2;
         ctx.stroke();
         ctx.setLineDash([]);
@@ -91,39 +93,17 @@ export function renderBubbleCompareChart() {
         ctx.lineTo(endX - 6, y - 4);
         ctx.lineTo(endX - 6, y + 4);
         ctx.closePath();
-        ctx.fillStyle = `${c.muted}80`;
+        ctx.fillStyle = c.textSecondary;
         ctx.fill();
         ctx.restore();
 
         if (showRatio) {
           const midX = (startX + endX) / 2;
-          const text = `\u00D7${ratios[i]}`;
-
-          ctx.save();
-          ctx.font = `bold 11px JetBrains Mono, monospace`;
-          const tm = ctx.measureText(text);
-          const pw = tm.width + 14;
-          const ph = 20;
-
-          ctx.fillStyle = c.card;
-          ctx.beginPath();
-          ctx.roundRect(midX - pw / 2, y - ph - 4, pw, ph, 5);
-          ctx.fill();
-          ctx.strokeStyle = `${colors.primary}99`;
-          ctx.lineWidth = 1;
-          ctx.stroke();
-
-          ctx.fillStyle = colors.primary;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(text, midX, y - ph / 2 - 4);
-          ctx.restore();
+          drawRatioPill(ctx, midX, y, `\u00D7${ratios[i]}`, c, { paddingWidth: 14, height: 20, cornerRadius: 5, yOffset: 4 });
         }
       }
     }
   };
-
-  const yMax = labels.length - 1 + 0.8;
 
   const config = {
     type: 'bubble',
@@ -158,39 +138,16 @@ export function renderBubbleCompareChart() {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: true,
+      maintainAspectRatio: ASPECT_RATIOS.square,
       layout: { padding: { left: 10, right: 50, top: 10, bottom: 10 } },
       scales: {
         x: { display: false, min: -0.3, max: 1.5 },
-        y: {
-          min: -0.8,
-          max: yMax,
-          grid: { display: false },
-          border: { display: false },
-          ticks: {
-            stepSize: 1,
-            color: c.muted,
-            font: { family: 'Inter', size: 12, weight: '600' },
-            callback(v) { return labels[v] || ''; }
-          },
-          afterFit: fitYAxis(labels, 12, '600').afterFit,
-        },
+        y: getCategoryYAxis(labels),
       },
       plugins: {
-        legend: {
-          display: true,
-          position: 'top',
-          labels: { color: c.text, font: { family: 'Inter', size: 11 }, boxWidth: 12, padding: 12 }
-        },
+        legend: getLegendBase(),
         tooltip: {
-          backgroundColor: c.card,
-          titleColor: c.text,
-          bodyColor: c.muted,
-          borderColor: c.border,
-          borderWidth: 1,
-          cornerRadius: 8,
-          titleFont: { family: 'Inter', weight: '600' },
-          bodyFont: { family: 'Inter' },
+          ...getTooltipBase(),
           callbacks: {
             label(ctx) {
               const val = ctx.raw._value;
@@ -200,11 +157,12 @@ export function renderBubbleCompareChart() {
         },
         datalabels: {
           display(ctx) {
+            if (!showValues) return false;
             const r = ctx.dataset.data[ctx.dataIndex].r;
             return r > 10;
           },
           color: c.text,
-          font: { family: 'JetBrains Mono', size: 9, weight: '700' },
+          font: FONTS.datalabels,
           anchor: 'center',
           align: 'center',
           formatter(v, ctx) {
@@ -215,14 +173,14 @@ export function renderBubbleCompareChart() {
           display: !!document.getElementById('chartTitle')?.value,
           text: document.getElementById('chartTitle')?.value || '',
           color: c.text,
-          font: { family: 'Inter', size: 16, weight: '700' },
+          font: FONTS.title,
           padding: { bottom: 8 },
         },
         subtitle: {
           display: !!document.getElementById('chartSubtitle')?.value,
           text: document.getElementById('chartSubtitle')?.value || '',
-          color: c.muted,
-          font: { family: 'Inter', size: 12, weight: '400' },
+          color: c.textSecondary,
+          font: FONTS.subtitle,
           padding: { bottom: 4 },
         },
       },

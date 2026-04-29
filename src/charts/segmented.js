@@ -2,7 +2,7 @@ import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { safeInt, safeFloat, hexToRgba } from '../utils.js';
 import { formatNumber } from '../format.js';
-import { getThemeColors, getMultiColors } from './base-options.js';
+import { getThemeColors, getMultiColors, FONTS, getTooltipBase, getLegendBase } from './base-options.js';
 import { bgPlugin, sourceFooterPlugin, brandPlugin } from './base-options.js';
 
 export function getDefaultSegments() {
@@ -309,33 +309,27 @@ export function buildSegmentedBarChart(c) {
         display: !!dom.chartTitle?.value,
         text: dom.chartTitle?.value || '',
         color: c.text,
-        font: { size: 16, weight: '600', family: "'Inter', sans-serif" },
+        font: FONTS.title,
         padding: { bottom: dom.chartSubtitle?.value ? 2 : 12 }
       },
       subtitle: {
         display: !!dom.chartSubtitle?.value,
         text: dom.chartSubtitle?.value || '',
         color: c.textSecondary,
-        font: { size: 11, weight: '400', family: "'Inter', sans-serif" },
+        font: FONTS.subtitle,
         padding: { bottom: 16 }
       },
       legend: {
-        display: dom.showLegend?.checked ?? true,
+        ...getLegendBase(),
         position: dom.legendPosition?.value || 'top',
         align: 'end',
         labels: {
-          color: c.textSecondary,
-          font: { size: 11, family: "'Inter', sans-serif" },
-          boxWidth: 8, boxHeight: 8, borderRadius: 4,
-          padding: 16, usePointStyle: true, pointStyle: 'circle'
+          ...getLegendBase().labels,
+          borderRadius: 4,
         }
       },
       tooltip: {
-        backgroundColor: state.currentTheme === 'dark' ? '#1e293b' : '#fff',
-        titleColor: c.text,
-        bodyColor: c.textSecondary,
-        borderColor: c.border,
-        borderWidth: 1, cornerRadius: 8, padding: 10,
+        ...getTooltipBase(),
         callbacks: {
           label: (ctx) => {
             const segLabel = ctx.dataset.label;
@@ -379,10 +373,10 @@ export function buildSegmentedBarChart(c) {
         },
         font: (ctx) => {
           const pct = getSegmentPercent(ctx);
-          if (pct >= 15) return { size: 11, weight: '600', family: "'Inter', sans-serif" };
-          if (pct >= 8) return { size: 10, weight: '600', family: "'Inter', sans-serif" };
-          if (pct >= 3) return { size: 9, weight: '500', family: "'Inter', sans-serif" };
-          return { size: 8, weight: '500', family: "'Inter', sans-serif" };
+          if (pct >= 15) return FONTS.datalabelsBold;
+          if (pct >= 8) return FONTS.datalabels;
+          if (pct >= 3) return FONTS.datalabelsSm;
+          return FONTS.datalabelsXs;
         },
         formatter: (value, ctx) => {
           if (!value || value === 0) return '';
@@ -432,7 +426,7 @@ export function buildSegmentedBarChart(c) {
     opts.scales.x.ticks = {
       display: true,
       color: c.textSecondary,
-      font: { size: 10, family: "'Inter', sans-serif" },
+      font: FONTS.tick,
       callback: (val) => mode === 'percent' ? val + '%' : formatNumber(val)
     };
     opts.scales.x.grid = { display: dom.showGrid?.checked ?? false, color: state.userGridColor || c.grid, lineWidth: 0.5 };
@@ -440,7 +434,7 @@ export function buildSegmentedBarChart(c) {
       opts.scales.y.ticks = {
         display: true,
         color: c.text,
-        font: { size: 11, weight: '500', family: "'Inter', sans-serif" },
+        font: FONTS.axisTitleLg,
       };
     }
   } else {
@@ -448,7 +442,7 @@ export function buildSegmentedBarChart(c) {
     opts.scales.y.ticks = {
       display: true,
       color: c.textSecondary,
-      font: { size: 10, family: "'Inter', sans-serif" },
+      font: FONTS.tick,
       callback: (val) => mode === 'percent' ? val + '%' : formatNumber(val)
     };
     opts.scales.y.grid = { display: dom.showGrid?.checked ?? false, color: state.userGridColor || c.grid, lineWidth: 0.5 };
@@ -456,7 +450,7 @@ export function buildSegmentedBarChart(c) {
       opts.scales.x.ticks = {
         display: true,
         color: c.text,
-        font: { size: 11, weight: '500', family: "'Inter', sans-serif" },
+        font: FONTS.axisTitleLg,
       };
     }
   }

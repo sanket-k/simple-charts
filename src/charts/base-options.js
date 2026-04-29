@@ -10,6 +10,73 @@ export function getThemeColors() {
   return PALETTE[state.currentTheme];
 }
 
+/** Centralized font definitions used across all chart types.
+ *  Chart.js font objects use { size, weight?, family }.
+ *  Canvas context strings use CSS shorthand like "400 11px 'Inter', sans-serif". */
+export const FONTS = {
+  family:        "'Inter', sans-serif",
+  tick:          { size: 10, family: "'Inter', sans-serif" },
+  tickSmall:     { size: 9, family: "'Inter', sans-serif" },
+  axisTitle:     { size: 10, weight: '500', family: "'Inter', sans-serif" },
+  axisTitleLg:   { size: 11, weight: '500', family: "'Inter', sans-serif" },
+  title:         { size: 16, weight: '600', family: "'Inter', sans-serif" },
+  subtitle:      { size: 11, weight: '400', family: "'Inter', sans-serif" },
+  legend:        { size: 11, family: "'Inter', sans-serif" },
+  datalabels:    { size: 10, weight: '500', family: "'Inter', sans-serif" },
+  datalabelsBold:{ size: 11, weight: '600', family: "'Inter', sans-serif" },
+  datalabelsSm:  { size: 9, weight: '500', family: "'Inter', sans-serif" },
+  datalabelsXs:  { size: 8, weight: '500', family: "'Inter', sans-serif" },
+  tooltipTitle:  { size: 12, weight: '600', family: "'Inter', sans-serif" },
+  tooltipBody:   { size: 11, family: "'Inter', sans-serif" },
+  annotation:    { size: 10, weight: '600', family: "'Inter', sans-serif" },
+  pointLabel:    { size: 10, weight: '500', family: "'Inter', sans-serif" },
+  kanoQuadrant:  { size: 12, weight: '600', style: 'italic', family: "'Inter', sans-serif" },
+  source:        "400 9px 'Inter', sans-serif",
+  brand:         "600 10px 'Inter', sans-serif",
+  ratioPill:     "400 11px 'Inter', sans-serif",
+};
+
+/** Aspect ratio presets for chart types */
+export const ASPECT_RATIOS = {
+  standard: false,
+  square: true,
+  circle: 1.6,
+};
+
+/** Shared tooltip config — all charts use the same tooltip styling */
+export function getTooltipBase() {
+  const c = getThemeColors();
+  return {
+    backgroundColor: state.currentTheme === 'dark' ? '#1e293b' : '#fff',
+    titleColor: c.text,
+    bodyColor: c.textSecondary,
+    borderColor: c.border,
+    borderWidth: 1,
+    cornerRadius: 8,
+    padding: 10,
+    titleFont: FONTS.tooltipTitle,
+    bodyFont: FONTS.tooltipBody,
+  };
+}
+
+/** Shared legend config — used by self-managed charts */
+export function getLegendBase() {
+  const c = getThemeColors();
+  return {
+    display: dom.showLegend?.checked ?? true,
+    position: 'top',
+    labels: {
+      color: c.textSecondary,
+      font: FONTS.legend,
+      boxWidth: 8,
+      boxHeight: 8,
+      padding: 16,
+      usePointStyle: true,
+      pointStyle: 'circle',
+    },
+  };
+}
+
 /** Returns user colors + extra colors as a combined palette */
 export function getMultiColors() {
   return [...state.userColors, ...EXTRA_COLORS];
@@ -54,7 +121,7 @@ export const sourceFooterPlugin = {
     const ctx = chart.ctx;
     const c = getThemeColors();
     ctx.save();
-    ctx.font = `400 9px 'Inter', sans-serif`;
+    ctx.font = FONTS.source;
     ctx.fillStyle = c.textMuted;
     ctx.textAlign = 'left';
     ctx.fillText(`Source: ${source}`, chart.chartArea.left, chart.height - 6);
@@ -105,7 +172,7 @@ export const brandPlugin = {
     const hasLogo = state.brandLogoImg && state.brandLogoImg.complete && state.brandLogoImg.naturalWidth;
     const gap = 4;
 
-    ctx.font = `600 10px 'Inter', sans-serif`;
+    ctx.font = FONTS.brand;
     const textW = brandNameVal ? ctx.measureText(brandNameVal).width : 0;
     const textH = 10;
 
@@ -313,8 +380,8 @@ export function getBaseChartOptions() {
     borderWidth: 1,
     cornerRadius: 8,
     padding: 10,
-    titleFont: { size: 12, weight: '600', family: "'Inter', sans-serif" },
-    bodyFont: { size: 11, family: "'Inter', sans-serif" },
+    titleFont: FONTS.tooltipTitle,
+    bodyFont: FONTS.tooltipBody,
     displayColors: true,
     boxWidth: 8,
     boxHeight: 8,
@@ -358,7 +425,7 @@ export function getBaseChartOptions() {
         position: 'end',
         backgroundColor: hexToRgba(c.hero, 0.15),
         color: c.hero,
-        font: { size: 10, weight: '600', family: "'Inter', sans-serif" },
+        font: FONTS.annotation,
         padding: { x: 6, y: 3 },
         borderRadius: 4
       }
@@ -391,7 +458,7 @@ export function getBaseChartOptions() {
             content: formatNumber(v),
             color: '#34D399',
             backgroundColor: 'rgba(52, 211, 153, 0.12)',
-            font: { size: 10, weight: '600', family: "'Inter', sans-serif" },
+            font: FONTS.annotation,
             padding: { x: 5, y: 3 },
             borderRadius: 4,
             yAdjust: -12,
@@ -406,7 +473,7 @@ export function getBaseChartOptions() {
             content: formatNumber(v),
             color: '#F87171',
             backgroundColor: 'rgba(248, 113, 113, 0.12)',
-            font: { size: 10, weight: '600', family: "'Inter', sans-serif" },
+            font: FONTS.annotation,
             padding: { x: 5, y: 3 },
             borderRadius: 4,
             yAdjust: 20,
@@ -429,7 +496,7 @@ export function getBaseChartOptions() {
     display: !!xAxisTitle,
     text: xAxisTitle,
     color: c.textSecondary,
-    font: { size: 10, weight: '500', family: "'Inter', sans-serif" },
+    font: FONTS.axisTitle,
     padding: { top: 6 }
   };
 
@@ -437,7 +504,7 @@ export function getBaseChartOptions() {
     display: !!leftAxisTitle,
     text: leftAxisTitle,
     color: c.textSecondary,
-    font: { size: 10, weight: '500', family: "'Inter', sans-serif" },
+    font: FONTS.axisTitle,
     padding: { bottom: 4 }
   };
 
@@ -450,7 +517,7 @@ export function getBaseChartOptions() {
     },
     ticks: {
       color: c.textSecondary,
-      font: { size: 10, family: "'Inter', sans-serif" },
+      font: FONTS.tick,
       padding: 6,
       maxTicksLimit: maxTicks,
       maxRotation: xRotation,
@@ -516,7 +583,7 @@ export function getBaseChartOptions() {
     },
     ticks: {
       color: c.textSecondary,
-      font: { size: 10, family: "'Inter', sans-serif" },
+      font: FONTS.tick,
       padding: 8,
       maxTicksLimit: maxTicks,
       callback: tickCallback
@@ -545,14 +612,14 @@ export function getBaseChartOptions() {
         display: !!dom.chartTitle.value,
         text: dom.chartTitle.value,
         color: c.text,
-        font: { size: 16, weight: '600', family: "'Inter', sans-serif" },
+        font: FONTS.title,
         padding: { bottom: dom.chartSubtitle.value ? 2 : 12 }
       },
       subtitle: {
         display: !!dom.chartSubtitle.value,
         text: dom.chartSubtitle.value,
         color: c.textSecondary,
-        font: { size: 11, weight: '400', family: "'Inter', sans-serif" },
+        font: FONTS.subtitle,
         padding: { bottom: 16 }
       },
       legend: {
@@ -561,7 +628,7 @@ export function getBaseChartOptions() {
         align: 'end',
         labels: {
           color: c.textSecondary,
-          font: { size: 11, family: "'Inter', sans-serif" },
+          font: FONTS.legend,
           boxWidth: 8,
           boxHeight: 8,
           borderRadius: 4,
@@ -632,7 +699,7 @@ export function getBaseChartOptions() {
       datalabels: {
         display: showDataLabels,
         color: c.text,
-        font: { size: 10, weight: '500', family: "'Inter', sans-serif" },
+        font: FONTS.datalabels,
         anchor: 'end',
         align: 'top',
         offset: 4,
@@ -653,13 +720,13 @@ export function getBaseChartOptions() {
             display: !!rightAxisTitle,
             text: rightAxisTitle,
             color: c.textSecondary,
-            font: { size: 10, weight: '500', family: "'Inter', sans-serif" },
+            font: FONTS.axisTitle,
             padding: { bottom: 4 }
           },
           grid: { display: false },
           ticks: {
             color: c.textSecondary,
-            font: { size: 10, family: "'Inter', sans-serif" },
+            font: FONTS.tick,
             padding: 8,
             maxTicksLimit: maxTicks,
             callback: tickCallback

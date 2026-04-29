@@ -170,9 +170,9 @@ export function initSettingsListeners() {
     dom.kanoShowMustBe, dom.kanoShowPerformance, dom.kanoShowAttractive,
     dom.kanoShowDecay, dom.kanoShowQuadrantLabels,
     dom.kanoBubbleSize, dom.kanoAxisRange,
-    dom.dumbbellPointSize, dom.dumbbellLineThickness, dom.dumbbellShowRatio,
-    dom.bubbleMaxRadius, dom.bubbleGapSize, dom.bubbleShowRatio,
-    dom.overlayBarOpacity, dom.overlayShowRatio,
+    dom.dumbbellPointSize, dom.dumbbellLineThickness, dom.dumbbellShowRatio, dom.dumbbellShowValues,
+    dom.bubbleMaxRadius, dom.bubbleMinRadius, dom.bubbleGapSize, dom.bubbleShowRatio, dom.bubbleShowValues,
+    dom.overlayBarOpacity, dom.overlayBorderRadius, dom.overlayShowRatio, dom.overlayShowValues,
   ];
 
   settingsInputs.forEach(el => {
@@ -258,6 +258,12 @@ export function initSettingsListeners() {
       }
       if (el === dom.overlayBarOpacity && dom.overlayBarOpacityValue) {
         dom.overlayBarOpacityValue.textContent = dom.overlayBarOpacity.value;
+      }
+      if (el === dom.bubbleMinRadius && dom.bubbleMinRadiusValue) {
+        dom.bubbleMinRadiusValue.textContent = dom.bubbleMinRadius.value;
+      }
+      if (el === dom.overlayBorderRadius && dom.overlayBorderRadiusValue) {
+        dom.overlayBorderRadiusValue.textContent = dom.overlayBorderRadius.value;
       }
       if (window.__debouncedRender) window.__debouncedRender();
     });

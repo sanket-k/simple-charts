@@ -1,7 +1,7 @@
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { safeInt, safeFloat, hexToRgba, wrapText } from '../utils.js';
-import { getThemeColors, getMultiColors, bgPlugin, sourceFooterPlugin, brandPlugin } from './base-options.js';
+import { getThemeColors, getMultiColors, bgPlugin, sourceFooterPlugin, brandPlugin, FONTS, getTooltipBase, getLegendBase } from './base-options.js';
 import { tryParseDate } from '../date-utils.js';
 
 export function getInnovatorTierDefaultName(t, total) {
@@ -198,7 +198,7 @@ export function renderInnovatorsDilemmaChart() {
         yValue: data[labelIdx],
         content: [tierName],
         color: hexToRgba(c.textSecondary, 0.65 + t * 0.05),
-        font: { size: 10, weight: '500', family: "'Inter', sans-serif" },
+        font: FONTS.datalabels,
         backgroundColor: hexToRgba(c.bg, 0.75),
         padding: { top: 2, bottom: 2, left: 4, right: 4 },
         xAdjust: 0,
@@ -280,7 +280,7 @@ export function renderInnovatorsDilemmaChart() {
           position: 'end',
           backgroundColor: hexToRgba(eventColor, 0.18),
           color: eventColor,
-          font: { size: 10, weight: '600', family: "'Inter', sans-serif" },
+          font: FONTS.annotation,
           padding: { x: 8, y: 4 },
           borderRadius: 6,
           yAdjust: yAdj,
@@ -313,7 +313,7 @@ export function renderInnovatorsDilemmaChart() {
       animation: { duration: animDuration, easing: 'easeOutQuart' },
       layout: {
         padding: {
-          top: dom.chartTitle.value ? 8 : 4,
+          top: dom.chartTitle?.value ? 8 : 4,
           bottom: dom.chartSource.value ? 24 : 8,
           left: 4,
           right: 20,
@@ -321,40 +321,34 @@ export function renderInnovatorsDilemmaChart() {
       },
       plugins: {
         title: {
-          display: !!dom.chartTitle.value,
-          text: dom.chartTitle.value,
+          display: !!dom.chartTitle?.value,
+          text: dom.chartTitle?.value,
           color: c.text,
-          font: { size: 16, weight: '600', family: "'Inter', sans-serif" },
-          padding: { bottom: dom.chartSubtitle.value ? 2 : 12 },
+          font: FONTS.title,
+          padding: { bottom: dom.chartSubtitle?.value ? 2 : 12 },
         },
         subtitle: {
-          display: !!dom.chartSubtitle.value,
-          text: dom.chartSubtitle.value,
+          display: !!dom.chartSubtitle?.value,
+          text: dom.chartSubtitle?.value,
           color: c.textSecondary,
-          font: { size: 11, weight: '400', family: "'Inter', sans-serif" },
+          font: FONTS.subtitle,
           padding: { bottom: 16 },
         },
         legend: {
-          display: dom.showLegend?.checked ?? true,
+          ...getLegendBase(),
           position: dom.legendPosition?.value || 'top',
           align: 'end',
           labels: {
             color: c.textSecondary,
-            font: { size: 11, family: "'Inter', sans-serif" },
+            font: FONTS.legend,
             boxWidth: 12,
             boxHeight: 3,
-            padding: 14,
+            padding: 16,
             usePointStyle: false,
           },
         },
         tooltip: {
-          backgroundColor: state.currentTheme === 'dark' ? '#1e293b' : '#fff',
-          titleColor: c.text,
-          bodyColor: c.textSecondary,
-          borderColor: c.border,
-          borderWidth: 1,
-          cornerRadius: 8,
-          padding: 10,
+          ...getTooltipBase(),
           mode: 'index',
           intersect: false,
           callbacks: {
@@ -372,12 +366,12 @@ export function renderInnovatorsDilemmaChart() {
             display: true,
             text: xLabel,
             color: c.textSecondary,
-            font: { size: 11, weight: '500', family: "'Inter', sans-serif" },
+            font: FONTS.axisTitleLg,
           },
           grid: { display: false },
           ticks: {
             color: isDateAxis ? c.textMuted : c.textMuted,
-            font: { size: isDateAxis ? 10 : 9, family: "'Inter', sans-serif" },
+            font: isDateAxis ? FONTS.tick : FONTS.tickSmall,
             maxTicksLimit: isDateAxis ? Math.min(labels.length, 15) : 6,
             maxRotation: isDateAxis ? 45 : 0,
             autoSkip: true,
@@ -390,12 +384,12 @@ export function renderInnovatorsDilemmaChart() {
             display: true,
             text: yLabel,
             color: c.textSecondary,
-            font: { size: 11, weight: '500', family: "'Inter', sans-serif" },
+            font: FONTS.axisTitleLg,
           },
           grid: { display: false },
           ticks: {
             color: c.textSecondary,
-            font: { size: 10, family: "'Inter', sans-serif" },
+            font: FONTS.tick,
             padding: 8,
           },
           border: { display: false },

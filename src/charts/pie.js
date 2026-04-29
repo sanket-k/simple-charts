@@ -2,14 +2,14 @@ import { CONFIG } from '../constants.js';
 import { dom } from '../dom.js';
 import { hexToRgba } from '../utils.js';
 import { formatNumber } from '../format.js';
-import { getBaseChartOptions } from './base-options.js';
+import { getBaseChartOptions, FONTS } from './base-options.js';
 
 export function buildPieChart(labels, datasets, c, colors) {
   const opts = getBaseChartOptions();
   delete opts.scales;
   opts.aspectRatio = 1.6;
   opts.plugins.datalabels.color = '#fff';
-  opts.plugins.datalabels.font = { size: 11, weight: '600', family: "'Inter', sans-serif" };
+  opts.plugins.datalabels.font = FONTS.datalabelsBold;
   opts.plugins.datalabels.anchor = 'center';
   opts.plugins.datalabels.align = 'center';
   opts.plugins.datalabels.formatter = (value, ctx) => {

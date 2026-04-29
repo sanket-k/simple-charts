@@ -176,16 +176,23 @@ export const dom = {
   dumbbellLineThickness: $('#dumbbellLineThickness'),
   dumbbellLineThicknessValue: $('#dumbbellLineThicknessValue'),
   dumbbellShowRatio: $('#dumbbellShowRatio'),
+  dumbbellShowValues: $('#dumbbellShowValues'),
   bubbleCompareSettings: $('#bubbleCompareSettings'),
   bubbleMaxRadius: $('#bubbleMaxRadius'),
   bubbleMaxRadiusValue: $('#bubbleMaxRadiusValue'),
+  bubbleMinRadius: $('#bubbleMinRadius'),
+  bubbleMinRadiusValue: $('#bubbleMinRadiusValue'),
   bubbleGapSize: $('#bubbleGapSize'),
   bubbleGapSizeValue: $('#bubbleGapSizeValue'),
   bubbleShowRatio: $('#bubbleShowRatio'),
+  bubbleShowValues: $('#bubbleShowValues'),
   overlaySettings: $('#overlaySettings'),
   overlayBarOpacity: $('#overlayBarOpacity'),
   overlayBarOpacityValue: $('#overlayBarOpacityValue'),
+  overlayBorderRadius: $('#overlayBorderRadius'),
+  overlayBorderRadiusValue: $('#overlayBorderRadiusValue'),
   overlayShowRatio: $('#overlayShowRatio'),
+  overlayShowValues: $('#overlayShowValues'),
 };
 
 /** Color picker input -> hex display pairs for the 5-color palette editor */

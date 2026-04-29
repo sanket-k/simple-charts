@@ -1,6 +1,6 @@
 import { dom } from '../dom.js';
 import { hexToRgba } from '../utils.js';
-import { getBaseChartOptions } from './base-options.js';
+import { getBaseChartOptions, FONTS } from './base-options.js';
 
 export function buildRadarChart(labels, datasets, c, colors) {
   const opts = getBaseChartOptions();
@@ -12,7 +12,7 @@ export function buildRadarChart(labels, datasets, c, colors) {
       grid: { color: c.grid, lineWidth: 0.5 },
       pointLabels: {
         color: c.textSecondary,
-        font: { size: 10, weight: '500', family: "'Inter', sans-serif" }
+        font: FONTS.pointLabel
       },
       ticks: { display: false, backdropColor: 'transparent' },
       suggestedMin: 0,

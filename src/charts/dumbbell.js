@@ -1,7 +1,7 @@
 import { state } from '../state.js';
 import { dom } from '../dom.js';
-import { getThemeColors, bgPlugin, sourceFooterPlugin, brandPlugin } from './base-options.js';
-import { validateCompareData, calcRatios, getCompareColors, fitYAxis } from './compare-utils.js';
+import { getThemeColors, bgPlugin, sourceFooterPlugin, brandPlugin, FONTS, getTooltipBase, getLegendBase, ASPECT_RATIOS } from './base-options.js';
+import { validateCompareData, calcRatios, getCompareColors, getCategoryYAxis, getLogXAxis, drawRatioPill } from './compare-utils.js';
 
 export function renderDumbbellChart() {
   if (state.chartInstance) {
@@ -17,9 +17,17 @@ export function renderDumbbellChart() {
   const colors = getCompareColors();
   const ratios = calcRatios(ds1.values, ds2.values);
 
+  const allValues = [...ds1.values, ...ds2.values];
+  const xMin = Math.min(...allValues);
+  const xMax = Math.max(...allValues);
+  const xPad = 0.15; // 15% padding in log space on each side
+  const logMin = Math.log10(xMin) - xPad * (Math.log10(xMax) - Math.log10(xMin));
+  const logMax = Math.log10(xMax) + xPad * (Math.log10(xMax) - Math.log10(xMin));
+
   const pointSize = parseInt(dom.dumbbellPointSize?.value) || 10;
   const lineThickness = parseInt(dom.dumbbellLineThickness?.value) || 12;
   const showRatio = dom.dumbbellShowRatio?.checked !== false;
+  const showValues = dom.dumbbellShowValues?.checked !== false;
 
   const dumbbellPlugin = {
     id: 'dumbbellLines',
@@ -50,27 +58,7 @@ export function renderDumbbellChart() {
         if (showRatio) {
           const midX = (p0.x + p1.x) / 2;
           const midY = p0.y;
-          const text = `\u00D7${ratios[i]}`;
-
-          ctx.save();
-          ctx.font = `bold 13px JetBrains Mono, monospace`;
-          const tm = ctx.measureText(text);
-          const pw = tm.width + 16;
-          const ph = 22;
-
-          ctx.fillStyle = c.card;
-          ctx.beginPath();
-          ctx.roundRect(midX - pw / 2, midY - ph - 6, pw, ph, 6);
-          ctx.fill();
-          ctx.strokeStyle = `${colors.primary}80`;
-          ctx.lineWidth = 1;
-          ctx.stroke();
-
-          ctx.fillStyle = colors.primary;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(text, midX, midY - ph / 2 - 6);
-          ctx.restore();
+          drawRatioPill(ctx, midX, midY, `\u00D7${ratios[i]}`, c);
         }
       }
     }
@@ -105,66 +93,40 @@ export function renderDumbbellChart() {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: true,
+      maintainAspectRatio: ASPECT_RATIOS.square,
       scales: {
         x: {
-          type: 'logarithmic',
-          grid: { color: c.grid, drawBorder: false },
-          ticks: {
-            color: c.muted,
-            font: { family: 'Inter', size: 11 },
-            callback(v) {
-              const nice = [1, 10, 100, 1000, 10000, 100000];
-              if (nice.includes(v)) return v.toLocaleString();
-              return '';
-            }
-          },
-          border: { display: false },
-          title: { display: true, text: 'Value (log scale)', color: c.muted, font: { family: 'Inter', size: 11 } },
+          ...getLogXAxis(),
+          min: Math.pow(10, logMin),
+          max: Math.pow(10, logMax),
         },
-        y: {
-          min: -0.8,
-          max: yMax,
-          grid: { display: false },
-          border: { display: false },
-          ticks: {
-            stepSize: 1,
-            color: c.muted,
-            font: { family: 'Inter', size: 12, weight: '600' },
-            callback(v) { return labels[v] || ''; }
-          },
-          afterFit: fitYAxis(labels, 12, '600').afterFit,
-        },
+        y: getCategoryYAxis(labels),
       },
       plugins: {
-        legend: {
-          display: true,
-          position: 'top',
-          labels: { color: c.text, font: { family: 'Inter', size: 11 }, boxWidth: 12, padding: 12 }
+        legend: getLegendBase(),
+        tooltip: getTooltipBase(),
+        datalabels: {
+          display: showValues,
+          color: c.text,
+          font: FONTS.datalabels,
+          anchor: 'end',
+          align: (ctx) => ctx.datasetIndex === 0 ? 'left' : 'right',
+          formatter(v) { return v.x?.toLocaleString(); },
+          offset: 4,
+          clip: false,
         },
-        tooltip: {
-          backgroundColor: c.card,
-          titleColor: c.text,
-          bodyColor: c.muted,
-          borderColor: c.border,
-          borderWidth: 1,
-          cornerRadius: 8,
-          titleFont: { family: 'Inter', weight: '600' },
-          bodyFont: { family: 'Inter' },
-        },
-        datalabels: { display: false },
         title: {
           display: !!document.getElementById('chartTitle')?.value,
           text: document.getElementById('chartTitle')?.value || '',
           color: c.text,
-          font: { family: 'Inter', size: 16, weight: '700' },
+          font: FONTS.title,
           padding: { bottom: 8 },
         },
         subtitle: {
           display: !!document.getElementById('chartSubtitle')?.value,
           text: document.getElementById('chartSubtitle')?.value || '',
-          color: c.muted,
-          font: { family: 'Inter', size: 12, weight: '400' },
+          color: c.textSecondary,
+          font: FONTS.subtitle,
           padding: { bottom: 4 },
         },
       },

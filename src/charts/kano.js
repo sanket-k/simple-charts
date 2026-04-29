@@ -1,7 +1,7 @@
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { safeInt, safeFloat, hexToRgba } from '../utils.js';
-import { getThemeColors, getMultiColors, bgPlugin, sourceFooterPlugin, brandPlugin } from './base-options.js';
+import { getThemeColors, getMultiColors, bgPlugin, sourceFooterPlugin, brandPlugin, FONTS, getTooltipBase, getLegendBase } from './base-options.js';
 
 /** Parse 3-column CSV (Feature, Implementation, Satisfaction) into feature objects */
 export function parseKanoData(text) {
@@ -191,7 +191,7 @@ export function renderKanoChart() {
     const ql = axisRange * 0.55;
     const labelStyle = {
       color: hexToRgba(c.textSecondary, 0.5),
-      font: { size: 12, weight: '600', style: 'italic', family: "'Inter', sans-serif" },
+      font: FONTS.kanoQuadrant,
       backgroundColor: 'transparent',
     };
 
@@ -242,7 +242,7 @@ export function renderKanoChart() {
         yValue: f.y,
         content: [f.name],
         color: c.text,
-        font: { size: 10, weight: '500', family: "'Inter', sans-serif" },
+        font: FONTS.datalabels,
         backgroundColor: hexToRgba(c.bg, 0.8),
         padding: { x: 4, y: 2 },
         borderRadius: 3,
@@ -275,38 +275,32 @@ export function renderKanoChart() {
           display: !!dom.chartTitle.value,
           text: dom.chartTitle.value,
           color: c.text,
-          font: { size: 16, weight: '600', family: "'Inter', sans-serif" },
+          font: FONTS.title,
           padding: { bottom: dom.chartSubtitle.value ? 2 : 12 },
         },
         subtitle: {
           display: !!dom.chartSubtitle.value,
           text: dom.chartSubtitle.value,
           color: c.textSecondary,
-          font: { size: 11, weight: '400', family: "'Inter', sans-serif" },
+          font: FONTS.subtitle,
           padding: { bottom: 16 },
         },
         legend: {
-          display: dom.showLegend?.checked ?? true,
+          ...getLegendBase(),
           position: dom.legendPosition?.value || 'top',
           align: 'end',
           labels: {
             color: c.textSecondary,
-            font: { size: 11, family: "'Inter', sans-serif" },
+            font: FONTS.legend,
             boxWidth: 12,
             boxHeight: 3,
-            padding: 14,
+            padding: 16,
             usePointStyle: false,
-            filter: (item) => item.text !== 'Features',
           },
+          filter: (item) => item.text !== 'Features',
         },
         tooltip: {
-          backgroundColor: state.currentTheme === 'dark' ? '#1e293b' : '#fff',
-          titleColor: c.text,
-          bodyColor: c.textSecondary,
-          borderColor: c.border,
-          borderWidth: 1,
-          cornerRadius: 8,
-          padding: 10,
+          ...getTooltipBase(),
           callbacks: {
             title: (items) => {
               const pt = items[0]?.raw;
@@ -338,7 +332,7 @@ export function renderKanoChart() {
             display: true,
             text: dom.xAxisLabel?.value || 'Implementation',
             color: c.textSecondary,
-            font: { size: 11, weight: '500', family: "'Inter', sans-serif" },
+            font: FONTS.axisTitleLg,
           },
           grid: {
             display: showGrid,
@@ -347,7 +341,7 @@ export function renderKanoChart() {
           },
           ticks: {
             color: c.textMuted,
-            font: { size: 9, family: "'Inter', sans-serif" },
+            font: FONTS.tickSmall,
             maxTicksLimit: 5,
             callback: (val) => {
               if (val <= -axisRange) return 'Not Impl.';
@@ -366,7 +360,7 @@ export function renderKanoChart() {
             display: true,
             text: dom.yAxisLabel?.value || 'Satisfaction',
             color: c.textSecondary,
-            font: { size: 11, weight: '500', family: "'Inter', sans-serif" },
+            font: FONTS.axisTitleLg,
           },
           grid: {
             display: showGrid,
@@ -375,7 +369,7 @@ export function renderKanoChart() {
           },
           ticks: {
             color: c.textMuted,
-            font: { size: 9, family: "'Inter', sans-serif" },
+            font: FONTS.tickSmall,
             maxTicksLimit: 5,
             callback: (val) => {
               if (val <= -axisRange) return 'Dissatisfied';

@@ -1,7 +1,7 @@
 import { CONFIG } from '../constants.js';
 import { dom } from '../dom.js';
 import { hexToRgba } from '../utils.js';
-import { getBaseChartOptions } from './base-options.js';
+import { getBaseChartOptions, FONTS } from './base-options.js';
 
 export function buildDonutChart(labels, datasets, c, colors) {
   const opts = getBaseChartOptions();
@@ -9,7 +9,7 @@ export function buildDonutChart(labels, datasets, c, colors) {
   opts.aspectRatio = 1.6;
   opts.cutout = '62%';
   opts.plugins.datalabels.color = c.text;
-  opts.plugins.datalabels.font = { size: 10, weight: '600', family: "'Inter', sans-serif" };
+  opts.plugins.datalabels.font = FONTS.datalabelsBold;
   opts.plugins.datalabels.anchor = 'end';
   opts.plugins.datalabels.align = 'end';
   opts.plugins.datalabels.offset = 6;
