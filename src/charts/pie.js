@@ -8,7 +8,7 @@ export function buildPieChart(labels, datasets, c, colors) {
   const opts = getBaseChartOptions();
   delete opts.scales;
   opts.aspectRatio = 1.6;
-  opts.plugins.datalabels.color = '#fff';
+  opts.plugins.datalabels.color = c.bg;
   opts.plugins.datalabels.font = FONTS.datalabelsBold;
   opts.plugins.datalabels.anchor = 'center';
   opts.plugins.datalabels.align = 'center';

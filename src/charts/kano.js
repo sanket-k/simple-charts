@@ -91,7 +91,7 @@ export function renderKanoChart() {
     });
   }
 
-  const curveColor = c.textMuted || '#94A3B8';
+  const curveColor = c.textMuted;
   const curveOpacity = 0.5;
 
   // Must-be curve (threshold)
@@ -290,11 +290,9 @@ export function renderKanoChart() {
           position: dom.legendPosition?.value || 'top',
           align: 'end',
           labels: {
-            color: c.textSecondary,
-            font: FONTS.legend,
+            ...getLegendBase().labels,
             boxWidth: 12,
             boxHeight: 3,
-            padding: 16,
             usePointStyle: false,
           },
           filter: (item) => item.text !== 'Features',

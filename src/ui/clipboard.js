@@ -38,7 +38,7 @@ export function initClipboard() {
     }
     if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'D') {
       e.preventDefault();
-      document.getElementById('themeToggle').click();
+      dom.themeToggle.click();
     }
     if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
       const tag = document.activeElement?.tagName?.toLowerCase();

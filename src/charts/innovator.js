@@ -155,7 +155,7 @@ export function renderInnovatorsDilemmaChart() {
     datasets.push({
       label: incumbentName,
       data,
-      borderColor: colors[1] || '#60A5FA',
+      borderColor: colors[1] || c.secondary,
       backgroundColor: 'transparent',
       borderWidth: 2.5,
       borderDash: [10, 6],
@@ -339,11 +339,9 @@ export function renderInnovatorsDilemmaChart() {
           position: dom.legendPosition?.value || 'top',
           align: 'end',
           labels: {
-            color: c.textSecondary,
-            font: FONTS.legend,
+            ...getLegendBase().labels,
             boxWidth: 12,
             boxHeight: 3,
-            padding: 16,
             usePointStyle: false,
           },
         },

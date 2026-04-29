@@ -1,7 +1,8 @@
 import { state } from '../state.js';
+import { dom } from '../dom.js';
 
 export function renderComboDatasetTypes() {
-  const container = document.getElementById('comboDatasetList');
+  const container = dom.comboDatasetList;
   if (!container || !state.rawParsedData) return;
 
   if (state.datasetChartTypes.length !== state.rawParsedData.datasets.length) {

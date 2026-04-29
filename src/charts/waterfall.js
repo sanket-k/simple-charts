@@ -106,7 +106,7 @@ export function buildWaterfallChart(labels, datasets, c, colors) {
       ...opts,
       plugins: {
         ...opts.plugins,
-        legend: { display: false }
+        legend: { display: dom.showLegend?.checked ?? false }
       }
     }
   };

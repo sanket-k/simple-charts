@@ -1,6 +1,7 @@
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { safeInt, safeFloat, hexToRgba } from '../utils.js';
+import { SEMANTIC } from '../constants.js';
 import { getBaseChartOptions, getMultiColors, getYAxisID } from './base-options.js';
 import { getLineDash } from '../ui/line-style-ui.js';
 
@@ -41,13 +42,13 @@ export function getLineDatasetDefaults(ds, i, c, colors, tension, useTimeAxis, d
       });
       pointBackgroundColor = ds.values.map(v => {
         if (v == null) return 'transparent';
-        if (v === maxVal) return '#34D399';
-        if (v === minVal) return '#F87171';
+        if (v === maxVal) return SEMANTIC.up;
+        if (v === minVal) return SEMANTIC.down;
         return color;
       });
       pointBorderColor = ds.values.map(v => {
         if (v == null) return 'transparent';
-        if (v === maxVal || v === minVal) return '#fff';
+        if (v === maxVal || v === minVal) return c.bg;
         return c.bg;
       });
     }

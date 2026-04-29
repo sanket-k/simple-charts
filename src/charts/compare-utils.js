@@ -44,13 +44,65 @@ export function validateCompareData(parsedData) {
 }
 
 /**
- * Calculate improvement ratios: ds2[i] / ds1[i], rounded to 1 decimal.
+ * Calculate improvement ratios: ds2[i] / ds1[i].
+ * @param {number} decimals - decimal places (default 1)
  */
-export function calcRatios(ds1Values, ds2Values) {
+export function calcRatios(ds1Values, ds2Values, decimals = 1) {
   return ds1Values.map((v, i) => {
     if (!v || v === 0) return 0;
-    return +(ds2Values[i] / v).toFixed(1);
+    return +(ds2Values[i] / v).toFixed(decimals);
   });
+}
+
+/**
+ * Sort data arrays together by a criterion.
+ * @param {string[]} labels
+ * @param {object} ds1 - { name, values }
+ * @param {object} ds2 - { name, values }
+ * @param {'original'|'value-asc'|'value-desc'|'ratio-asc'|'ratio-desc'} mode
+ * @returns {{ labels, ds1, ds2, ratios }}
+ */
+export function sortCompareData(labels, ds1, ds2, mode = 'original') {
+  if (mode === 'original') return { labels, ds1, ds2 };
+  const ratios = ds1.values.map((v, i) => (!v || v === 0) ? 0 : ds2.values[i] / v);
+  const indices = labels.map((_, i) => i);
+
+  if (mode === 'value-asc') indices.sort((a, b) => (ds2.values[a] - ds1.values[a]) - (ds2.values[b] - ds1.values[b]));
+  else if (mode === 'value-desc') indices.sort((a, b) => (ds2.values[b] - ds1.values[b]) - (ds2.values[a] - ds1.values[a]));
+  else if (mode === 'ratio-asc') indices.sort((a, b) => ratios[a] - ratios[b]);
+  else if (mode === 'ratio-desc') indices.sort((a, b) => ratios[b] - ratios[a]);
+
+  return {
+    labels: indices.map(i => labels[i]),
+    ds1: { ...ds1, values: indices.map(i => ds1.values[i]) },
+    ds2: { ...ds2, values: indices.map(i => ds2.values[i]) },
+  };
+}
+
+/**
+ * Swap two series so the user can flip primary/secondary.
+ * Returns new { ds1, ds2 } with swapped values and names.
+ */
+export function swapSeries(ds1, ds2) {
+  return { ds1: { ...ds2 }, ds2: { ...ds1 } };
+}
+
+/**
+ * Format a number with K/M/B abbreviations.
+ * @param {number} v
+ * @param {'raw'|'compact'|'kmb'} fmt
+ * @returns {string}
+ */
+export function formatCompareNumber(v, fmt = 'raw') {
+  if (fmt === 'raw') return v?.toLocaleString() ?? '';
+  if (fmt === 'compact') {
+    if (v == null) return '';
+    if (Math.abs(v) >= 1e9) return (v / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+    if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (Math.abs(v) >= 1e3) return (v / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+    return v.toLocaleString();
+  }
+  return v?.toLocaleString() ?? '';
 }
 
 /**

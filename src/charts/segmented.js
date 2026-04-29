@@ -287,9 +287,7 @@ export function buildSegmentedBarChart(c) {
     };
   });
 
-  const animSpeed = safeInt(dom.animationSpeed?.value, 600);
-  const animDurations = { none: 0, fast: 300, normal: 600, slow: 1000 };
-  const animDuration = animDurations[animSpeed] ?? 600;
+  const animDuration = safeInt(dom.animationSpeed?.value, 600);
 
   const opts = {
     responsive: true,

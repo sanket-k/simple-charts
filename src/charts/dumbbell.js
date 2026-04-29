@@ -1,7 +1,8 @@
 import { state } from '../state.js';
 import { dom } from '../dom.js';
+import { safeInt } from '../utils.js';
 import { getThemeColors, bgPlugin, sourceFooterPlugin, brandPlugin, FONTS, getTooltipBase, getLegendBase, ASPECT_RATIOS } from './base-options.js';
-import { validateCompareData, calcRatios, getCompareColors, getCategoryYAxis, getLogXAxis, drawRatioPill } from './compare-utils.js';
+import { validateCompareData, calcRatios, getCompareColors, getCategoryYAxis, getLogXAxis, drawRatioPill, sortCompareData, swapSeries, formatCompareNumber } from './compare-utils.js';
 
 export function renderDumbbellChart() {
   if (state.chartInstance) {
@@ -9,25 +10,43 @@ export function renderDumbbellChart() {
     state.chartInstance = null;
   }
 
-  const data = validateCompareData(state.parsedData);
+  let data = validateCompareData(state.parsedData);
   if (!data) return;
 
-  const { labels, ds1, ds2 } = data;
+  // Shared settings: sort, swap, format, decimals
+  const sortBy = dom.dumbbellSortBy?.value || 'original';
+  const shouldSwap = dom.dumbbellSwapSeries?.checked;
+  const numFmt = dom.dumbbellNumberFormat?.value || 'raw';
+  const ratioDecimals = parseInt(dom.dumbbellRatioDecimals?.value) ?? 1;
+
+  if (shouldSwap) {
+    const swapped = swapSeries(data.ds1, data.ds2);
+    data = { ...data, ...swapped };
+  }
+  const sorted = sortCompareData(data.labels, data.ds1, data.ds2, sortBy);
+  const { labels, ds1, ds2 } = sorted;
+
   const c = getThemeColors();
   const colors = getCompareColors();
-  const ratios = calcRatios(ds1.values, ds2.values);
+  const ratios = calcRatios(ds1.values, ds2.values, ratioDecimals);
 
   const allValues = [...ds1.values, ...ds2.values];
   const xMin = Math.min(...allValues);
   const xMax = Math.max(...allValues);
-  const xPad = 0.15; // 15% padding in log space on each side
+  const xPad = 0.15;
   const logMin = Math.log10(xMin) - xPad * (Math.log10(xMax) - Math.log10(xMin));
   const logMax = Math.log10(xMax) + xPad * (Math.log10(xMax) - Math.log10(xMin));
 
+  // Chart-specific settings
   const pointSize = parseInt(dom.dumbbellPointSize?.value) || 10;
   const lineThickness = parseInt(dom.dumbbellLineThickness?.value) || 12;
+  const lineStyle = dom.dumbbellLineStyle?.value || 'gradient';
+  const lineOpacity = parseFloat(dom.dumbbellLineOpacity?.value) || 0.4;
+  const showArrow = dom.dumbbellShowArrow?.checked;
   const showRatio = dom.dumbbellShowRatio?.checked !== false;
   const showValues = dom.dumbbellShowValues?.checked !== false;
+
+  const opacityHex = Math.round(lineOpacity * 255).toString(16).padStart(2, '0');
 
   const dumbbellPlugin = {
     id: 'dumbbellLines',
@@ -41,18 +60,45 @@ export function renderDumbbellChart() {
         const p0 = meta0.data[i];
         const p1 = meta1.data[i];
 
-        const grad = ctx.createLinearGradient(p0.x, p0.y, p1.x, p1.y);
-        grad.addColorStop(0, `${colors.secondary}66`);
-        grad.addColorStop(1, `${colors.primary}66`);
-
         ctx.save();
         ctx.beginPath();
         ctx.moveTo(p0.x, p0.y);
         ctx.lineTo(p1.x, p1.y);
-        ctx.strokeStyle = grad;
+
+        if (lineStyle === 'gradient') {
+          const grad = ctx.createLinearGradient(p0.x, p0.y, p1.x, p1.y);
+          grad.addColorStop(0, `${colors.secondary}${opacityHex}`);
+          grad.addColorStop(1, `${colors.primary}${opacityHex}`);
+          ctx.strokeStyle = grad;
+        } else if (lineStyle === 'dashed') {
+          ctx.setLineDash([8, 6]);
+          ctx.strokeStyle = `${colors.primary}${opacityHex}`;
+        } else {
+          ctx.strokeStyle = `${colors.primary}${opacityHex}`;
+        }
+
         ctx.lineWidth = lineThickness;
         ctx.lineCap = 'round';
         ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Direction arrow
+        if (showArrow) {
+          const dx = p1.x - p0.x;
+          const dy = p1.y - p0.y;
+          const angle = Math.atan2(dy, dx);
+          const arrowLen = 10;
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p1.x - arrowLen * Math.cos(angle - Math.PI / 6), p1.y - arrowLen * Math.sin(angle - Math.PI / 6));
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p1.x - arrowLen * Math.cos(angle + Math.PI / 6), p1.y - arrowLen * Math.sin(angle + Math.PI / 6));
+          ctx.strokeStyle = colors.primary;
+          ctx.lineWidth = 2.5;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+        }
+
         ctx.restore();
 
         if (showRatio) {
@@ -63,8 +109,6 @@ export function renderDumbbellChart() {
       }
     }
   };
-
-  const yMax = labels.length - 1 + 0.8;
 
   const config = {
     type: 'scatter',
@@ -94,6 +138,15 @@ export function renderDumbbellChart() {
     options: {
       responsive: true,
       maintainAspectRatio: ASPECT_RATIOS.square,
+      animation: { duration: safeInt(dom.animationSpeed?.value, 600), easing: 'easeOutQuart' },
+      layout: {
+        padding: {
+          top: dom.chartTitle?.value ? 8 : 4,
+          bottom: dom.chartSource?.value ? 24 : 8,
+          left: 4,
+          right: 20,
+        },
+      },
       scales: {
         x: {
           ...getLogXAxis(),
@@ -103,7 +156,7 @@ export function renderDumbbellChart() {
         y: getCategoryYAxis(labels),
       },
       plugins: {
-        legend: getLegendBase(),
+        legend: { ...getLegendBase(), display: dom.showLegend?.checked ?? true },
         tooltip: getTooltipBase(),
         datalabels: {
           display: showValues,
@@ -111,20 +164,20 @@ export function renderDumbbellChart() {
           font: FONTS.datalabels,
           anchor: 'end',
           align: (ctx) => ctx.datasetIndex === 0 ? 'left' : 'right',
-          formatter(v) { return v.x?.toLocaleString(); },
+          formatter(v) { return formatCompareNumber(v.x, numFmt); },
           offset: 4,
           clip: false,
         },
         title: {
-          display: !!document.getElementById('chartTitle')?.value,
-          text: document.getElementById('chartTitle')?.value || '',
+          display: !!dom.chartTitle?.value,
+          text: dom.chartTitle?.value || '',
           color: c.text,
           font: FONTS.title,
           padding: { bottom: 8 },
         },
         subtitle: {
-          display: !!document.getElementById('chartSubtitle')?.value,
-          text: document.getElementById('chartSubtitle')?.value || '',
+          display: !!dom.chartSubtitle?.value,
+          text: dom.chartSubtitle?.value || '',
           color: c.textSecondary,
           font: FONTS.subtitle,
           padding: { bottom: 4 },

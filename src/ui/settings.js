@@ -73,7 +73,7 @@ export function updateSettingsVisibility() {
     }
   }
 
-  const comboEl = document.getElementById('comboSettings');
+  const comboEl = dom.comboSettings;
   if (comboEl) {
     if (t === 'combo' && state.rawParsedData && state.rawParsedData.datasets.length >= 2) {
       comboEl.style.display = 'block';
@@ -83,7 +83,7 @@ export function updateSettingsVisibility() {
     }
   }
 
-  const lineStyleSection = document.getElementById('lineStyleSection');
+  const lineStyleSection = dom.lineStyleSection;
   if (lineStyleSection) {
     const isLineStyleChart = ['line', 'timeline', 'area'].includes(t);
     const comboHasLine = t === 'combo' && state.datasetChartTypes.some(dt => dt === 'line');
@@ -170,9 +170,18 @@ export function initSettingsListeners() {
     dom.kanoShowMustBe, dom.kanoShowPerformance, dom.kanoShowAttractive,
     dom.kanoShowDecay, dom.kanoShowQuadrantLabels,
     dom.kanoBubbleSize, dom.kanoAxisRange,
-    dom.dumbbellPointSize, dom.dumbbellLineThickness, dom.dumbbellShowRatio, dom.dumbbellShowValues,
-    dom.bubbleMaxRadius, dom.bubbleMinRadius, dom.bubbleGapSize, dom.bubbleShowRatio, dom.bubbleShowValues,
-    dom.overlayBarOpacity, dom.overlayBorderRadius, dom.overlayShowRatio, dom.overlayShowValues,
+    dom.dumbbellSortBy, dom.dumbbellSwapSeries,
+    dom.dumbbellNumberFormat, dom.dumbbellRatioDecimals,
+    dom.dumbbellPointSize, dom.dumbbellLineThickness, dom.dumbbellLineStyle, dom.dumbbellLineOpacity,
+    dom.dumbbellShowArrow, dom.dumbbellShowRatio, dom.dumbbellShowValues,
+    dom.bubbleSortBy, dom.bubbleSwapSeries,
+    dom.bubbleNumberFormat, dom.bubbleRatioDecimals,
+    dom.bubbleMaxRadius, dom.bubbleMinRadius, dom.bubbleGapSize, dom.bubbleOpacity,
+    dom.bubbleArrowStyle, dom.bubbleShowCategoryLabels, dom.bubbleShowRatio, dom.bubbleShowValues,
+    dom.overlaySortBy, dom.overlaySwapSeries,
+    dom.overlayNumberFormat, dom.overlayRatioDecimals,
+    dom.overlayBarOpacity, dom.overlayFgOpacity, dom.overlayBorderRadius,
+    dom.overlayBorderStyle, dom.overlayDisplayMode, dom.overlayShowRatio, dom.overlayShowValues,
   ];
 
   settingsInputs.forEach(el => {
@@ -250,20 +259,38 @@ export function initSettingsListeners() {
       if (el === dom.dumbbellLineThickness && dom.dumbbellLineThicknessValue) {
         dom.dumbbellLineThicknessValue.textContent = dom.dumbbellLineThickness.value;
       }
+      if (el === dom.dumbbellRatioDecimals && dom.dumbbellRatioDecimalsValue) {
+        dom.dumbbellRatioDecimalsValue.textContent = dom.dumbbellRatioDecimals.value;
+      }
+      if (el === dom.dumbbellLineOpacity && dom.dumbbellLineOpacityValue) {
+        dom.dumbbellLineOpacityValue.textContent = dom.dumbbellLineOpacity.value;
+      }
       if (el === dom.bubbleMaxRadius && dom.bubbleMaxRadiusValue) {
         dom.bubbleMaxRadiusValue.textContent = dom.bubbleMaxRadius.value;
       }
       if (el === dom.bubbleGapSize && dom.bubbleGapSizeValue) {
         dom.bubbleGapSizeValue.textContent = dom.bubbleGapSize.value;
       }
-      if (el === dom.overlayBarOpacity && dom.overlayBarOpacityValue) {
-        dom.overlayBarOpacityValue.textContent = dom.overlayBarOpacity.value;
-      }
       if (el === dom.bubbleMinRadius && dom.bubbleMinRadiusValue) {
         dom.bubbleMinRadiusValue.textContent = dom.bubbleMinRadius.value;
       }
+      if (el === dom.bubbleRatioDecimals && dom.bubbleRatioDecimalsValue) {
+        dom.bubbleRatioDecimalsValue.textContent = dom.bubbleRatioDecimals.value;
+      }
+      if (el === dom.bubbleOpacity && dom.bubbleOpacityValue) {
+        dom.bubbleOpacityValue.textContent = dom.bubbleOpacity.value;
+      }
+      if (el === dom.overlayBarOpacity && dom.overlayBarOpacityValue) {
+        dom.overlayBarOpacityValue.textContent = dom.overlayBarOpacity.value;
+      }
+      if (el === dom.overlayFgOpacity && dom.overlayFgOpacityValue) {
+        dom.overlayFgOpacityValue.textContent = dom.overlayFgOpacity.value;
+      }
       if (el === dom.overlayBorderRadius && dom.overlayBorderRadiusValue) {
         dom.overlayBorderRadiusValue.textContent = dom.overlayBorderRadius.value;
+      }
+      if (el === dom.overlayRatioDecimals && dom.overlayRatioDecimalsValue) {
+        dom.overlayRatioDecimalsValue.textContent = dom.overlayRatioDecimals.value;
       }
       if (window.__debouncedRender) window.__debouncedRender();
     });

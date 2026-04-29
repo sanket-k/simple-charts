@@ -507,6 +507,33 @@ Range, 150, 700</pre>
           <p class="hint-text" style="margin-top:6px;margin-bottom:0;">Requires exactly 2 data series. First series = left dots, second series = right dots. Values must be positive (logarithmic scale). Ratio labels show <code>After / Before</code>.</p>
         </div>
         <div class="input-group">
+          <label>Sort By</label>
+          <select id="dumbbellSortBy">
+            <option value="original">Original Order</option>
+            <option value="value-desc">Value (High → Low)</option>
+            <option value="value-asc">Value (Low → High)</option>
+            <option value="ratio-desc">Ratio (High → Low)</option>
+            <option value="ratio-asc">Ratio (Low → High)</option>
+          </select>
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="dumbbellSwapSeries">
+          <label for="dumbbellSwapSeries">Swap Series</label>
+        </div>
+        <div class="input-group">
+          <label for="dumbbellNumberFormat">Number Format</label>
+          <select id="dumbbellNumberFormat">
+            <option value="raw">1,234</option>
+            <option value="compact">1.2K</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="dumbbellRatioDecimals">Ratio Decimals</label>
+          <input type="range" id="dumbbellRatioDecimals" min="0" max="3" step="1" value="1">
+          <span class="range-value" id="dumbbellRatioDecimalsValue">1</span>
+        </div>
+        <div class="input-group-separator"></div>
+        <div class="input-group">
           <label for="dumbbellPointSize">Point Size</label>
           <input type="range" id="dumbbellPointSize" min="4" max="16" step="1" value="10">
           <span class="range-value" id="dumbbellPointSizeValue">10</span>
@@ -516,13 +543,30 @@ Range, 150, 700</pre>
           <input type="range" id="dumbbellLineThickness" min="4" max="20" step="2" value="12">
           <span class="range-value" id="dumbbellLineThicknessValue">12</span>
         </div>
+        <div class="input-group">
+          <label for="dumbbellLineStyle">Line Style</label>
+          <select id="dumbbellLineStyle">
+            <option value="gradient">Gradient</option>
+            <option value="solid">Solid</option>
+            <option value="dashed">Dashed</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="dumbbellLineOpacity">Line Opacity</label>
+          <input type="range" id="dumbbellLineOpacity" min="0.1" max="1" step="0.1" value="0.4">
+          <span class="range-value" id="dumbbellLineOpacityValue">0.4</span>
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="dumbbellShowArrow">
+          <label for="dumbbellShowArrow">Show Direction Arrow</label>
+        </div>
         <div class="input-group checkbox-group">
           <input type="checkbox" id="dumbbellShowRatio" checked>
           <label for="dumbbellShowRatio">Show Ratio Labels</label>
         </div>
         <div class="input-group checkbox-group">
           <input type="checkbox" id="dumbbellShowValues" checked>
-          <label for="dumbbellShowValues">Show Values on Hover</label>
+          <label for="dumbbellShowValues">Show Values</label>
         </div>
       </div>
 
@@ -550,6 +594,33 @@ Range, 150, 700</pre>
           <p class="hint-text" style="margin-top:6px;margin-bottom:0;">Requires exactly 2 data series. Bubble area is proportional to value (<code>area = value</code>, radius = <code>&#8730;value &times; scale</code>). Larger values = bigger circles. Small values get a minimum radius so they remain visible.</p>
         </div>
         <div class="input-group">
+          <label>Sort By</label>
+          <select id="bubbleSortBy">
+            <option value="original">Original Order</option>
+            <option value="value-desc">Value (High → Low)</option>
+            <option value="value-asc">Value (Low → High)</option>
+            <option value="ratio-desc">Ratio (High → Low)</option>
+            <option value="ratio-asc">Ratio (Low → High)</option>
+          </select>
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="bubbleSwapSeries">
+          <label for="bubbleSwapSeries">Swap Series</label>
+        </div>
+        <div class="input-group">
+          <label for="bubbleNumberFormat">Number Format</label>
+          <select id="bubbleNumberFormat">
+            <option value="raw">1,234</option>
+            <option value="compact">1.2K</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="bubbleRatioDecimals">Ratio Decimals</label>
+          <input type="range" id="bubbleRatioDecimals" min="0" max="3" step="1" value="1">
+          <span class="range-value" id="bubbleRatioDecimalsValue">1</span>
+        </div>
+        <div class="input-group-separator"></div>
+        <div class="input-group">
           <label for="bubbleMaxRadius">Max Bubble Radius</label>
           <input type="range" id="bubbleMaxRadius" min="16" max="48" step="2" value="32">
           <span class="range-value" id="bubbleMaxRadiusValue">32</span>
@@ -559,10 +630,28 @@ Range, 150, 700</pre>
           <input type="range" id="bubbleMinRadius" min="2" max="10" step="1" value="4">
           <span class="range-value" id="bubbleMinRadiusValue">4</span>
         </div>
+        <!-- TODO: revisit for distancing -->
+        <!-- <div class="input-group">
+          <label for="bubbleGapSize">Gap Distance</label>
+          <input type="range" id="bubbleGapSize" min="-10" max="280" step="5" value="0">
+          <span class="range-value" id="bubbleGapSizeValue">0</span>
+        </div> -->
         <div class="input-group">
-          <label for="bubbleGapSize">Min Gap (px)</label>
-          <input type="range" id="bubbleGapSize" min="10" max="60" step="5" value="30">
-          <span class="range-value" id="bubbleGapSizeValue">30</span>
+          <label for="bubbleOpacity">Bubble Opacity</label>
+          <input type="range" id="bubbleOpacity" min="0.3" max="1" step="0.05" value="0.75">
+          <span class="range-value" id="bubbleOpacityValue">0.75</span>
+        </div>
+        <div class="input-group">
+          <label for="bubbleArrowStyle">Gap Connector</label>
+          <select id="bubbleArrowStyle">
+            <option value="arrow">Arrow</option>
+            <option value="line">Line Only</option>
+            <option value="none">None</option>
+          </select>
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="bubbleShowCategoryLabels" checked>
+          <label for="bubbleShowCategoryLabels">Show Category Labels</label>
         </div>
         <div class="input-group checkbox-group">
           <input type="checkbox" id="bubbleShowRatio" checked>
@@ -598,14 +687,60 @@ Range, 150, 700</pre>
           <p class="hint-text" style="margin-top:6px;margin-bottom:0;">Requires exactly 2 data series. Uses logarithmic scale — values must be positive. The second series is drawn as a faded background bar; the first series is drawn as a solid foreground bar.</p>
         </div>
         <div class="input-group">
+          <label>Sort By</label>
+          <select id="overlaySortBy">
+            <option value="original">Original Order</option>
+            <option value="value-desc">Value (High → Low)</option>
+            <option value="value-asc">Value (Low → High)</option>
+            <option value="ratio-desc">Ratio (High → Low)</option>
+            <option value="ratio-asc">Ratio (Low → High)</option>
+          </select>
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="overlaySwapSeries">
+          <label for="overlaySwapSeries">Swap Series</label>
+        </div>
+        <div class="input-group">
+          <label for="overlayNumberFormat">Number Format</label>
+          <select id="overlayNumberFormat">
+            <option value="raw">1,234</option>
+            <option value="compact">1.2K</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="overlayRatioDecimals">Ratio Decimals</label>
+          <input type="range" id="overlayRatioDecimals" min="0" max="3" step="1" value="1">
+          <span class="range-value" id="overlayRatioDecimalsValue">1</span>
+        </div>
+        <div class="input-group-separator"></div>
+        <div class="input-group">
           <label for="overlayBarOpacity">Background Opacity</label>
           <input type="range" id="overlayBarOpacity" min="0.05" max="0.5" step="0.05" value="0.18">
           <span class="range-value" id="overlayBarOpacityValue">0.18</span>
         </div>
         <div class="input-group">
+          <label for="overlayFgOpacity">Foreground Opacity</label>
+          <input type="range" id="overlayFgOpacity" min="0.5" max="1" step="0.05" value="0.9">
+          <span class="range-value" id="overlayFgOpacityValue">0.9</span>
+        </div>
+        <div class="input-group">
           <label for="overlayBorderRadius">Border Radius</label>
           <input type="range" id="overlayBorderRadius" min="0" max="12" step="1" value="6">
           <span class="range-value" id="overlayBorderRadiusValue">6</span>
+        </div>
+        <div class="input-group">
+          <label for="overlayBorderStyle">Border Style</label>
+          <select id="overlayBorderStyle">
+            <option value="solid">Solid</option>
+            <option value="none">None</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="overlayDisplayMode">Display Mode</label>
+          <select id="overlayDisplayMode">
+            <option value="overlay">Overlay</option>
+            <option value="grouped">Grouped</option>
+          </select>
         </div>
         <div class="input-group checkbox-group">
           <input type="checkbox" id="overlayShowRatio" checked>

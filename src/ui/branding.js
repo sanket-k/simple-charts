@@ -44,7 +44,7 @@ export function initBranding() {
     const raw = dom.brandLogoSvgInput.value.trim();
     if (!raw) return;
     if (!/<svg[\s>]/i.test(raw)) {
-      alert('Please paste valid SVG code starting with <svg>');
+      showToast('Please paste valid SVG code starting with <svg>', 'error');
       return;
     }
     const sanitized = raw
@@ -61,7 +61,7 @@ export function initBranding() {
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      alert('Could not render the SVG. Please check the code and try again.');
+      showToast('Could not render the SVG. Please check the code and try again.', 'error');
     };
     img.src = url;
   });
