@@ -16,6 +16,9 @@ export function updateSettingsVisibility() {
   if (dom.innovatorSettings) dom.innovatorSettings.style.display = t === 'innovator' ? 'block' : 'none';
   if (dom.segmentedSettings) dom.segmentedSettings.style.display = t === 'segmented' ? 'block' : 'none';
   if (dom.kanoSettings) dom.kanoSettings.style.display = t === 'kano' ? 'block' : 'none';
+  if (dom.dumbbellSettings) dom.dumbbellSettings.style.display = t === 'dumbbell' ? 'block' : 'none';
+  if (dom.bubbleCompareSettings) dom.bubbleCompareSettings.style.display = t === 'bubble-compare' ? 'block' : 'none';
+  if (dom.overlaySettings) dom.overlaySettings.style.display = t === 'overlay' ? 'block' : 'none';
 
   const toggle = (el, show) => {
     if (el) {
@@ -32,7 +35,7 @@ export function updateSettingsVisibility() {
   };
 
   toggle(dom.chartCurve, ['line', 'timeline', 'area', 'radar', 'combo'].includes(t));
-  toggle(dom.pointSize, ['line', 'timeline', 'scatter', 'radar', 'innovator', 'combo'].includes(t));
+  toggle(dom.pointSize, ['line', 'timeline', 'scatter', 'radar', 'innovator', 'combo', 'dumbbell'].includes(t));
   toggle(dom.lineWidth, ['line', 'timeline', 'area', 'radar', 'innovator', 'combo'].includes(t));
 
   const hasGrid = ['line', 'timeline', 'bar', 'vbar', 'area', 'scatter', 'waterfall', 'combo', 'segmented'].includes(t);
@@ -167,6 +170,9 @@ export function initSettingsListeners() {
     dom.kanoShowMustBe, dom.kanoShowPerformance, dom.kanoShowAttractive,
     dom.kanoShowDecay, dom.kanoShowQuadrantLabels,
     dom.kanoBubbleSize, dom.kanoAxisRange,
+    dom.dumbbellPointSize, dom.dumbbellLineThickness, dom.dumbbellShowRatio,
+    dom.bubbleMaxRadius, dom.bubbleGapSize, dom.bubbleShowRatio,
+    dom.overlayBarOpacity, dom.overlayShowRatio,
   ];
 
   settingsInputs.forEach(el => {
@@ -237,6 +243,21 @@ export function initSettingsListeners() {
       }
       if (el === dom.kanoAxisRange && dom.kanoAxisRangeValue) {
         dom.kanoAxisRangeValue.textContent = dom.kanoAxisRange.value;
+      }
+      if (el === dom.dumbbellPointSize && dom.dumbbellPointSizeValue) {
+        dom.dumbbellPointSizeValue.textContent = dom.dumbbellPointSize.value;
+      }
+      if (el === dom.dumbbellLineThickness && dom.dumbbellLineThicknessValue) {
+        dom.dumbbellLineThicknessValue.textContent = dom.dumbbellLineThickness.value;
+      }
+      if (el === dom.bubbleMaxRadius && dom.bubbleMaxRadiusValue) {
+        dom.bubbleMaxRadiusValue.textContent = dom.bubbleMaxRadius.value;
+      }
+      if (el === dom.bubbleGapSize && dom.bubbleGapSizeValue) {
+        dom.bubbleGapSizeValue.textContent = dom.bubbleGapSize.value;
+      }
+      if (el === dom.overlayBarOpacity && dom.overlayBarOpacityValue) {
+        dom.overlayBarOpacityValue.textContent = dom.overlayBarOpacity.value;
       }
       if (window.__debouncedRender) window.__debouncedRender();
     });

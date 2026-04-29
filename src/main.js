@@ -84,7 +84,10 @@ async function loadSampleData() {
     radar: "Metric, Us, Competitor\nSpeed, 90, 65\nCost, 75, 80\nAccuracy, 95, 70\nScale, 85, 60\nUX, 88, 72\nSupport, 92, 55",
     scatter: "X, Y\n10, 25\n22, 38\n35, 52\n18, 30\n42, 61\n28, 44\n55, 72\n15, 28\n48, 65\n33, 48\n60, 78\n25, 40\n38, 55\n45, 68\n12, 22",
     waterfall: "Category, Value\nRevenue, 5000\nCOGS, -2100\nGross Profit, 2900\nSalaries, -1200\nMarketing, -400\nR&D, -350\nNet Income, 950",
-    kano: "Feature, Implementation, Satisfaction\nTouchscreen, 8, 9\nFast Charging, 6, 7\nUSB-C, 9, 3\nFaceID, 3, 8\nHeadphone Jack, 7, -2\nWireless Charging, 5, 8\nNFC Payments, 8, 2\n5G Connectivity, 6, 6\nIP68 Rating, 9, 4\nAlways-On Display, 4, 7"
+    kano: "Feature, Implementation, Satisfaction\nTouchscreen, 8, 9\nFast Charging, 6, 7\nUSB-C, 9, 3\nFaceID, 3, 8\nHeadphone Jack, 7, -2\nWireless Charging, 5, 8\nNFC Payments, 8, 2\n5G Connectivity, 6, 6\nIP68 Rating, 9, 4\nAlways-On Display, 4, 7",
+    dumbbell: "Metric, Before, After\nHorsepower, 10, 430\nTop Speed (mph), 35, 120\nRange (miles), 150, 700\nTowing (lbs), 10, 13500",
+    'bubble-compare': "Metric, Before, After\nHorsepower, 10, 430\nTop Speed (mph), 35, 120\nRange (miles), 150, 700\nTowing (lbs), 10, 13500",
+    overlay: "Metric, Before, After\nHorsepower, 10, 430\nTop Speed (mph), 35, 120\nRange (miles), 150, 700\nTowing (lbs), 10, 13500",
   };
 
   if (state.currentChartType === 'segmented') {
@@ -365,6 +368,11 @@ function init() {
   if (dom.segmentedMinLabelPctValue) dom.segmentedMinLabelPctValue.textContent = dom.segmentedMinLabelPct.value + '%';
   if (dom.kanoBubbleSizeValue) dom.kanoBubbleSizeValue.textContent = dom.kanoBubbleSize.value;
   if (dom.kanoAxisRangeValue) dom.kanoAxisRangeValue.textContent = dom.kanoAxisRange.value;
+  if (dom.dumbbellPointSizeValue) dom.dumbbellPointSizeValue.textContent = dom.dumbbellPointSize.value;
+  if (dom.dumbbellLineThicknessValue) dom.dumbbellLineThicknessValue.textContent = dom.dumbbellLineThickness.value;
+  if (dom.bubbleMaxRadiusValue) dom.bubbleMaxRadiusValue.textContent = dom.bubbleMaxRadius.value;
+  if (dom.bubbleGapSizeValue) dom.bubbleGapSizeValue.textContent = dom.bubbleGapSize.value;
+  if (dom.overlayBarOpacityValue) dom.overlayBarOpacityValue.textContent = dom.overlayBarOpacity.value;
 
   renderInnovatorTierNames();
 

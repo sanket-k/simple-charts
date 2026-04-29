@@ -170,6 +170,22 @@ export const dom = {
   kanoBubbleSizeValue: $('#kanoBubbleSizeValue'),
   kanoAxisRange: $('#kanoAxisRange'),
   kanoAxisRangeValue: $('#kanoAxisRangeValue'),
+  dumbbellSettings: $('#dumbbellSettings'),
+  dumbbellPointSize: $('#dumbbellPointSize'),
+  dumbbellPointSizeValue: $('#dumbbellPointSizeValue'),
+  dumbbellLineThickness: $('#dumbbellLineThickness'),
+  dumbbellLineThicknessValue: $('#dumbbellLineThicknessValue'),
+  dumbbellShowRatio: $('#dumbbellShowRatio'),
+  bubbleCompareSettings: $('#bubbleCompareSettings'),
+  bubbleMaxRadius: $('#bubbleMaxRadius'),
+  bubbleMaxRadiusValue: $('#bubbleMaxRadiusValue'),
+  bubbleGapSize: $('#bubbleGapSize'),
+  bubbleGapSizeValue: $('#bubbleGapSizeValue'),
+  bubbleShowRatio: $('#bubbleShowRatio'),
+  overlaySettings: $('#overlaySettings'),
+  overlayBarOpacity: $('#overlayBarOpacity'),
+  overlayBarOpacityValue: $('#overlayBarOpacityValue'),
+  overlayShowRatio: $('#overlayShowRatio'),
 };
 
 /** Color picker input -> hex display pairs for the 5-color palette editor */

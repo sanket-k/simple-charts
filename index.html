@@ -154,6 +154,18 @@
             <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 34C14 30 22 18 28 10L34 6" stroke="currentColor" stroke-width="1.8" opacity="0.45"/><line x1="6" y1="34" x2="34" y2="6" stroke="currentColor" stroke-width="1.8"/><path d="M6 28C16 28 26 18 34 6" stroke="currentColor" stroke-width="1.8" opacity="0.45"/><circle cx="18" cy="12" r="2" fill="currentColor" opacity="0.7"/><circle cx="26" cy="18" r="2" fill="currentColor" opacity="0.7"/><circle cx="14" cy="22" r="2" fill="currentColor" opacity="0.7"/></svg>
             <span>Kano</span>
           </button>
+          <button class="chart-type-btn" data-type="dumbbell" title="Dumbbell Comparison" role="tab" aria-selected="false">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="14" r="4" fill="currentColor" opacity="0.6"/><circle cx="30" cy="14" r="4" fill="currentColor" opacity="0.6"/><line x1="14" y1="14" x2="26" y2="14" stroke-width="4" opacity="0.3"/><circle cx="10" cy="26" r="4" fill="currentColor" opacity="0.6"/><circle cx="30" cy="26" r="4" fill="currentColor" opacity="0.6"/><line x1="14" y1="26" x2="26" y2="26" stroke-width="4" opacity="0.3"/></svg>
+            <span>Dumbbell</span>
+          </button>
+          <button class="chart-type-btn" data-type="bubble-compare" title="Bubble Size Comparison" role="tab" aria-selected="false">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="14" r="5" fill="currentColor" opacity="0.3"/><circle cx="28" cy="14" r="9" fill="currentColor" opacity="0.2"/><circle cx="12" cy="28" r="3" fill="currentColor" opacity="0.3"/><circle cx="28" cy="28" r="8" fill="currentColor" opacity="0.2"/></svg>
+            <span>Bubble</span>
+          </button>
+          <button class="chart-type-btn" data-type="overlay" title="Before/After Overlay" role="tab" aria-selected="false">
+            <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="8" width="28" height="5" rx="2" fill="currentColor" opacity="0.15"/><rect x="6" y="8" width="10" height="5" rx="2" fill="currentColor" opacity="0.7"/><rect x="6" y="18" width="28" height="5" rx="2" fill="currentColor" opacity="0.15"/><rect x="6" y="18" width="14" height="5" rx="2" fill="currentColor" opacity="0.7"/><rect x="6" y="28" width="28" height="5" rx="2" fill="currentColor" opacity="0.15"/><rect x="6" y="28" width="8" height="5" rx="2" fill="currentColor" opacity="0.7"/></svg>
+            <span>Overlay</span>
+          </button>
         </div>
       </div>
 
@@ -469,6 +481,64 @@
         </div>
         <div class="input-group-separator"></div>
         <p class="hint-text">Data format: Feature, Implementation, Satisfaction (values from -axis range to +axis range)</p>
+      </div>
+
+      <!-- Dumbbell Chart Settings -->
+      <div class="panel-section" id="dumbbellSettings" style="display:none;">
+        <h3 class="panel-title">Dumbbell Chart</h3>
+        <div class="input-group">
+          <label for="dumbbellPointSize">Point Size</label>
+          <input type="range" id="dumbbellPointSize" min="4" max="16" step="1" value="10">
+          <span class="range-value" id="dumbbellPointSizeValue">10</span>
+        </div>
+        <div class="input-group">
+          <label for="dumbbellLineThickness">Line Thickness</label>
+          <input type="range" id="dumbbellLineThickness" min="4" max="20" step="2" value="12">
+          <span class="range-value" id="dumbbellLineThicknessValue">12</span>
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="dumbbellShowRatio" checked>
+          <label for="dumbbellShowRatio">Show Ratio Labels</label>
+        </div>
+        <div class="input-group-separator"></div>
+        <p class="hint-text">Data format: Label, Series 1, Series 2 (e.g. Metric, Before, After)</p>
+      </div>
+
+      <!-- Bubble Compare Settings -->
+      <div class="panel-section" id="bubbleCompareSettings" style="display:none;">
+        <h3 class="panel-title">Bubble Compare</h3>
+        <div class="input-group">
+          <label for="bubbleMaxRadius">Max Bubble Radius</label>
+          <input type="range" id="bubbleMaxRadius" min="16" max="48" step="2" value="32">
+          <span class="range-value" id="bubbleMaxRadiusValue">32</span>
+        </div>
+        <div class="input-group">
+          <label for="bubbleGapSize">Min Gap (px)</label>
+          <input type="range" id="bubbleGapSize" min="10" max="60" step="5" value="30">
+          <span class="range-value" id="bubbleGapSizeValue">30</span>
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="bubbleShowRatio" checked>
+          <label for="bubbleShowRatio">Show Ratio Labels</label>
+        </div>
+        <div class="input-group-separator"></div>
+        <p class="hint-text">Data format: Label, Series 1, Series 2 (e.g. Metric, Before, After)</p>
+      </div>
+
+      <!-- Overlay Chart Settings -->
+      <div class="panel-section" id="overlaySettings" style="display:none;">
+        <h3 class="panel-title">Overlay Chart</h3>
+        <div class="input-group">
+          <label for="overlayBarOpacity">Background Opacity</label>
+          <input type="range" id="overlayBarOpacity" min="0.05" max="0.5" step="0.05" value="0.18">
+          <span class="range-value" id="overlayBarOpacityValue">0.18</span>
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="overlayShowRatio" checked>
+          <label for="overlayShowRatio">Show Improvement Ratios</label>
+        </div>
+        <div class="input-group-separator"></div>
+        <p class="hint-text">Data format: Label, Series 1, Series 2 (e.g. Metric, Before, After)</p>
       </div>
 
       <!-- Style -->

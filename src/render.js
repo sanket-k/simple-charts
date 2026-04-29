@@ -16,6 +16,9 @@ import { buildTimelineChart } from './charts/timeline.js';
 import { renderSegmentedChart } from './charts/segmented.js';
 import { renderInnovatorsDilemmaChart } from './charts/innovator.js';
 import { renderKanoChart } from './charts/kano.js';
+import { renderDumbbellChart } from './charts/dumbbell.js';
+import { renderBubbleCompareChart } from './charts/bubble-compare.js';
+import { renderOverlayChart } from './charts/overlay.js';
 
 /** Main chart render function */
 export function renderChart() {
@@ -36,6 +39,21 @@ export function renderChart() {
 
   if (state.currentChartType === 'segmented') {
     renderSegmentedChart();
+    return;
+  }
+
+  if (state.currentChartType === 'dumbbell') {
+    renderDumbbellChart();
+    return;
+  }
+
+  if (state.currentChartType === 'bubble-compare') {
+    renderBubbleCompareChart();
+    return;
+  }
+
+  if (state.currentChartType === 'overlay') {
+    renderOverlayChart();
     return;
   }
 
