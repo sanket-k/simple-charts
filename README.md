@@ -312,6 +312,52 @@ A product management visualization that plots features on a 2D plane (Implementa
 
 The four quadrants represent: **Attractive** (low implementation, high satisfaction — delighters), **Performance** (high implementation, high satisfaction — proportional), **Must-be** (low implementation, low dissatisfaction — expected basics), and **Indifferent** (high implementation, low satisfaction — features users don't care about).
 
+### Dumbbell Comparison Chart
+
+A scatter-based chart that visualizes the gap between two groups across multiple metrics. Each metric shows two dots (one per group) connected by a thick gradient line, with a ratio pill label at the midpoint showing the improvement multiple (e.g., "x43"). Uses a logarithmic X-axis to handle wide value ranges.
+
+**When to use:** Before/after comparisons, competitor analysis, performance gap visualization.
+
+**Data format:** 3-column CSV — `Label, Series 1, Series 2` (e.g., `Metric, Before, After`). Values must be positive (logarithmic scale). Requires exactly 2 data series.
+
+| Setting | Options | Description |
+|---|---|---|
+| Point Size | 4 – 16 | Radius of scatter dots |
+| Line Thickness | 4 – 20 | Width of the gradient connecting line |
+| Show Ratio Labels | On/Off | Display "xN" pill labels at line midpoints |
+| Show Values on Hover | On/Off | Display actual values next to each dot |
+
+### Bubble Compare Chart
+
+An area-proportional bubble chart that compares two groups across metrics. Circle area is proportional to value (`radius = sqrt(value) * scale`), creating a visceral "aha" effect where one circle dwarfs the other. Pairs are connected by dashed arrows with ratio labels.
+
+**When to use:** Size comparisons, scale awareness, dramatic contrast between values.
+
+**Data format:** 3-column CSV — `Label, Series 1, Series 2`. Values must be positive. Requires exactly 2 data series.
+
+| Setting | Options | Description |
+|---|---|---|
+| Max Bubble Radius | 16 – 48 | Maximum bubble radius (controls overall scale) |
+| Min Radius | 2 – 10 | Minimum radius for very small values |
+| Min Gap (px) | 10 – 60 | Horizontal gap between bubble pairs |
+| Show Ratio Labels | On/Off | Display "xN" pill labels between bubble pairs |
+| Show Values Inside Bubbles | On/Off | Display actual values inside bubbles (when large enough) |
+
+### Overlay Chart
+
+A horizontal bar chart that overlays two series on a logarithmic scale. The second series is drawn as a faded, semi-transparent background bar, while the first series is drawn as a solid foreground bar on top. This creates a clear visual contrast showing how much one value overshadows another.
+
+**When to use:** Before/after overlays, highlighting gaps between groups, comparing magnitudes.
+
+**Data format:** 3-column CSV — `Label, Series 1, Series 2`. Values must be positive (logarithmic scale). Requires exactly 2 data series.
+
+| Setting | Options | Description |
+|---|---|---|
+| Background Opacity | 0.05 – 0.50 | Opacity of the faded background bar |
+| Border Radius | 0 – 12 | Corner rounding of bars |
+| Show Improvement Ratios | On/Off | Display "xN" ratio in data labels |
+| Show Values | On/Off | Display actual values as data labels |
+
 ---
 
 ## Features
@@ -570,7 +616,7 @@ graphs/
 │   ├── data.js             # Parsing pipeline: CSV, JSON, manual, downsample, zoom
 │   ├── format-number.js    # Y-tick, data-label, tooltip formatters
 │   ├── charts/
-│   │   ├── base-options.js # getThemeColors, getMultiColors, bgPlugin, sourceFooterPlugin, brandPlugin
+│   │   ├── base-options.js # FONTS tokens, getTooltipBase, getLegendBase, ASPECT_RATIOS, theme colors, plugins
 │   │   ├── line.js         # Line chart builder
 │   │   ├── bar.js          # Vertical & horizontal bar chart builder
 │   │   ├── pie.js          # Pie chart builder
@@ -582,8 +628,12 @@ graphs/
 │   │   ├── combo.js        # Combo (mixed) chart builder
 │   │   ├── timeline.js     # Timeline chart builder (with event markers)
 │   │   ├── segmented.js    # Segmented bar chart builder + segment editor
-│   │   └── innovator.js    # Innovator's Dilemma parametric chart builder
-│   │   └── kano.js         # Kano Model chart (feature prioritization scatter)
+│   │   ├── innovator.js    # Innovator's Dilemma parametric chart builder
+│   │   ├── kano.js         # Kano Model chart (feature prioritization scatter)
+│   │   ├── compare-utils.js # Log/category axis helpers, ratio pill drawing, compare data validation
+│   │   ├── dumbbell.js     # Dumbbell gap comparison chart
+│   │   ├── bubble-compare.js # Area-proportional bubble comparison chart
+│   │   └── overlay.js      # Before/after overlay bar chart
 │   └── ui/
 │       ├── theme.js        # Dark/light theme toggle
 │       ├── colors.js       # Color pickers, preset palette listeners

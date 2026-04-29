@@ -62,6 +62,18 @@ index.html ──► src/main.js (entry, init())
 
 **Chart palette**: `#F7931A` `#60A5FA` `#34D399` `#F472B6` `#A78BFA` (5 default + 5 extra). Semantic: positive `#34D399`, negative `#F87171`.
 
+**Chart.js fonts** (JS constant `FONTS` in `charts/base-options.js`):
+All chart font objects MUST use `FONTS.*` tokens. Never inline `family: "'Inter', sans-serif"`.
+Available tokens: `title`, `subtitle`, `legend`, `tick`, `tickSmall`, `axisTitle`, `axisTitleLg`, `tooltipTitle`, `tooltipBody`, `datalabels`, `datalabelsBold`, `datalabelsSm`, `datalabelsXs`, `annotation`, `pointLabel`, `kanoQuadrant`, `source`, `brand`, `ratioPill`.
+
+**Chart.js design helpers** (functions in `charts/base-options.js`):
+`getTooltipBase()` — shared tooltip config (colors, fonts, border).
+`getLegendBase()` — shared legend config (position, colors, point style).
+`ASPECT_RATIOS` — `{ standard: false, square: true, circle: 1.6 }`.
+
+**Compare chart helpers** (functions in `charts/compare-utils.js`):
+`getLogXAxis()` — logarithmic X-axis config. `getCategoryYAxis(labels)` — categorical Y-axis. `drawRatioPill(ctx, x, y, text, colors, opts?)` — canvas ratio pill.
+
 **Other tokens**: `--font-sans: Inter`, `--font-mono: JetBrains Mono`, base `14px`. Spacing: `--sp-1`(4px) through `--sp-10`(40px). Radii: `--radius-xs`(4px) through `--radius-xl`(20px). Transition: `--duration: 0.2s`, `--ease-out: cubic-bezier(0.16, 1, 0.3, 1)`.
 
 ## 5. Component Rules
@@ -98,13 +110,22 @@ export function buildLineChart(labels, datasets, c, colors, tension, useTimeAxis
 
 **Theme Plugins** (read colors at draw time, not init): `getThemeColors()` called inside `beforeDraw()`.
 
-## 7. Folder Structure
+**Self-Managed Charts** (charts that build options from scratch — compare, segmented, kano, innovator):
+```javascript
+import { FONTS, getTooltipBase, getLegendBase, ASPECT_RATIOS } from './base-options.js';
+// Use FONTS.* for all font objects, spread helpers for tooltip/legend:
+plugins: {
+  legend: getLegendBase(),
+  tooltip: { ...getTooltipBase(), callbacks: { ... } },
+  title: { font: FONTS.title, ... },
+}
+```
 
 ```
 src/
 ├── main.js, render.js, state.js, dom.js, constants.js, utils.js
 ├── format.js, chart-format.js, date-utils.js, data.js
-├── charts/          # One builder per type + base-options.js (shared config & plugins)
+├── charts/          # One builder per type + base-options.js (design tokens, config helpers, plugins)
 └── ui/              # Event modules: theme, colors, settings, dual-axis, combo-ui,
                      # line-style-ui, branding, timeline-ui, zoom-ui, export, clipboard
 hub/                 # PRD.md, TECHNICAL_SPECIFICATION.md, USER_MANUAL.md, STYLE_GUIDE.md
