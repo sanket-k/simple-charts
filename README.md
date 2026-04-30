@@ -31,7 +31,7 @@ A browser-based, publication-quality chart creation tool designed for producing 
 
 ## Overview
 
-Simple Charts lets you paste, upload, or manually enter data and instantly generate polished, branded charts. It supports 14 chart types, dark/light themes, social-media-optimized export sizes, and advanced features like dual axes, timeline event markers, a segmented bar chart editor, a Kano Model for feature prioritization, and a unique "Innovator's Dilemma" visualization.
+Simple Charts lets you paste, upload, or manually enter data and instantly generate polished, branded charts. It supports 16 chart types, dark/light themes, social-media-optimized export sizes, and advanced features like dual axes, timeline event markers, a segmented bar chart editor, a Kano Model for feature prioritization, a unique "Innovator's Dilemma" visualization, and comparison charts (dumbbell, bubble compare, overlay).
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -609,7 +609,7 @@ graphs/
 │   ├── render.js           # Chart render dispatcher (routes to chart builders)
 │   ├── constants.js        # PALETTE, DEFAULT_COLORS, PRESET_PALETTES, CONFIG
 │   ├── state.js            # Single mutable state object
-│   ├── dom.js              # DOM cache ($, $$, dom object)
+│   ├── dom.js              # DOM cache ($, $$, ~229 dom refs)
 │   ├── utils.js            # debounce, safeInt, safeFloat, hexToRgba, showToast
 │   ├── format.js           # formatNumber (6 modes)
 │   ├── date-utils.js       # tryParseDate, isDateColumn, formatDateLabel
