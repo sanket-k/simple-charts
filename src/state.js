@@ -3,7 +3,7 @@ import { DEFAULT_COLORS } from './constants.js';
 /** Single mutable state object shared across all modules */
 export const state = {
   // Core state
-  currentTheme: 'dark',
+  currentTheme: 'light',
   currentChartType: 'line',
   chartInstance: null,
   parsedData: null,

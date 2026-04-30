@@ -43,7 +43,7 @@
   --overlay-bg: rgba(0, 0, 0, 0.5);
 }
 
-/* ── Dark Theme (Default) ── */
+/* ── Dark Theme ── */
 [data-theme="dark"] {
   --bg-primary: #111622;
   --bg-secondary: #19202e;
