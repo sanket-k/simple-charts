@@ -1,6 +1,7 @@
 import { CONFIG, DEFAULT_COLORS } from '../constants.js';
 import { state } from '../state.js';
 import { dom, $$ } from '../dom.js';
+import { getCapabilities, getAllChartDescriptors, getChartDescriptor } from '../charts/registry.js';
 import { renderGroupTabs, renderSegmentList, getDefaultSegments, ensureGroupStructure } from '../charts/segmented.js';
 import { renderInnovatorTierNames } from '../charts/innovator.js';
 import { renderComboDatasetTypes } from './combo-ui.js';
@@ -10,15 +11,7 @@ import { updateZoomSlider } from '../data.js';
 
 export function updateSettingsVisibility() {
   const t = state.currentChartType;
-  const isAxisChart = ['line', 'timeline', 'bar', 'vbar', 'area', 'scatter', 'waterfall', 'combo'].includes(t);
-
-  if (dom.timelineSettings) dom.timelineSettings.style.display = (t === 'timeline' || t === 'innovator') ? 'block' : 'none';
-  if (dom.innovatorSettings) dom.innovatorSettings.style.display = t === 'innovator' ? 'block' : 'none';
-  if (dom.segmentedSettings) dom.segmentedSettings.style.display = t === 'segmented' ? 'block' : 'none';
-  if (dom.kanoSettings) dom.kanoSettings.style.display = t === 'kano' ? 'block' : 'none';
-  if (dom.dumbbellSettings) dom.dumbbellSettings.style.display = t === 'dumbbell' ? 'block' : 'none';
-  if (dom.bubbleCompareSettings) dom.bubbleCompareSettings.style.display = t === 'bubble-compare' ? 'block' : 'none';
-  if (dom.overlaySettings) dom.overlaySettings.style.display = t === 'overlay' ? 'block' : 'none';
+  const caps = getCapabilities(t);
 
   const toggle = (el, show) => {
     if (el) {
@@ -34,39 +27,54 @@ export function updateSettingsVisibility() {
     }
   };
 
-  toggle(dom.chartCurve, ['line', 'timeline', 'area', 'radar', 'combo'].includes(t));
-  toggle(dom.pointSize, ['line', 'timeline', 'scatter', 'radar', 'innovator', 'combo', 'dumbbell'].includes(t));
-  toggle(dom.lineWidth, ['line', 'timeline', 'area', 'radar', 'innovator', 'combo'].includes(t));
+  // Chart-specific settings panels
+  const chartPanelMap = {
+    timeline: dom.timelineSettings,
+    innovator: dom.innovatorSettings,
+    segmented: dom.segmentedSettings,
+    kano: dom.kanoSettings,
+    dumbbell: dom.dumbbellSettings,
+    'bubble-compare': dom.bubbleCompareSettings,
+    overlay: dom.overlaySettings,
+  };
+  Object.entries(chartPanelMap).forEach(([id, panel]) => {
+    if (panel) panel.style.display = t === id ? 'block' : 'none';
+  });
+  // Timeline settings panel also shows for innovator
+  if (dom.timelineSettings) dom.timelineSettings.style.display = (t === 'timeline' || t === 'innovator') ? 'block' : 'none';
 
-  const hasGrid = ['line', 'timeline', 'bar', 'vbar', 'area', 'scatter', 'waterfall', 'combo', 'segmented'].includes(t);
-  toggle(dom.showGrid, hasGrid);
-  toggle(dom.gridStyle, hasGrid);
-  toggle(dom.chartGridColor, hasGrid);
+  // Shared controls driven by capabilities
+  toggle(dom.chartCurve, caps.curve);
+  toggle(dom.pointSize, caps.pointSize);
+  toggle(dom.lineWidth, caps.lineWidth);
 
-  toggle(dom.fillArea, ['line', 'timeline'].includes(t));
-  toggle(dom.spanGaps, ['line', 'timeline', 'area'].includes(t));
-  toggle(dom.showHighLowPoints, ['line', 'timeline', 'area', 'radar', 'combo'].includes(t));
-  toggle(dom.barBorderRadius, ['bar', 'vbar', 'waterfall', 'combo'].includes(t));
+  toggle(dom.showGrid, caps.grid);
+  toggle(dom.gridStyle, caps.grid);
+  toggle(dom.chartGridColor, caps.grid);
 
-  toggle(dom.legendPosition, t !== 'innovator');
+  toggle(dom.fillArea, caps.fillArea);
+  toggle(dom.spanGaps, caps.spanGaps);
+  toggle(dom.showHighLowPoints, caps.highLow);
+  toggle(dom.barBorderRadius, caps.barRadius);
 
-  const isFormattingChart = isAxisChart;
-  toggle(dom.xAxisType, isFormattingChart);
-  toggle(dom.xAxisLabel, isFormattingChart);
-  toggle(dom.yAxisLabel, isFormattingChart);
-  toggle(dom.dateFormat, isFormattingChart);
-  toggle(dom.maxTicks, isFormattingChart);
-  toggle(dom.yAxisScale, isFormattingChart);
-  toggleRow(dom.yAxisMin, isFormattingChart);
-  toggle(dom.xAxisRotation, isFormattingChart);
+  toggle(dom.legendPosition, caps.legend);
+
+  toggle(dom.xAxisType, caps.axisFormatting);
+  toggle(dom.xAxisLabel, caps.axisFormatting);
+  toggle(dom.yAxisLabel, caps.axisFormatting);
+  toggle(dom.dateFormat, caps.axisFormatting);
+  toggle(dom.maxTicks, caps.axisFormatting);
+  toggle(dom.yAxisScale, caps.axisFormatting);
+  toggleRow(dom.yAxisMin, caps.axisFormatting);
+  toggle(dom.xAxisRotation, caps.axisFormatting);
 
   if (dom.refLineY) {
     const annSection = dom.refLineY.closest('.panel-section');
-    if (annSection) annSection.style.display = isAxisChart ? '' : 'none';
+    if (annSection) annSection.style.display = caps.axisFormatting ? '' : 'none';
   }
 
   if (dom.dualAxisSection) {
-    if (!isAxisChart || !state.rawParsedData || state.rawParsedData.datasets.length < 2) {
+    if (!caps.dualAxis || !state.rawParsedData || state.rawParsedData.datasets.length < 2) {
       dom.dualAxisSection.style.display = 'none';
     } else {
       dom.dualAxisSection.style.display = 'block';
@@ -85,7 +93,7 @@ export function updateSettingsVisibility() {
 
   const lineStyleSection = dom.lineStyleSection;
   if (lineStyleSection) {
-    const isLineStyleChart = ['line', 'timeline', 'area'].includes(t);
+    const isLineStyleChart = caps.lineStyle;
     const comboHasLine = t === 'combo' && state.datasetChartTypes.some(dt => dt === 'line');
     const showLineStyles = (isLineStyleChart || comboHasLine) && state.rawParsedData && state.rawParsedData.datasets.length >= 1;
     lineStyleSection.style.display = showLineStyles ? 'block' : 'none';
@@ -93,7 +101,30 @@ export function updateSettingsVisibility() {
   }
 }
 
+/** Generate chart type grid buttons from registry */
+function buildChartTypeGrid() {
+  const grid = dom.chartTypeGrid;
+  if (!grid) return;
+
+  grid.innerHTML = '';
+  const descriptors = getAllChartDescriptors();
+
+  descriptors.forEach((desc, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'chart-type-btn' + (i === 0 ? ' active' : '');
+    btn.dataset.type = desc.id;
+    btn.title = desc.label + ' Chart';
+    btn.role = 'tab';
+    btn.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+    btn.innerHTML = `${desc.icon}<span>${desc.label}</span>`;
+    grid.appendChild(btn);
+  });
+}
+
 export function initChartTypeGrid() {
+  // Auto-generate buttons from registry
+  buildChartTypeGrid();
+
   dom.chartTypeGrid.addEventListener('click', (e) => {
     const btn = e.target.closest('.chart-type-btn');
     if (!btn) return;
@@ -106,8 +137,8 @@ export function initChartTypeGrid() {
     state.previousChartType = state.currentChartType;
     state.currentChartType = btn.dataset.type;
 
-    if (state.currentChartType === 'segmented' && state.segmentedSegments.length === 0 && state.segmentedGroups.length === 0) {
-      state.segmentedSegments = getDefaultSegments();
+    if (state.currentChartType === 'segmented' && state.charts.segmented.segments.length === 0 && state.charts.segmented.groups.length === 0) {
+      state.charts.segmented.segments = getDefaultSegments();
       ensureGroupStructure();
       renderGroupTabs();
       renderSegmentList();

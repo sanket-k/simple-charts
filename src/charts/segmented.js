@@ -4,6 +4,7 @@ import { safeInt, safeFloat, hexToRgba } from '../utils.js';
 import { formatNumber } from '../format.js';
 import { getThemeColors, getMultiColors, FONTS, getTooltipBase, getLegendBase } from './base-options.js';
 import { bgPlugin, sourceFooterPlugin, brandPlugin } from './base-options.js';
+import { registerChart } from './registry.js';
 
 export function getDefaultSegments() {
   return [
@@ -16,16 +17,16 @@ export function getDefaultSegments() {
 }
 
 export function ensureGroupStructure() {
-  if (state.segmentedGroups.length === 0) {
-    const segs = state.segmentedSegments.length > 0 ? [...state.segmentedSegments] : getDefaultSegments();
-    state.segmentedGroups = [{ name: '', segments: segs }];
-    state.activeGroupIndex = 0;
+  if (state.charts.segmented.groups.length === 0) {
+    const segs = state.charts.segmented.segments.length > 0 ? [...state.charts.segmented.segments] : getDefaultSegments();
+    state.charts.segmented.groups = [{ name: '', segments: segs }];
+    state.charts.segmented.activeGroupIndex = 0;
   }
 }
 
 export function getActiveGroupSegments() {
   ensureGroupStructure();
-  return state.segmentedGroups[state.activeGroupIndex]?.segments || [];
+  return state.charts.segmented.groups[state.charts.segmented.activeGroupIndex]?.segments || [];
 }
 
 export function renderGroupTabs() {
@@ -33,12 +34,12 @@ export function renderGroupTabs() {
   ensureGroupStructure();
   dom.segmentedGroupTabs.innerHTML = '';
 
-  state.segmentedGroups.forEach((group, i) => {
+  state.charts.segmented.groups.forEach((group, i) => {
     const tab = document.createElement('button');
-    tab.className = 'segmented-group-tab' + (i === state.activeGroupIndex ? ' active' : '');
+    tab.className = 'segmented-group-tab' + (i === state.charts.segmented.activeGroupIndex ? ' active' : '');
     tab.textContent = group.name || `Group ${i + 1}`;
     tab.addEventListener('click', () => {
-      state.activeGroupIndex = i;
+      state.charts.segmented.activeGroupIndex = i;
       renderGroupTabs();
       renderSegmentList();
     });
@@ -46,7 +47,7 @@ export function renderGroupTabs() {
   });
 
   if (dom.segmentedGroupName) {
-    const g = state.segmentedGroups[state.activeGroupIndex];
+    const g = state.charts.segmented.groups[state.charts.segmented.activeGroupIndex];
     dom.segmentedGroupName.value = g ? g.name : '';
   }
 }
@@ -183,7 +184,7 @@ export function renderSegmentList() {
 function getSegmentPercent(ctx) {
   const segLabel = ctx.dataset.label;
   const groupIdx = ctx.dataIndex;
-  const group = state.segmentedGroups[groupIdx];
+  const group = state.charts.segmented.groups[groupIdx];
   if (!group) return 0;
   const seg = group.segments.find(s => s.label === segLabel);
   const val = seg?.value || 0;
@@ -206,19 +207,19 @@ export function buildSegmentedBarChart(c) {
 
   ensureGroupStructure();
 
-  const isSingleGroup = state.segmentedGroups.length === 1;
+  const isSingleGroup = state.charts.segmented.groups.length === 1;
   const labels = isSingleGroup
     ? ['']
-    : state.segmentedGroups.map((g, i) => g.name || `Group ${i + 1}`);
+    : state.charts.segmented.groups.map((g, i) => g.name || `Group ${i + 1}`);
 
-  const hasData = state.segmentedGroups.some(g => g.segments.some(s => (s.value || 0) > 0));
+  const hasData = state.charts.segmented.groups.some(g => g.segments.some(s => (s.value || 0) > 0));
   if (!hasData) {
     return { type: 'bar', data: { labels: [''], datasets: [] }, options: { responsive: true, maintainAspectRatio: false }, plugins: [bgPlugin, sourceFooterPlugin, brandPlugin, ChartDataLabels] };
   }
 
   const allSegmentLabels = [];
   const seenLabels = new Set();
-  state.segmentedGroups.forEach(g => {
+  state.charts.segmented.groups.forEach(g => {
     g.segments.forEach(s => {
       if (!seenLabels.has(s.label)) {
         seenLabels.add(s.label);
@@ -228,7 +229,7 @@ export function buildSegmentedBarChart(c) {
   });
 
   const segmentColorMap = {};
-  state.segmentedGroups.forEach(g => {
+  state.charts.segmented.groups.forEach(g => {
     g.segments.forEach(s => {
       if (!segmentColorMap[s.label]) {
         segmentColorMap[s.label] = s.color;
@@ -239,7 +240,7 @@ export function buildSegmentedBarChart(c) {
   const chartBg = state.userBgColor || c.bg;
 
   const datasets = allSegmentLabels.map((segLabel, segIdx) => {
-    const data = state.segmentedGroups.map(g => {
+    const data = state.charts.segmented.groups.map(g => {
       const seg = g.segments.find(s => s.label === segLabel);
       if (!seg) return 0;
       if (mode === 'percent') {
@@ -259,7 +260,7 @@ export function buildSegmentedBarChart(c) {
       borderWidth: gap,
       borderRadius: (ctx) => {
         const groupIdx = ctx.dataIndex;
-        const group = state.segmentedGroups[groupIdx];
+        const group = state.charts.segmented.groups[groupIdx];
         if (!group) return 0;
         const visibleLabels = group.segments.filter(s => (s.value || 0) > 0).map(s => s.label);
         if (visibleLabels.length === 0) return 0;
@@ -332,7 +333,7 @@ export function buildSegmentedBarChart(c) {
           label: (ctx) => {
             const segLabel = ctx.dataset.label;
             const groupIdx = ctx.dataIndex;
-            const group = state.segmentedGroups[groupIdx];
+            const group = state.charts.segmented.groups[groupIdx];
             const seg = group?.segments.find(s => s.label === segLabel);
             const val = seg?.value || 0;
             const groupTotal = group?.segments.reduce((sum, s) => sum + (s.value || 0), 0) || 0;
@@ -380,7 +381,7 @@ export function buildSegmentedBarChart(c) {
           if (!value || value === 0) return '';
           const segLabel = ctx.dataset.label;
           const groupIdx = ctx.dataIndex;
-          const group = state.segmentedGroups[groupIdx];
+          const group = state.charts.segmented.groups[groupIdx];
           const seg = group?.segments.find(s => s.label === segLabel);
           const val = seg?.value || 0;
           const groupTotal = group?.segments.reduce((sum, s) => sum + (s.value || 0), 0) || 0;
@@ -467,10 +468,19 @@ export function renderSegmentedChart() {
     state.chartInstance = null;
   }
   ensureGroupStructure();
-  const hasData = state.segmentedGroups.some(g => g.segments && g.segments.length > 0);
+  const hasData = state.charts.segmented.groups.some(g => g.segments && g.segments.length > 0);
   if (!hasData) return;
 
   const c = getThemeColors();
   const config = buildSegmentedBarChart(c);
   state.chartInstance = new Chart(dom.chartCanvas, config);
 }
+
+registerChart({
+  id: 'segmented',
+  label: 'Segmented',
+  icon: '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="14" width="12" height="12" rx="1" fill="currentColor" opacity="0.4"/><rect x="16" y="14" width="8" height="12" fill="currentColor" opacity="0.25"/><rect x="24" y="14" width="6" height="12" fill="currentColor" opacity="0.15"/><rect x="30" y="14" width="6" height="12" rx="1" fill="currentColor" opacity="0.1"/></svg>',
+  isSelfManaged: true,
+  builder: () => renderSegmentedChart(),
+  capabilities: { grid: true, legend: true },
+});

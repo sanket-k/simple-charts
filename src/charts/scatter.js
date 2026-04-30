@@ -1,6 +1,7 @@
 import { dom } from '../dom.js';
 import { safeInt, hexToRgba } from '../utils.js';
 import { getBaseChartOptions } from './base-options.js';
+import { registerChart } from './registry.js';
 
 export function buildScatterChart(labels, datasets, c, colors) {
   const opts = getBaseChartOptions();
@@ -32,3 +33,12 @@ export function buildScatterChart(labels, datasets, c, colors) {
     options: opts
   };
 }
+
+registerChart({
+  id: 'scatter',
+  label: 'Scatter',
+  icon: '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="28" r="2.5" fill="currentColor"/><circle cx="16" cy="20" r="2.5" fill="currentColor"/><circle cx="24" cy="14" r="2.5" fill="currentColor"/><circle cx="30" cy="22" r="2.5" fill="currentColor"/><circle cx="20" cy="26" r="2.5" fill="currentColor" opacity="0.4"/></svg>',
+  isSelfManaged: false,
+  builder: (ctx) => buildScatterChart(ctx.labels, ctx.datasets, ctx.c, ctx.colors),
+  capabilities: { pointSize: true, grid: true, legend: true, axisFormatting: true, dualAxis: true, zoom: true },
+});

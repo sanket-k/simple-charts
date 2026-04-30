@@ -101,7 +101,7 @@ export function applyZoom(data) {
 export function updateZoomLabels() {
   let lbls = [];
   if (state.currentChartType === 'innovator') {
-    lbls = state.currentInnovatorLabels;
+    lbls = state.charts.innovator.currentLabels;
   } else if (state.parsedData) {
     lbls = state.parsedData.labels;
   }
@@ -374,7 +374,7 @@ export function convertParsedDataToSegments(data) {
   const colors = getMultiColors();
 
   if (data.datasets.length >= 2 && data.labels.length > 1) {
-    state.segmentedGroups = data.labels.map((label, labelIdx) => ({
+    state.charts.segmented.groups = data.labels.map((label, labelIdx) => ({
       name: String(label),
       segments: data.datasets
         .map((ds, dsIdx) => ({
@@ -384,16 +384,16 @@ export function convertParsedDataToSegments(data) {
         }))
         .filter(s => s.value > 0)
     }));
-    state.activeGroupIndex = 0;
-    state.segmentedSegments = [...state.segmentedGroups[0].segments];
+    state.charts.segmented.activeGroupIndex = 0;
+    state.charts.segmented.segments = [...state.charts.segmented.groups[0].segments];
   } else {
-    state.segmentedSegments = data.labels.map((label, i) => ({
+    state.charts.segmented.segments = data.labels.map((label, i) => ({
       label: String(label),
       value: data.datasets[0].values[i] || 0,
       color: colors[i % colors.length]
     }));
-    state.segmentedGroups = [{ name: '', segments: [...state.segmentedSegments] }];
-    state.activeGroupIndex = 0;
+    state.charts.segmented.groups = [{ name: '', segments: [...state.charts.segmented.segments] }];
+    state.charts.segmented.activeGroupIndex = 0;
   }
 }
 
@@ -517,7 +517,7 @@ export function updateZoomSlider() {
     return;
   }
   const isLineChart = ['line', 'timeline', 'area', 'innovator', 'combo'].includes(state.currentChartType);
-  const len = isInnovator ? state.currentInnovatorLabels.length : (state.parsedData ? state.parsedData.labels.length : 0);
+  const len = isInnovator ? state.charts.innovator.currentLabels.length : (state.parsedData ? state.parsedData.labels.length : 0);
   if (!isLineChart && len < 50) {
     dom.zoomSliderContainer.style.display = 'none';
     return;

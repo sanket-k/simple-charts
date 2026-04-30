@@ -3,6 +3,7 @@ import { dom } from '../dom.js';
 import { hexToRgba } from '../utils.js';
 import { formatNumber } from '../format.js';
 import { getBaseChartOptions, FONTS } from './base-options.js';
+import { registerChart } from './registry.js';
 
 export function buildPieChart(labels, datasets, c, colors) {
   const opts = getBaseChartOptions();
@@ -46,3 +47,12 @@ export function buildPieChart(labels, datasets, c, colors) {
     options: opts
   };
 }
+
+registerChart({
+  id: 'pie',
+  label: 'Pie',
+  icon: '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><circle cx="20" cy="20" r="12"/><path d="M20 8V20L30 14" stroke-linecap="round"/></svg>',
+  isSelfManaged: false,
+  builder: (ctx) => buildPieChart(ctx.labels, ctx.datasets, ctx.c, ctx.colors),
+  capabilities: { legend: true },
+});

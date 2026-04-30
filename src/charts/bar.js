@@ -2,6 +2,7 @@ import { CONFIG } from '../constants.js';
 import { dom } from '../dom.js';
 import { safeInt, hexToRgba } from '../utils.js';
 import { getBaseChartOptions } from './base-options.js';
+import { registerChart } from './registry.js';
 
 export function buildBarChart(labels, datasets, c, colors, indexAxis) {
   const opts = getBaseChartOptions();
@@ -59,3 +60,21 @@ export function buildBarChart(labels, datasets, c, colors, indexAxis) {
     options: opts
   };
 }
+
+registerChart({
+  id: 'bar',
+  label: 'H-Bar',
+  icon: '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="8" width="24" height="5" rx="1" fill="currentColor" opacity="0.3"/><rect x="6" y="17" width="18" height="5" rx="1" fill="currentColor" opacity="0.3"/><rect x="6" y="26" width="28" height="5" rx="1" fill="currentColor" opacity="0.3"/></svg>',
+  isSelfManaged: false,
+  builder: (ctx) => buildBarChart(ctx.labels, ctx.datasets, ctx.c, ctx.colors, 'y'),
+  capabilities: { grid: true, barRadius: true, legend: true, axisFormatting: true, dualAxis: true, zoom: true },
+});
+
+registerChart({
+  id: 'vbar',
+  label: 'V-Bar',
+  icon: '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="16" width="5" height="18" rx="1" fill="currentColor" opacity="0.3"/><rect x="15" y="8" width="5" height="26" rx="1" fill="currentColor" opacity="0.3"/><rect x="24" y="12" width="5" height="22" rx="1" fill="currentColor" opacity="0.3"/><rect x="33" y="6" width="5" height="28" rx="1" fill="currentColor" opacity="0.3"/></svg>',
+  isSelfManaged: false,
+  builder: (ctx) => buildBarChart(ctx.labels, ctx.datasets, ctx.c, ctx.colors, 'x'),
+  capabilities: { grid: true, barRadius: true, legend: true, axisFormatting: true, dualAxis: true, zoom: true },
+});

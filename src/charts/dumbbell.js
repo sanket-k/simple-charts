@@ -3,6 +3,7 @@ import { dom } from '../dom.js';
 import { safeInt } from '../utils.js';
 import { getThemeColors, bgPlugin, sourceFooterPlugin, brandPlugin, FONTS, getTooltipBase, getLegendBase, ASPECT_RATIOS } from './base-options.js';
 import { validateCompareData, calcRatios, getCompareColors, getCategoryYAxis, getLogXAxis, drawRatioPill, sortCompareData, swapSeries, formatCompareNumber } from './compare-utils.js';
+import { registerChart } from './registry.js';
 
 export function renderDumbbellChart() {
   if (state.chartInstance) {
@@ -188,3 +189,12 @@ export function renderDumbbellChart() {
 
   state.chartInstance = new Chart(dom.chartCanvas, config);
 }
+
+registerChart({
+  id: 'dumbbell',
+  label: 'Dumbbell',
+  icon: '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="14" r="4" fill="currentColor" opacity="0.6"/><circle cx="30" cy="14" r="4" fill="currentColor" opacity="0.6"/><line x1="14" y1="14" x2="26" y2="14" stroke-width="4" opacity="0.3"/><circle cx="10" cy="26" r="4" fill="currentColor" opacity="0.6"/><circle cx="30" cy="26" r="4" fill="currentColor" opacity="0.6"/><line x1="14" y1="26" x2="26" y2="26" stroke-width="4" opacity="0.3"/></svg>',
+  isSelfManaged: true,
+  builder: () => renderDumbbellChart(),
+  capabilities: { pointSize: true, legend: true },
+});

@@ -4,6 +4,7 @@ import { safeInt, safeFloat, hexToRgba } from '../utils.js';
 import { SEMANTIC } from '../constants.js';
 import { getBaseChartOptions, getMultiColors, getYAxisID } from './base-options.js';
 import { getLineDash } from '../ui/line-style-ui.js';
+import { registerChart } from './registry.js';
 
 export function getLineDatasetDefaults(ds, i, c, colors, tension, useTimeAxis, displayData) {
   const baseRadius = safeInt(dom.pointSize.value, 3);
@@ -84,3 +85,12 @@ export function buildLineChart(labels, datasets, c, colors, tension, useTimeAxis
     options: getBaseChartOptions()
   };
 }
+
+registerChart({
+  id: 'line',
+  label: 'Line',
+  icon: '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 30L14 18L22 24L34 10" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  isSelfManaged: false,
+  builder: (ctx) => buildLineChart(ctx.timeLabels, ctx.datasets, ctx.c, ctx.colors, ctx.tension, ctx.useTimeAxis, ctx.displayData),
+  capabilities: { curve: true, pointSize: true, lineWidth: true, grid: true, fillArea: true, spanGaps: true, highLow: true, legend: true, axisFormatting: true, dualAxis: true, lineStyle: true, zoom: true },
+});

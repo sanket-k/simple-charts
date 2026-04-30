@@ -2,6 +2,7 @@ import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { safeInt, safeFloat, hexToRgba } from '../utils.js';
 import { getThemeColors, getMultiColors, bgPlugin, sourceFooterPlugin, brandPlugin, FONTS, getTooltipBase, getLegendBase } from './base-options.js';
+import { registerChart } from './registry.js';
 
 /** Parse 3-column CSV (Feature, Implementation, Satisfaction) into feature objects */
 export function parseKanoData(text) {
@@ -71,7 +72,7 @@ export function renderKanoChart() {
 
   // Parse features from textarea
   const features = parseKanoData(dom.dataTextarea.value);
-  state.kanoFeatures = features;
+  state.charts.kano.features = features;
 
   const datasets = [];
 
@@ -385,3 +386,12 @@ export function renderKanoChart() {
 
   state.chartInstance = new Chart(dom.chartCanvas, config);
 }
+
+registerChart({
+  id: 'kano',
+  label: 'Kano',
+  icon: '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 34C14 30 22 18 28 10L34 6" stroke="currentColor" stroke-width="1.8" opacity="0.45"/><line x1="6" y1="34" x2="34" y2="6" stroke="currentColor" stroke-width="1.8"/><path d="M6 28C16 28 26 18 34 6" stroke="currentColor" stroke-width="1.8" opacity="0.45"/><circle cx="18" cy="12" r="2" fill="currentColor" opacity="0.7"/><circle cx="26" cy="18" r="2" fill="currentColor" opacity="0.7"/><circle cx="14" cy="22" r="2" fill="currentColor" opacity="0.7"/></svg>',
+  isSelfManaged: true,
+  builder: () => renderKanoChart(),
+  capabilities: { legend: true },
+});

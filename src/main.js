@@ -34,7 +34,7 @@ function updateAfterDataLoad() {
     renderSegmentList();
   }
   if (state.currentChartType === 'kano') {
-    state.kanoFeatures = parseKanoData(dom.dataTextarea.value);
+    state.charts.kano.features = parseKanoData(dom.dataTextarea.value);
   }
   applyDownsampling();
   updateSettingsVisibility();
@@ -95,9 +95,9 @@ async function loadSampleData() {
     dom.dataTextarea.value = sample;
     state.rawParsedData = await parseDataFromText(sample);
     state.parsedData = state.rawParsedData;
-    state.segmentedSegments = getDefaultSegments();
-    state.segmentedGroups = [{ name: '', segments: [...state.segmentedSegments] }];
-    state.activeGroupIndex = 0;
+    state.charts.segmented.segments = getDefaultSegments();
+    state.charts.segmented.groups = [{ name: '', segments: [...state.charts.segmented.segments] }];
+    state.charts.segmented.activeGroupIndex = 0;
     renderGroupTabs();
     renderSegmentList();
   } else {
@@ -108,7 +108,7 @@ async function loadSampleData() {
   }
 
   if (state.currentChartType === 'timeline') {
-    state.timelineEvents = [
+    state.charts.timeline.events = [
       { label: 'ETF Approved', position: 'Mar 2024' },
       { label: 'Halving', position: 'Apr 2024' }
     ];
@@ -116,7 +116,7 @@ async function loadSampleData() {
   }
 
   if (state.currentChartType === 'innovator') {
-    state.timelineEvents = [
+    state.charts.timeline.events = [
       { label: 'Disruption Begins', position: '3' },
       { label: 'Market Shift', position: '6' }
     ];
@@ -305,11 +305,11 @@ function initSegmentedGroupListeners() {
   dom.addGroupBtn?.addEventListener('click', () => {
     ensureGroupStructure();
     const currentSegs = getActiveGroupSegments().map(s => ({ ...s, value: 0 }));
-    state.segmentedGroups.push({
+    state.charts.segmented.groups.push({
       name: '',
       segments: currentSegs
     });
-    state.activeGroupIndex = state.segmentedGroups.length - 1;
+    state.charts.segmented.activeGroupIndex = state.charts.segmented.groups.length - 1;
     renderGroupTabs();
     renderSegmentList();
     renderChart();
@@ -317,9 +317,9 @@ function initSegmentedGroupListeners() {
 
   dom.removeGroupBtn?.addEventListener('click', () => {
     ensureGroupStructure();
-    if (state.segmentedGroups.length <= 1) return;
-    state.segmentedGroups.splice(state.activeGroupIndex, 1);
-    state.activeGroupIndex = Math.min(state.activeGroupIndex, state.segmentedGroups.length - 1);
+    if (state.charts.segmented.groups.length <= 1) return;
+    state.charts.segmented.groups.splice(state.charts.segmented.activeGroupIndex, 1);
+    state.charts.segmented.activeGroupIndex = Math.min(state.charts.segmented.activeGroupIndex, state.charts.segmented.groups.length - 1);
     renderGroupTabs();
     renderSegmentList();
     renderChart();
@@ -327,8 +327,8 @@ function initSegmentedGroupListeners() {
 
   dom.segmentedGroupName?.addEventListener('input', () => {
     ensureGroupStructure();
-    if (state.segmentedGroups[state.activeGroupIndex]) {
-      state.segmentedGroups[state.activeGroupIndex].name = dom.segmentedGroupName.value;
+    if (state.charts.segmented.groups[state.charts.segmented.activeGroupIndex]) {
+      state.charts.segmented.groups[state.charts.segmented.activeGroupIndex].name = dom.segmentedGroupName.value;
       renderGroupTabs();
       renderChart();
     }

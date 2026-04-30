@@ -3,6 +3,7 @@ import { dom } from '../dom.js';
 import { safeInt, safeFloat, hexToRgba, wrapText } from '../utils.js';
 import { getThemeColors, getMultiColors, bgPlugin, sourceFooterPlugin, brandPlugin, FONTS, getTooltipBase, getLegendBase } from './base-options.js';
 import { tryParseDate } from '../date-utils.js';
+import { registerChart } from './registry.js';
 
 export function getInnovatorTierDefaultName(t, total) {
   if (total === 1) return 'Market Demand';
@@ -15,8 +16,8 @@ export function renderInnovatorTierNames() {
   if (!dom.innovatorTierNames) return;
   const tiers = safeInt(dom.innovatorTiers?.value, 3);
 
-  if (state.innovatorTierCustomNames.length > tiers) {
-    state.innovatorTierCustomNames.length = tiers;
+  if (state.charts.innovator.tierCustomNames.length > tiers) {
+    state.charts.innovator.tierCustomNames.length = tiers;
   }
 
   dom.innovatorTierNames.innerHTML = '';
@@ -32,11 +33,11 @@ export function renderInnovatorTierNames() {
     input.className = 'swatch-hex-input';
     input.style.flex = '1';
     input.style.width = 'auto';
-    input.value = state.innovatorTierCustomNames[t] || '';
+    input.value = state.charts.innovator.tierCustomNames[t] || '';
     input.placeholder = getInnovatorTierDefaultName(t, tiers);
     input.dataset.tierIndex = t;
     input.addEventListener('input', (e) => {
-      state.innovatorTierCustomNames[parseInt(e.target.dataset.tierIndex)] = e.target.value;
+      state.charts.innovator.tierCustomNames[parseInt(e.target.dataset.tierIndex)] = e.target.value;
       if (window.__debouncedRender) window.__debouncedRender();
     });
     row.appendChild(label);
@@ -124,7 +125,7 @@ export function renderInnovatorsDilemmaChart() {
   const n = labels.length;
   const normX = (i) => i / Math.max(n - 1, 1);
 
-  state.currentInnovatorLabels = labels;
+  state.charts.innovator.currentLabels = labels;
 
   const startRatio = state.zoomRange[0] / 100;
   const endRatio = state.zoomRange[1] / 100;
@@ -174,8 +175,8 @@ export function renderInnovatorsDilemmaChart() {
       : marketTop - t * tierSpacing;
     const data = labels.map((_, i) => baseY + normX(i) * 10 * slopePerUnit).slice(startIndex, endIndex);
 
-    const tierName = (state.innovatorTierCustomNames[t] && state.innovatorTierCustomNames[t].trim())
-      ? state.innovatorTierCustomNames[t].trim()
+    const tierName = (state.charts.innovator.tierCustomNames[t] && state.charts.innovator.tierCustomNames[t].trim())
+      ? state.charts.innovator.tierCustomNames[t].trim()
       : getInnovatorTierDefaultName(t, tiers);
 
     datasets.push({
@@ -212,7 +213,7 @@ export function renderInnovatorsDilemmaChart() {
   const eventColor = dom.eventMarkerColor?.value || state.userColors[0] || c.hero;
 
   if (showMarkers) {
-    state.timelineEvents.forEach((evt, i) => {
+    state.charts.timeline.events.forEach((evt, i) => {
       if (!evt.position) return;
 
       let labelIndex = -1;
@@ -401,3 +402,12 @@ export function renderInnovatorsDilemmaChart() {
 
   state.chartInstance = new Chart(dom.chartCanvas, config);
 }
+
+registerChart({
+  id: 'innovator',
+  label: 'Innovator',
+  icon: '<svg viewBox="0 0 40 40" fill="none"><path d="M8 28L32 20" stroke="currentColor" stroke-width="1.2" opacity="0.35"/><path d="M8 20L32 12" stroke="currentColor" stroke-width="1.2" opacity="0.35"/><path d="M8 12L32 4" stroke="currentColor" stroke-width="1.2" opacity="0.35"/><path d="M8 34C14 30 22 18 28 10L34 4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  isSelfManaged: true,
+  builder: () => renderInnovatorsDilemmaChart(),
+  capabilities: { pointSize: true, lineWidth: true },
+});

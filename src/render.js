@@ -3,57 +3,39 @@ import { dom } from './dom.js';
 import { safeFloat } from './utils.js';
 import { getThemeColors, getMultiColors, isTimeXAxis, bgPlugin, sourceFooterPlugin, brandPlugin } from './charts/base-options.js';
 import { applyZoom } from './data.js';
-import { buildLineChart } from './charts/line.js';
-import { buildBarChart } from './charts/bar.js';
-import { buildPieChart } from './charts/pie.js';
-import { buildDonutChart } from './charts/donut.js';
-import { buildAreaChart } from './charts/area.js';
-import { buildRadarChart } from './charts/radar.js';
-import { buildScatterChart } from './charts/scatter.js';
-import { buildWaterfallChart } from './charts/waterfall.js';
-import { buildComboChart } from './charts/combo.js';
-import { buildTimelineChart } from './charts/timeline.js';
-import { renderSegmentedChart } from './charts/segmented.js';
-import { renderInnovatorsDilemmaChart } from './charts/innovator.js';
-import { renderKanoChart } from './charts/kano.js';
-import { renderDumbbellChart } from './charts/dumbbell.js';
-import { renderBubbleCompareChart } from './charts/bubble-compare.js';
-import { renderOverlayChart } from './charts/overlay.js';
+import { getChartDescriptor } from './charts/registry.js';
+
+// Import all chart modules to trigger self-registration
+import './charts/line.js';
+import './charts/bar.js';
+import './charts/pie.js';
+import './charts/donut.js';
+import './charts/area.js';
+import './charts/radar.js';
+import './charts/scatter.js';
+import './charts/waterfall.js';
+import './charts/combo.js';
+import './charts/timeline.js';
+import './charts/segmented.js';
+import './charts/innovator.js';
+import './charts/kano.js';
+import './charts/dumbbell.js';
+import './charts/bubble-compare.js';
+import './charts/overlay.js';
 
 /** Main chart render function */
 export function renderChart() {
+  // Always destroy previous chart before rendering any type
   if (state.chartInstance) {
     state.chartInstance.destroy();
     state.chartInstance = null;
   }
 
-  if (state.currentChartType === 'innovator') {
-    renderInnovatorsDilemmaChart();
-    return;
-  }
+  const desc = getChartDescriptor(state.currentChartType);
 
-  if (state.currentChartType === 'kano') {
-    renderKanoChart();
-    return;
-  }
-
-  if (state.currentChartType === 'segmented') {
-    renderSegmentedChart();
-    return;
-  }
-
-  if (state.currentChartType === 'dumbbell') {
-    renderDumbbellChart();
-    return;
-  }
-
-  if (state.currentChartType === 'bubble-compare') {
-    renderBubbleCompareChart();
-    return;
-  }
-
-  if (state.currentChartType === 'overlay') {
-    renderOverlayChart();
+  // Self-managed charts handle their own rendering lifecycle
+  if (desc?.isSelfManaged) {
+    desc.builder();
     return;
   }
 
@@ -74,45 +56,10 @@ export function renderChart() {
     timeLabels = displayData.dateObjects.map(d => d ? d.toISOString() : null);
   }
 
-  let config;
+  const ctx = { labels, timeLabels, datasets, c, colors, tension, useTimeAxis, displayData };
 
-  switch (state.currentChartType) {
-    case 'line':
-      config = buildLineChart(timeLabels, datasets, c, colors, tension, useTimeAxis, displayData);
-      break;
-    case 'timeline':
-      config = buildTimelineChart(timeLabels, datasets, c, colors, tension, displayData, useTimeAxis);
-      break;
-    case 'bar':
-      config = buildBarChart(labels, datasets, c, colors, 'y');
-      break;
-    case 'vbar':
-      config = buildBarChart(labels, datasets, c, colors, 'x');
-      break;
-    case 'combo':
-      config = buildComboChart(timeLabels, datasets, c, colors, tension, useTimeAxis, displayData);
-      break;
-    case 'pie':
-      config = buildPieChart(labels, datasets, c, colors);
-      break;
-    case 'donut':
-      config = buildDonutChart(labels, datasets, c, colors);
-      break;
-    case 'area':
-      config = buildAreaChart(timeLabels, datasets, c, colors, tension, useTimeAxis, displayData);
-      break;
-    case 'radar':
-      config = buildRadarChart(labels, datasets, c, colors);
-      break;
-    case 'scatter':
-      config = buildScatterChart(labels, datasets, c, colors);
-      break;
-    case 'waterfall':
-      config = buildWaterfallChart(labels, datasets, c, colors);
-      break;
-    default:
-      config = buildLineChart(timeLabels, datasets, c, colors, tension, useTimeAxis, displayData);
-  }
+  if (!desc) return;
+  const config = desc.builder(ctx);
 
   config.plugins = [bgPlugin, sourceFooterPlugin, brandPlugin, ChartDataLabels];
 

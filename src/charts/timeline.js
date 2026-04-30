@@ -5,6 +5,7 @@ import { safeInt, hexToRgba, wrapText } from '../utils.js';
 import { getBaseChartOptions, FONTS } from './base-options.js';
 import { getLineDatasetDefaults } from './line.js';
 import { tryParseDate } from '../date-utils.js';
+import { registerChart } from './registry.js';
 
 export function buildTimelineChart(labels, datasets, c, colors, tension, displayData, useTimeAxis) {
   const opts = getBaseChartOptions();
@@ -14,7 +15,7 @@ export function buildTimelineChart(labels, datasets, c, colors, tension, display
   const annotations = { ...opts.plugins.annotation?.annotations };
 
   if (showMarkers) {
-    state.timelineEvents.forEach((evt, i) => {
+    state.charts.timeline.events.forEach((evt, i) => {
       if (!evt.position) return;
 
       let labelIndex = labels.findIndex(l =>
@@ -95,3 +96,12 @@ export function buildTimelineChart(labels, datasets, c, colors, tension, display
     options: opts
   };
 }
+
+registerChart({
+  id: 'timeline',
+  label: 'Timeline',
+  icon: '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 30L14 18L22 24L34 10" stroke-linecap="round" stroke-linejoin="round"/><line x1="20" y1="8" x2="20" y2="32" stroke-dasharray="2 2" opacity="0.5"/><circle cx="20" cy="8" r="2" fill="currentColor"/></svg>',
+  isSelfManaged: false,
+  builder: (ctx) => buildTimelineChart(ctx.timeLabels, ctx.datasets, ctx.c, ctx.colors, ctx.tension, ctx.displayData, ctx.useTimeAxis),
+  capabilities: { curve: true, pointSize: true, lineWidth: true, grid: true, fillArea: true, spanGaps: true, highLow: true, legend: true, axisFormatting: true, dualAxis: true, lineStyle: true, zoom: true },
+});

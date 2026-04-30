@@ -3,6 +3,7 @@ import { dom } from '../dom.js';
 import { safeInt } from '../utils.js';
 import { getThemeColors, bgPlugin, sourceFooterPlugin, brandPlugin, FONTS, getTooltipBase, getLegendBase, ASPECT_RATIOS } from './base-options.js';
 import { validateCompareData, calcRatios, getCompareColors, getLogXAxis, sortCompareData, swapSeries, formatCompareNumber } from './compare-utils.js';
+import { registerChart } from './registry.js';
 
 export function renderOverlayChart() {
   if (state.chartInstance) {
@@ -147,3 +148,12 @@ export function renderOverlayChart() {
 
   state.chartInstance = new Chart(dom.chartCanvas, config);
 }
+
+registerChart({
+  id: 'overlay',
+  label: 'Overlay',
+  icon: '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="8" width="28" height="5" rx="2" fill="currentColor" opacity="0.15"/><rect x="6" y="8" width="10" height="5" rx="2" fill="currentColor" opacity="0.7"/><rect x="6" y="18" width="28" height="5" rx="2" fill="currentColor" opacity="0.15"/><rect x="6" y="18" width="14" height="5" rx="2" fill="currentColor" opacity="0.7"/><rect x="6" y="28" width="28" height="5" rx="2" fill="currentColor" opacity="0.15"/><rect x="6" y="28" width="8" height="5" rx="2" fill="currentColor" opacity="0.7"/></svg>',
+  isSelfManaged: true,
+  builder: () => renderOverlayChart(),
+  capabilities: { legend: true },
+});

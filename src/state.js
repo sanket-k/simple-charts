@@ -2,13 +2,12 @@ import { DEFAULT_COLORS } from './constants.js';
 
 /** Single mutable state object shared across all modules */
 export const state = {
+  // Core state
   currentTheme: 'dark',
   currentChartType: 'line',
   chartInstance: null,
   parsedData: null,
   rawParsedData: null,
-  currentInnovatorLabels: [],
-  timelineEvents: [],
   userColors: [...DEFAULT_COLORS],
   userBgColor: null,
   userGridColor: null,
@@ -20,13 +19,27 @@ export const state = {
   datasetChartTypes: [],
   datasetLineStyles: [],
   zoomRange: [0, 100],
-  segmentedSegments: [],
-  segmentedGroups: [],
-  activeGroupIndex: 0,
-  innovatorTierCustomNames: [],
   dataFormat: 'csv',
   seriesCount: 1,
-  kanoFeatures: [],
   chartDataStore: {},
   previousChartType: null,
+
+  // Per-chart namespaced state
+  charts: {
+    innovator: {
+      tierCustomNames: [],
+      currentLabels: [],
+    },
+    kano: {
+      features: [],
+    },
+    segmented: {
+      segments: [],
+      groups: [],
+      activeGroupIndex: 0,
+    },
+    timeline: {
+      events: [],
+    },
+  },
 };

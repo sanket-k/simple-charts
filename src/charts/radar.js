@@ -1,6 +1,7 @@
 import { dom } from '../dom.js';
 import { hexToRgba } from '../utils.js';
 import { getBaseChartOptions, FONTS } from './base-options.js';
+import { registerChart } from './registry.js';
 
 export function buildRadarChart(labels, datasets, c, colors) {
   const opts = getBaseChartOptions();
@@ -41,3 +42,12 @@ export function buildRadarChart(labels, datasets, c, colors) {
     options: opts
   };
 }
+
+registerChart({
+  id: 'radar',
+  label: 'Radar',
+  icon: '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="20,6 33,14 30,30 10,30 7,14" opacity="0.2" fill="currentColor"/><polygon points="20,6 33,14 30,30 10,30 7,14"/><polygon points="20,12 28,17 26,26 14,26 12,17" stroke-dasharray="2 2" opacity="0.5"/></svg>',
+  isSelfManaged: false,
+  builder: (ctx) => buildRadarChart(ctx.labels, ctx.datasets, ctx.c, ctx.colors),
+  capabilities: { curve: true, pointSize: true, lineWidth: true, grid: true, highLow: true, legend: true },
+});

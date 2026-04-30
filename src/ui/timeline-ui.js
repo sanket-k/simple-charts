@@ -4,7 +4,7 @@ import { showToast } from '../utils.js';
 
 export function renderTimelineEvents() {
   dom.timelineEventsList.innerHTML = '';
-  state.timelineEvents.forEach((evt, i) => {
+  state.charts.timeline.events.forEach((evt, i) => {
     const row = document.createElement('div');
     row.className = 'timeline-event-row';
 
@@ -39,7 +39,7 @@ export function renderTimelineEvents() {
     input.addEventListener('input', (e) => {
       const idx = parseInt(e.target.dataset.index);
       const field = e.target.dataset.field;
-      state.timelineEvents[idx][field] = e.target.value;
+      state.charts.timeline.events[idx][field] = e.target.value;
       if (window.__debouncedRender) window.__debouncedRender();
     });
   });
@@ -47,7 +47,7 @@ export function renderTimelineEvents() {
   dom.timelineEventsList.querySelectorAll('.btn-remove').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const idx = parseInt(e.target.dataset.index);
-      state.timelineEvents.splice(idx, 1);
+      state.charts.timeline.events.splice(idx, 1);
       renderTimelineEvents();
       if (window.__renderChart) window.__renderChart();
     });
@@ -56,7 +56,7 @@ export function renderTimelineEvents() {
 
 export function initTimelineUI() {
   dom.addTimelineEvent.addEventListener('click', () => {
-    state.timelineEvents.push({ label: '', position: '' });
+    state.charts.timeline.events.push({ label: '', position: '' });
     renderTimelineEvents();
   });
 
@@ -72,7 +72,7 @@ export function initTimelineUI() {
       }
     }
     if (newEvents.length > 0) {
-      state.timelineEvents = [...state.timelineEvents, ...newEvents];
+      state.charts.timeline.events = [...state.charts.timeline.events, ...newEvents];
       renderTimelineEvents();
       if (window.__renderChart) window.__renderChart();
       showToast(`Added ${newEvents.length} events`, 'success');

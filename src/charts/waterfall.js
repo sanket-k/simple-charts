@@ -4,6 +4,7 @@ import { dom } from '../dom.js';
 import { safeInt, hexToRgba } from '../utils.js';
 import { formatNumber } from '../format.js';
 import { getBaseChartOptions } from './base-options.js';
+import { registerChart } from './registry.js';
 
 export function buildWaterfallChart(labels, datasets, c, colors) {
   const opts = getBaseChartOptions();
@@ -111,3 +112,12 @@ export function buildWaterfallChart(labels, datasets, c, colors) {
     }
   };
 }
+
+registerChart({
+  id: 'waterfall',
+  label: 'Waterfall',
+  icon: '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="6" y="10" width="5" height="16" fill="currentColor" opacity="0.3"/><rect x="13" y="8" width="5" height="6" fill="currentColor" opacity="0.2"/><rect x="20" y="14" width="5" height="8" fill="currentColor" opacity="0.2"/><rect x="27" y="6" width="5" height="20" fill="currentColor" opacity="0.3"/><line x1="11" y1="10" x2="13" y2="10" stroke-dasharray="1 1"/><line x1="18" y1="14" x2="20" y2="14" stroke-dasharray="1 1"/><line x1="25" y1="22" x2="27" y2="22" stroke-dasharray="1 1"/></svg>',
+  isSelfManaged: false,
+  builder: (ctx) => buildWaterfallChart(ctx.labels, ctx.datasets, ctx.c, ctx.colors),
+  capabilities: { grid: true, barRadius: true, legend: true, axisFormatting: true, dualAxis: true, zoom: true },
+});

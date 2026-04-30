@@ -2,6 +2,7 @@ import { CONFIG } from '../constants.js';
 import { dom } from '../dom.js';
 import { hexToRgba } from '../utils.js';
 import { getBaseChartOptions, FONTS } from './base-options.js';
+import { registerChart } from './registry.js';
 
 export function buildDonutChart(labels, datasets, c, colors) {
   const opts = getBaseChartOptions();
@@ -47,3 +48,12 @@ export function buildDonutChart(labels, datasets, c, colors) {
     options: opts
   };
 }
+
+registerChart({
+  id: 'donut',
+  label: 'Donut',
+  icon: '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="20" cy="20" r="12"/><circle cx="20" cy="20" r="6"/></svg>',
+  isSelfManaged: false,
+  builder: (ctx) => buildDonutChart(ctx.labels, ctx.datasets, ctx.c, ctx.colors),
+  capabilities: { legend: true },
+});

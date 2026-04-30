@@ -3,6 +3,7 @@ import { dom } from '../dom.js';
 import { safeInt } from '../utils.js';
 import { getThemeColors, bgPlugin, sourceFooterPlugin, brandPlugin, FONTS, getTooltipBase, getLegendBase, ASPECT_RATIOS } from './base-options.js';
 import { validateCompareData, calcRatios, getCompareColors, getCategoryYAxis, drawRatioPill, sortCompareData, swapSeries, formatCompareNumber } from './compare-utils.js';
+import { registerChart } from './registry.js';
 
 export function renderBubbleCompareChart() {
   if (state.chartInstance) {
@@ -244,3 +245,12 @@ export function renderBubbleCompareChart() {
 
   state.chartInstance = new Chart(dom.chartCanvas, config);
 }
+
+registerChart({
+  id: 'bubble-compare',
+  label: 'Bubble',
+  icon: '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="14" r="5" fill="currentColor" opacity="0.3"/><circle cx="28" cy="14" r="9" fill="currentColor" opacity="0.2"/><circle cx="12" cy="28" r="3" fill="currentColor" opacity="0.3"/><circle cx="28" cy="28" r="8" fill="currentColor" opacity="0.2"/></svg>',
+  isSelfManaged: true,
+  builder: () => renderBubbleCompareChart(),
+  capabilities: { legend: true },
+});
