@@ -81,7 +81,7 @@ export function renderOverlayChart() {
       scales: {
         x: getLogXAxis(),
         y: {
-          grid: { color: c.grid, drawBorder: false },
+          grid: { display: false },
           border: { display: false },
           ticks: {
             color: c.textSecondary,
