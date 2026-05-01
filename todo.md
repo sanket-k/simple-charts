@@ -1,6 +1,9 @@
 # Phase 1: Chart Registration System
 
-**Goal:** Reduce the 6-file tax to a 1-file tax. Adding a new chart type should only require creating the chart module and registering it.
+- [x] 1.1 Chart Registry
+- [x] 1.2 Per-Chart State Namespacing
+- [x] 1.3 Dynamic Imports
+- [x] 1.4 Data Validation Framework
 
 ---
 
@@ -13,6 +16,11 @@
 - [x] Refactor `render.js` to use `getChartDescriptor(type).builder(data)` instead of 6 `if` blocks + 11-case `switch`
 - [x] Delete all static named chart imports from `render.js` (replaced by side-effect imports + registry)
 - [x] Auto-generate chart type grid buttons from `getAllChartDescriptors()` instead of hardcoded HTML
+- [x] Add `dataHint` + `dataExample` to all 17 chart descriptors with expected data format
+- [x] Move data format info panel to DATA section (right panel, above input tabs), single implementation for all charts
+- [x] Remove redundant per-chart `?` panels (segmented, dumbbell, bubble, overlay) and native `title` tooltips
+- [x] Add `validateChartData()` in registry.js — per-chart validation with helpful error messages
+- [x] Wire validation into render.js — show error/warning toasts for wrong column count, missing data, wrong types
 
 ## 1.2 Per-Chart State Namespacing
 
