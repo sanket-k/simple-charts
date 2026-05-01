@@ -101,6 +101,21 @@ export function updateSettingsVisibility() {
   }
 }
 
+/** Update the shared data format info panel to match current chart type and format */
+export function updateDataFormatTip() {
+  const desc = getChartDescriptor(state.currentChartType);
+  const title = document.getElementById('chartDataFormatTitle');
+  const code = document.getElementById('chartDataFormatCode');
+  const hint = document.getElementById('chartDataFormatHint');
+  if (!desc || !title || !code) return;
+  const isJson = state.dataFormat === 'json';
+  const example = isJson ? (desc.dataJsonExample || desc.dataExample) : desc.dataExample;
+  const hintStr = isJson ? (desc.dataJsonHint || desc.dataHint) : desc.dataHint;
+  title.textContent = desc.label + ' data format (' + (isJson ? 'JSON' : 'CSV') + ')';
+  code.textContent = example || hintStr || '';
+  if (hint) hint.textContent = example ? hintStr : '';
+}
+
 /** Generate chart type grid buttons from registry */
 function buildChartTypeGrid() {
   const grid = dom.chartTypeGrid;
@@ -148,10 +163,37 @@ export function initChartTypeGrid() {
     }
 
     updateSettingsVisibility();
+    updateDataFormatTip();
     if (window.__loadSampleForType) window.__loadSampleForType(state.currentChartType);
     if (window.__renderChart) window.__renderChart();
     updateZoomSlider();
   });
+
+  // Data format info-tip toggle (shared for all chart types)
+  const formatBtn = document.getElementById('chartDataFormatBtn');
+  const formatPanel = document.getElementById('chartDataFormatTip');
+  const formatClose = document.getElementById('chartDataFormatClose');
+  if (formatBtn && formatPanel) {
+    formatBtn.addEventListener('click', () => formatPanel.classList.toggle('visible'));
+  }
+  if (formatClose && formatPanel) {
+    formatClose.addEventListener('click', () => formatPanel.classList.remove('visible'));
+  }
+
+  // Copy example data to clipboard
+  const copyBtn = document.getElementById('chartDataFormatCopy');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      const code = document.getElementById('chartDataFormatCode');
+      if (!code) return;
+      navigator.clipboard.writeText(code.textContent).then(() => {
+        copyBtn.classList.add('copied');
+        setTimeout(() => copyBtn.classList.remove('copied'), 1500);
+      });
+    });
+  }
+
+  updateDataFormatTip();
 
   if (dom.innovatorTimeMode) {
     dom.innovatorTimeMode.addEventListener('change', () => {

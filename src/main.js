@@ -13,7 +13,7 @@ import { renderTimelineEvents } from './ui/timeline-ui.js';
 import { showToast } from './utils.js';
 import { setTheme, initTheme } from './ui/theme.js';
 import { initColorPickers } from './ui/colors.js';
-import { initChartTypeGrid, initSettingsListeners, updateSettingsVisibility } from './ui/settings.js';
+import { initChartTypeGrid, initSettingsListeners, updateSettingsVisibility, updateDataFormatTip } from './ui/settings.js';
 import { initDualAxis } from './ui/dual-axis.js';
 import { initBranding } from './ui/branding.js';
 import { initTimelineUI } from './ui/timeline-ui.js';
@@ -162,6 +162,7 @@ function initFormatToggle() {
         dom.formatToggle.querySelectorAll('.format-opt').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         state.dataFormat = btn.dataset.format;
+        updateDataFormatTip();
       });
     });
   }
@@ -175,9 +176,8 @@ function initParseButton() {
       state.parsedData = state.rawParsedData;
       state.zoomRange = [0, 100];
       updateAfterDataLoad();
-      showToast('Data parsed successfully', 'success');
     } else {
-      showToast('Could not parse data', 'error');
+      showToast('Could not parse data. Check the format hint above the data input.', 'error');
     }
   });
 }
@@ -331,29 +331,6 @@ function initSegmentedGroupListeners() {
       state.charts.segmented.groups[state.charts.segmented.activeGroupIndex].name = dom.segmentedGroupName.value;
       renderGroupTabs();
       renderChart();
-    }
-  });
-
-  const tipBtn = document.getElementById('segmentedFormatTipBtn');
-  const tipPanel = document.getElementById('segmentedFormatTip');
-  const tipClose = document.getElementById('segmentedFormatTipClose');
-  if (tipBtn && tipPanel) {
-    tipBtn.addEventListener('click', () => tipPanel.classList.toggle('visible'));
-  }
-  if (tipClose && tipPanel) {
-    tipClose.addEventListener('click', () => tipPanel.classList.remove('visible'));
-  }
-
-  // Info-tip toggles for comparison charts
-  ['dumbbell', 'bubble', 'overlay'].forEach(prefix => {
-    const btn = document.getElementById(`${prefix}FormatTipBtn`);
-    const panel = document.getElementById(`${prefix}FormatTip`);
-    const close = document.getElementById(`${prefix}FormatTipClose`);
-    if (btn && panel) {
-      btn.addEventListener('click', () => panel.classList.toggle('visible'));
-    }
-    if (close && panel) {
-      close.addEventListener('click', () => panel.classList.remove('visible'));
     }
   });
 }

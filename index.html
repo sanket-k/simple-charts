@@ -278,31 +278,7 @@
 
       <!-- Segmented Bar Settings -->
       <div class="panel-section" id="segmentedSettings" style="display:none;">
-        <h3 class="panel-title">Segmented Bar <button type="button" class="info-tip-btn" id="segmentedFormatTipBtn" aria-label="Show JSON format example">?</button></h3>
-        <div class="info-tip" id="segmentedFormatTip">
-          <div class="info-tip-header">
-            <span>Data formats for multi-group segmented charts</span>
-            <button type="button" class="info-tip-close" id="segmentedFormatTipClose">&times;</button>
-          </div>
-          <span class="info-tip-label">JSON</span>
-          <pre class="info-tip-code">{
-  "2020": {
-    "NMC": "~70%",
-    "LFP": "~25%",
-    "Other": "~5%"
-  },
-  "2025": {
-    "NMC": "~45%",
-    "LFP": "~50%",
-    "Other": "~5%"
-  }
-}</pre>
-          <span class="info-tip-label">CSV</span>
-          <pre class="info-tip-code">Category,NMC,LFP,Other
-2020,70,25,5
-2025,45,50,5</pre>
-          <p class="hint-text" style="margin-top:6px;margin-bottom:0;">JSON: top-level keys become comparison groups, inner keys become segment labels. CSV: first column becomes group names, headers become segment labels. Values support <code>~</code> and <code>%</code> prefixes/suffixes.</p>
-        </div>
+        <h3 class="panel-title">Segmented Bar</h3>
         <div class="input-group">
           <label for="segmentedMode">Mode</label>
           <select id="segmentedMode">
@@ -418,27 +394,7 @@
 
       <!-- Dumbbell Chart Settings -->
       <div class="panel-section" id="dumbbellSettings" style="display:none;">
-        <h3 class="panel-title">Dumbbell Chart <button type="button" class="info-tip-btn" id="dumbbellFormatTipBtn" aria-label="Show data format example">?</button></h3>
-        <div class="info-tip" id="dumbbellFormatTip">
-          <div class="info-tip-header">
-            <span>Data format for dumbbell comparison</span>
-            <button type="button" class="info-tip-close" id="dumbbellFormatTipClose">&times;</button>
-          </div>
-          <span class="info-tip-label">CSV</span>
-          <pre class="info-tip-code">Metric, Before, After
-Horsepower, 10, 430
-Top Speed, 35, 120
-Range, 150, 700</pre>
-          <span class="info-tip-label">JSON</span>
-          <pre class="info-tip-code">{
-  "labels": ["Horsepower", "Top Speed", "Range"],
-  "datasets": [
-    { "name": "Before", "values": [10, 35, 150] },
-    { "name": "After", "values": [430, 120, 700] }
-  ]
-}</pre>
-          <p class="hint-text" style="margin-top:6px;margin-bottom:0;">Requires exactly 2 data series. First series = left dots, second series = right dots. Values must be positive (logarithmic scale). Ratio labels show <code>After / Before</code>.</p>
-        </div>
+        <h3 class="panel-title">Dumbbell Chart</h3>
         <div class="input-group">
           <label>Sort By</label>
           <select id="dumbbellSortBy">
@@ -505,27 +461,7 @@ Range, 150, 700</pre>
 
       <!-- Bubble Compare Settings -->
       <div class="panel-section" id="bubbleCompareSettings" style="display:none;">
-        <h3 class="panel-title">Bubble Compare <button type="button" class="info-tip-btn" id="bubbleFormatTipBtn" aria-label="Show data format example">?</button></h3>
-        <div class="info-tip" id="bubbleFormatTip">
-          <div class="info-tip-header">
-            <span>Data format for bubble comparison</span>
-            <button type="button" class="info-tip-close" id="bubbleFormatTipClose">&times;</button>
-          </div>
-          <span class="info-tip-label">CSV</span>
-          <pre class="info-tip-code">Metric, Before, After
-Horsepower, 10, 430
-Top Speed, 35, 120
-Range, 150, 700</pre>
-          <span class="info-tip-label">JSON</span>
-          <pre class="info-tip-code">{
-  "labels": ["Horsepower", "Top Speed", "Range"],
-  "datasets": [
-    { "name": "Before", "values": [10, 35, 150] },
-    { "name": "After", "values": [430, 120, 700] }
-  ]
-}</pre>
-          <p class="hint-text" style="margin-top:6px;margin-bottom:0;">Requires exactly 2 data series. Bubble area is proportional to value (<code>area = value</code>, radius = <code>&#8730;value &times; scale</code>). Larger values = bigger circles. Small values get a minimum radius so they remain visible.</p>
-        </div>
+        <h3 class="panel-title">Bubble Compare</h3>
         <div class="input-group">
           <label>Sort By</label>
           <select id="bubbleSortBy">
@@ -598,27 +534,7 @@ Range, 150, 700</pre>
 
       <!-- Overlay Chart Settings -->
       <div class="panel-section" id="overlaySettings" style="display:none;">
-        <h3 class="panel-title">Overlay Chart <button type="button" class="info-tip-btn" id="overlayFormatTipBtn" aria-label="Show data format example">?</button></h3>
-        <div class="info-tip" id="overlayFormatTip">
-          <div class="info-tip-header">
-            <span>Data format for overlay comparison</span>
-            <button type="button" class="info-tip-close" id="overlayFormatTipClose">&times;</button>
-          </div>
-          <span class="info-tip-label">CSV</span>
-          <pre class="info-tip-code">Metric, Before, After
-Horsepower, 10, 430
-Top Speed, 35, 120
-Range, 150, 700</pre>
-          <span class="info-tip-label">JSON</span>
-          <pre class="info-tip-code">{
-  "labels": ["Horsepower", "Top Speed", "Range"],
-  "datasets": [
-    { "name": "Before", "values": [10, 35, 150] },
-    { "name": "After", "values": [430, 120, 700] }
-  ]
-}</pre>
-          <p class="hint-text" style="margin-top:6px;margin-bottom:0;">Requires exactly 2 data series. Uses logarithmic scale — values must be positive. The second series is drawn as a faded background bar; the first series is drawn as a solid foreground bar.</p>
-        </div>
+        <h3 class="panel-title">Overlay Chart</h3>
         <div class="input-group">
           <label>Sort By</label>
           <select id="overlaySortBy">
@@ -964,7 +880,20 @@ Range, 150, 700</pre>
     <!-- Right Panel: Data Input -->
     <aside class="panel panel-right">
       <div class="panel-section">
-        <h3 class="panel-title">Data</h3>
+        <h3 class="panel-title">Data <button type="button" class="info-tip-btn" id="chartDataFormatBtn" aria-label="Show data format">?</button></h3>
+        <div class="info-tip visible" id="chartDataFormatTip">
+          <div class="info-tip-header">
+            <span id="chartDataFormatTitle">Data format</span>
+            <button type="button" class="info-tip-close" id="chartDataFormatClose">&times;</button>
+          </div>
+          <div class="info-tip-code-wrap">
+            <pre class="info-tip-code" id="chartDataFormatCode"></pre>
+            <button type="button" class="info-tip-copy" id="chartDataFormatCopy" aria-label="Copy example data" title="Copy to clipboard">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+          <p class="hint-text" id="chartDataFormatHint" style="margin-top:6px;margin-bottom:0;"></p>
+        </div>
         <div class="data-input-tabs" role="tablist" aria-label="Data Input Methods">
           <button class="tab-btn active" data-tab="paste" role="tab" aria-selected="true">Paste</button>
           <button class="tab-btn" data-tab="csv" role="tab" aria-selected="false">CSV</button>
