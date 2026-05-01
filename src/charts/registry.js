@@ -105,8 +105,9 @@ export function validateChartData(chartId, parsedData) {
       break;
     }
     case 'segmented': {
-      if (numDatasets < 2) {
-        return 'Segmented requires at least 2 segment columns. Add more value columns for each segment.';
+      // Single dataset = single group of segments (valid); 2+ datasets = multi-group comparison
+      if (numDatasets < 1) {
+        return 'Segmented needs at least 1 value column.';
       }
       break;
     }
