@@ -9,6 +9,8 @@ export function buildDonutChart(labels, datasets, c, colors) {
   delete opts.scales;
   opts.aspectRatio = 1.6;
   opts.cutout = '62%';
+  opts.radius = '85%';
+  opts.layout = { padding: 20 };
   opts.plugins.datalabels.color = c.text;
   opts.plugins.datalabels.font = FONTS.datalabelsBold;
   opts.plugins.datalabels.anchor = 'end';
@@ -53,6 +55,7 @@ registerChart({
   id: 'donut',
   label: 'Donut',
   icon: '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="20" cy="20" r="12"/><circle cx="20" cy="20" r="6"/></svg>',
+  dataHint: 'CSV: Category, Value\nRows: Label, number\nMax 10 slices.',
   isSelfManaged: false,
   builder: (ctx) => buildDonutChart(ctx.labels, ctx.datasets, ctx.c, ctx.colors),
   capabilities: { legend: true },
