@@ -356,7 +356,7 @@ export function parseInputText(text) {
     return parseJSONData(text);
   }
   const trimmed = text.trim();
-  if ((trimmed.startsWith('{') || trimmed.startsWith('[')) && state.dataFormat !== 'csv') {
+  if ((trimmed.startsWith('{') || trimmed.startsWith('[')) && state.dataFormat !== 'csv' && state.dataFormat !== 'tsv') {
     const jsonResult = parseJSONData(text);
     if (jsonResult) return Promise.resolve(jsonResult);
   }

@@ -26,7 +26,8 @@ export function initClipboard() {
       state.parsedData = state.rawParsedData;
       state.zoomRange = [0, 100];
       if (window.__updateAfterDataLoad) window.__updateAfterDataLoad();
-      const fmt = (trimmed.startsWith('{') || trimmed.startsWith('[')) && parseJSONData(text) ? 'JSON' : 'CSV';
+      const fmt = (trimmed.startsWith('{') || trimmed.startsWith('[')) && parseJSONData(text) ? 'JSON'
+        : trimmed.includes('\t') && !trimmed.includes(',') ? 'TSV' : 'CSV';
       showToast(`Data pasted and parsed (${fmt})!`, 'success');
     }
   });

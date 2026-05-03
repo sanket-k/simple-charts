@@ -108,10 +108,26 @@ export function updateDataFormatTip() {
   const code = document.getElementById('chartDataFormatCode');
   const hint = document.getElementById('chartDataFormatHint');
   if (!desc || !title || !code) return;
-  const isJson = state.dataFormat === 'json';
-  const example = isJson ? (desc.dataJsonExample || desc.dataExample) : desc.dataExample;
-  const hintStr = isJson ? (desc.dataJsonHint || desc.dataHint) : desc.dataHint;
-  title.textContent = desc.label + ' data format (' + (isJson ? 'JSON' : 'CSV') + ')';
+
+  const fmt = state.dataFormat;
+  let example, hintStr, label;
+
+  if (fmt === 'json') {
+    example = desc.dataJsonExample || desc.dataExample;
+    hintStr = desc.dataJsonHint || desc.dataHint;
+    label = 'JSON';
+  } else if (fmt === 'tsv') {
+    // Derive TSV examples from CSV by replacing commas with tabs
+    example = desc.dataExample ? desc.dataExample.replace(/,/g, '\t') : '';
+    hintStr = desc.dataHint;
+    label = 'TSV';
+  } else {
+    example = desc.dataExample;
+    hintStr = desc.dataHint;
+    label = 'CSV';
+  }
+
+  title.textContent = desc.label + ' data format (' + label + ')';
   code.textContent = example || hintStr || '';
   if (hint) hint.textContent = example ? hintStr : '';
 }
