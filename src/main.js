@@ -3,7 +3,7 @@ import { state } from './state.js';
 import { dom, $, $$ } from './dom.js';
 import { debounce, safeInt } from './utils.js';
 import { renderChart } from './render.js';
-import { parseJSONData, parseDataFromText, parseInputText, applyDownsampling, updateDataPreview, updateDataInfo, updateDataOptions, updateZoomSlider, updateZoomLabels, addManualRow, parseManualData, convertParsedDataToSegments } from './data.js';
+import { parseJSONData, parseDataFromText, parseInputText, applyDownsampling, updateDataPreview, updateDataInfo, updateDataOptions, updateZoomSlider, updateZoomLabels, addManualRow, parseManualData, convertParsedDataToSegments, dataToCSV, dataToTSV, dataToJSON } from './data.js';
 import { renderGroupTabs, renderSegmentList, getDefaultSegments, ensureGroupStructure, getActiveGroupSegments } from './charts/segmented.js';
 import { renderInnovatorTierNames } from './charts/innovator.js';
 import { parseKanoData } from './charts/kano.js';
@@ -335,6 +335,39 @@ function initSegmentedGroupListeners() {
   });
 }
 
+function initCopyDataButtons() {
+  const serializers = { csv: dataToCSV, tsv: dataToTSV, json: dataToJSON };
+  const labels = { csv: 'CSV', tsv: 'TSV', json: 'JSON' };
+  let selectedFormat = 'csv';
+
+  const actions = document.getElementById('copyDataActions');
+  const csvBtn = document.getElementById('copyDataCSV');
+  const tsvBtn = document.getElementById('copyDataTSV');
+  const jsonBtn = document.getElementById('copyDataJSON');
+  const copyBtn = document.getElementById('copyDataBtn');
+  if (!actions) return;
+
+  const toggleActive = (format, btn) => {
+    selectedFormat = format;
+    actions.querySelectorAll('.format-opt').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  };
+
+  if (csvBtn) csvBtn.addEventListener('click', () => toggleActive('csv', csvBtn));
+  if (tsvBtn) tsvBtn.addEventListener('click', () => toggleActive('tsv', tsvBtn));
+  if (jsonBtn) jsonBtn.addEventListener('click', () => toggleActive('json', jsonBtn));
+
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      if (!state.rawParsedData) return;
+      const text = serializers[selectedFormat](state.rawParsedData);
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(`Data copied as ${labels[selectedFormat]}!`, 'success');
+      });
+    });
+  }
+}
+
 function init() {
   Chart.register(ChartDataLabels);
   Chart.defaults.plugins.datalabels.display = false;
@@ -388,6 +421,7 @@ function init() {
   initParseButton();
   initCSVUpload();
   initManualEntry();
+  initCopyDataButtons();
   initDownsampleColumnListeners();
   initSegmentedGroupListeners();
 

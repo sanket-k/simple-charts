@@ -439,6 +439,11 @@ export function updateDataPreview() {
 
   html += '</tbody></table>';
   dom.dataPreview.innerHTML = html;
+
+  const copyActions = document.getElementById('copyDataActions');
+  if (copyActions) {
+    copyActions.style.display = state.parsedData ? 'flex' : 'none';
+  }
 }
 
 export function updateDataInfo() {
@@ -459,6 +464,34 @@ export function updateDataInfo() {
   }
   dom.dataInfo.textContent = info;
   dom.rowCountBadge.textContent = count;
+}
+
+/** Serialize parsedData to CSV string */
+export function dataToCSV(data) {
+  if (!data || !data.labels || !data.datasets) return '';
+  const header = ['Label', ...data.datasets.map(ds => ds.name)].join(',');
+  const rows = data.labels.map((label, i) => {
+    const vals = data.datasets.map(ds => ds.values[i] != null ? ds.values[i] : '');
+    return [label, ...vals].join(',');
+  });
+  return [header, ...rows].join('\n');
+}
+
+/** Serialize parsedData to TSV string */
+export function dataToTSV(data) {
+  if (!data || !data.labels || !data.datasets) return '';
+  const header = ['Label', ...data.datasets.map(ds => ds.name)].join('\t');
+  const rows = data.labels.map((label, i) => {
+    const vals = data.datasets.map(ds => ds.values[i] != null ? ds.values[i] : '');
+    return [label, ...vals].join('\t');
+  });
+  return [header, ...rows].join('\n');
+}
+
+/** Serialize parsedData to JSON string */
+export function dataToJSON(data) {
+  if (!data || !data.labels || !data.datasets) return '';
+  return JSON.stringify(data, null, 2);
 }
 
 export function updateDataOptions() {

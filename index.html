@@ -949,6 +949,12 @@
         <h3 class="panel-title">
           Data Preview
           <span class="badge" id="rowCountBadge"></span>
+          <div class="panel-title-actions" id="copyDataActions" style="display:none;">
+            <button class="format-opt active" id="copyDataCSV" title="Copy as CSV">CSV</button>
+            <button class="format-opt" id="copyDataTSV" title="Copy as TSV">TSV</button>
+            <button class="format-opt" id="copyDataJSON" title="Copy as JSON">JSON</button>
+            <button class="panel-title-copy" id="copyDataBtn" title="Copy data"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+          </div>
         </h3>
         <div class="data-preview" id="dataPreview">
           <p class="placeholder-text">No data loaded yet</p>

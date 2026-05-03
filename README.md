@@ -85,7 +85,7 @@ Then open `http://localhost:8080` in your browser. All dependencies load via CDN
 ### Quick Start
 
 1. **Choose a chart type** from the grid at the top of the left panel
-2. **Enter data** in the right panel — paste CSV text, upload a `.csv` file, or use manual entry
+2. **Enter data** in the right panel — paste CSV/TSV/JSON text, upload a file, or use manual entry
 3. **Customize** using the settings panels (labels, style, colors, formatting)
 4. **Export** using the download button or `Cmd/Ctrl + E`
 
@@ -368,14 +368,15 @@ Three input modes accessible via tabs in the right panel:
 
 | Mode | How It Works | Best For |
 |---|---|---|
-| **Paste** | Paste CSV-formatted text into a textarea | Quick data from spreadsheets |
-| **CSV Upload** | Drag-and-drop or browse for `.csv`/`.tsv` files | Large datasets, exported files |
+| **Paste** | Paste CSV, TSV, or JSON text into a textarea with format toggle | Quick data from spreadsheets, Google Sheets |
+| **File Upload** | Drag-and-drop or browse for `.csv`/`.tsv`/`.json` files | Large datasets, exported files |
 | **Manual Entry** | Editable spreadsheet-like grid with dynamic series/rows | Building data from scratch |
 
-**Supported data formats:**
+**Supported data formats (toggle between CSV / TSV / JSON):**
 ```
-Label, Value
-Label, Series1, Series2, Series3
+CSV: Label, Value  |  Label, Series1, Series2, Series3
+TSV: Label	Value  |  Label	Series1	Series2	Series3
+JSON: {"labels":[...],"datasets":[{"name":"...","values":[...]}]}
 ```
 
 **Smart number parsing** handles:
@@ -613,7 +614,7 @@ graphs/
 │   ├── utils.js            # debounce, safeInt, safeFloat, hexToRgba, showToast
 │   ├── format.js           # formatNumber (6 modes)
 │   ├── date-utils.js       # tryParseDate, isDateColumn, formatDateLabel
-│   ├── data.js             # Parsing pipeline: CSV, JSON, manual, downsample, zoom
+│   ├── data.js             # Parsing pipeline: CSV, TSV, JSON, manual, downsample, zoom
 │   ├── format-number.js    # Y-tick, data-label, tooltip formatters
 │   ├── charts/
 │   │   ├── base-options.js # FONTS tokens, getTooltipBase, getLegendBase, ASPECT_RATIOS, theme colors, plugins
