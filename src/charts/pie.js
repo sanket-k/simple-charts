@@ -1,3 +1,4 @@
+/** Pie chart — proportional slices with auto-grouping of small values into "Other". */
 import { CONFIG } from '../constants.js';
 import { dom } from '../dom.js';
 import { hexToRgba } from '../utils.js';
@@ -5,6 +6,7 @@ import { formatNumber } from '../format.js';
 import { getBaseChartOptions, FONTS } from './base-options.js';
 import { registerChart } from './registry.js';
 
+/** Returns Chart.js config for a pie chart. */
 export function buildPieChart(labels, datasets, c, colors) {
   const opts = getBaseChartOptions();
   delete opts.scales;

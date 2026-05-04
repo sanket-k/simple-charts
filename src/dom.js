@@ -1,3 +1,5 @@
+/** DOM cache — query shorthand functions and a cached reference object to avoid repeated DOM lookups. */
+
 /** Shorthand for document.querySelector */
 export const $ = (sel) => document.querySelector(sel);
 /** Shorthand for document.querySelectorAll */

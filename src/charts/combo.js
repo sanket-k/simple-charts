@@ -1,3 +1,4 @@
+/** Combo chart — mixed bar + line series with per-dataset type assignment. */
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { hexToRgba } from '../utils.js';
@@ -5,6 +6,7 @@ import { getBaseChartOptions, getYAxisID } from './base-options.js';
 import { getLineDatasetDefaults } from './line.js';
 import { registerChart } from './registry.js';
 
+/** Returns Chart.js config for a combo chart with bar and line datasets. */
 export function buildComboChart(labels, datasets, c, colors, tension, useTimeAxis, displayData) {
   const opts = getBaseChartOptions();
   const borderRadius = parseInt(dom.barBorderRadius?.value) || 4;

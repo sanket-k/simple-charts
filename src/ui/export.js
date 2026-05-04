@@ -1,8 +1,10 @@
+/** Chart export — PNG/JPG/WebP/SVG download, clipboard copy, and JSON data export. */
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { safeInt, showToast } from '../utils.js';
 import { getThemeColors, bgPlugin, sourceFooterPlugin, brandPlugin } from '../charts/base-options.js';
 
+/** Generates a filename from chart title/dataset names with a date suffix. */
 function getExportFilename(ext) {
   const dateStr = new Date().toISOString().slice(0, 10);
   const legendNames = state.parsedData ? state.parsedData.datasets.map(ds => ds.name).filter(Boolean) : [];
@@ -23,6 +25,7 @@ function getExportFilename(ext) {
   return `${base}-${dateStr}.${ext}`;
 }
 
+/** Shows a modal dialog for the user to confirm/edit the export filename. */
 function showExportModal(suggestedName, onConfirm) {
   document.querySelectorAll('.export-modal-overlay').forEach(m => m.remove());
 
@@ -89,6 +92,7 @@ function showExportModal(suggestedName, onConfirm) {
   });
 }
 
+/** Exports the chart canvas as an SVG wrapper around the PNG data URL. */
 function exportAsSVG(w, h, filename) {
   const dataUrl = dom.chartCanvas.toDataURL('image/png', 1.0);
   const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
@@ -107,6 +111,7 @@ function exportAsSVG(w, h, filename) {
   showToast('Chart exported as SVG!', 'success');
 }
 
+/** Recursively clones a Chart.js config object while preserving function references. */
 function deepCloneConfig(obj, seen = new WeakMap()) {
   if (obj === null || typeof obj !== 'object') return obj;
   if (typeof obj === 'function') return obj;
@@ -125,6 +130,7 @@ function deepCloneConfig(obj, seen = new WeakMap()) {
   return clone;
 }
 
+/** Renders the chart to an offscreen canvas at the selected size/quality and triggers download. */
 function doExport(filename, format, ext) {
   const sizeStr = dom.exportSize.value;
   const [w, h] = sizeStr.split('x').map(Number);
@@ -178,6 +184,7 @@ function doExport(filename, format, ext) {
   }, 300);
 }
 
+/** Orchestrates the export flow: validates state, shows modal, then calls doExport. */
 function exportChart() {
   if (!state.chartInstance) {
     showToast('No chart to export', 'error');
@@ -193,12 +200,14 @@ function exportChart() {
   });
 }
 
+/** Wires the export, clipboard copy, and JSON copy buttons. */
 export function initExport() {
   dom.exportBtn.addEventListener('click', exportChart);
   dom.copyClipboardBtn.addEventListener('click', copyToClipboard);
   dom.copyJsonBtn.addEventListener('click', copyAsJSON);
 }
 
+/** Copies chart data and settings as JSON to the clipboard. */
 async function copyAsJSON() {
   if (!state.parsedData) {
     showToast('No data to copy', 'error');
@@ -228,6 +237,7 @@ async function copyAsJSON() {
   }
 }
 
+/** Copies the chart canvas as a PNG image to the clipboard. */
 async function copyToClipboard() {
   if (!state.chartInstance) {
     showToast('No chart to copy', 'error');

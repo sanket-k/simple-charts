@@ -1,3 +1,4 @@
+/** Comparison chart utilities — data validation, sorting, ratio calculation, and shared axis/drawing helpers. */
 import { getMultiColors, FONTS, getThemeColors } from './base-options.js';
 import { showToast } from '../utils.js';
 

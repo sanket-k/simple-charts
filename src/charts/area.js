@@ -1,3 +1,4 @@
+/** Area chart — stacked area series with optional dual-axis support. */
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { safeInt, safeFloat, hexToRgba } from '../utils.js';
@@ -5,6 +6,7 @@ import { getBaseChartOptions, getYAxisID } from './base-options.js';
 import { getLineDash } from '../ui/line-style-ui.js';
 import { registerChart } from './registry.js';
 
+/** Returns Chart.js config for a stacked area chart. */
 export function buildAreaChart(labels, datasets, c, colors, tension, useTimeAxis, displayData) {
   const opts = getBaseChartOptions();
   const gaps = dom.spanGaps.checked;

@@ -1,3 +1,4 @@
+/** Kano Model chart — scatter plot with must-be/performance/attractive curves and feature placement. */
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { safeInt, safeFloat, hexToRgba } from '../utils.js';

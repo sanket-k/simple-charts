@@ -1,8 +1,10 @@
+/** Clipboard and keyboard shortcuts — paste-to-parse, Cmd+E export, Cmd+Shift+D theme, Cmd+C copy. */
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { showToast } from '../utils.js';
 import { parseJSONData, parseDataFromText } from '../data.js';
 
+/** Wires global paste handler (auto-parses data) and keyboard shortcuts. */
 export function initClipboard() {
   document.addEventListener('paste', async (e) => {
     const tag = document.activeElement?.tagName?.toLowerCase();

@@ -1,3 +1,4 @@
+/** Waterfall chart — stacked bar decomposition showing incremental gains and losses with a total bar. */
 import { SEMANTIC } from '../constants.js';
 import { state } from '../state.js';
 import { dom } from '../dom.js';
@@ -6,6 +7,7 @@ import { formatNumber } from '../format.js';
 import { getBaseChartOptions } from './base-options.js';
 import { registerChart } from './registry.js';
 
+/** Returns Chart.js config for a waterfall chart using stacked positive/negative/total bars. */
 export function buildWaterfallChart(labels, datasets, c, colors) {
   const opts = getBaseChartOptions();
   const values = datasets[0].values;

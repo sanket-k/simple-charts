@@ -1,8 +1,10 @@
+/** Zoom UI — range slider inputs for panning into a subset of the data. */
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { updateZoomLabels } from '../data.js';
 import { showToast } from '../utils.js';
 
+/** Wires zoom min/max range inputs and reset button. */
 export function initZoomUI() {
   dom.zoomMin.addEventListener('input', () => {
     let min = parseFloat(dom.zoomMin.value);

@@ -1,3 +1,4 @@
+/** Segmented bar chart — 100% stacked bars with editable segment colors, labels, and multi-group support. */
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { safeInt, safeFloat, hexToRgba } from '../utils.js';
@@ -6,6 +7,7 @@ import { getThemeColors, getMultiColors, FONTS, getTooltipBase, getLegendBase } 
 import { bgPlugin, sourceFooterPlugin, brandPlugin } from './base-options.js';
 import { registerChart } from './registry.js';
 
+/** Returns the default segment set (DeFi, NFTs, Infra, Gaming, Social) for new segmented charts. */
 export function getDefaultSegments() {
   return [
     { label: 'DeFi', value: 35, color: '#F7931A' },
@@ -16,6 +18,7 @@ export function getDefaultSegments() {
   ];
 }
 
+/** Initializes the groups array with a single group if empty. */
 export function ensureGroupStructure() {
   if (state.charts.segmented.groups.length === 0) {
     const segs = state.charts.segmented.segments.length > 0 ? [...state.charts.segmented.segments] : getDefaultSegments();
@@ -24,11 +27,13 @@ export function ensureGroupStructure() {
   }
 }
 
+/** Returns the segments array for the currently active group. */
 export function getActiveGroupSegments() {
   ensureGroupStructure();
   return state.charts.segmented.groups[state.charts.segmented.activeGroupIndex]?.segments || [];
 }
 
+/** Renders the group tab bar UI from the groups state. */
 export function renderGroupTabs() {
   if (!dom.segmentedGroupTabs) return;
   ensureGroupStructure();
@@ -52,6 +57,7 @@ export function renderGroupTabs() {
   }
 }
 
+/** Returns true if the segmented chart is in percent mode (vs. raw values). */
 export function isPercentMode() {
   return (dom.segmentedMode?.value || 'percent') === 'percent';
 }
@@ -68,6 +74,7 @@ function percentToSegValue(pct, seg, total) {
   return total > 0 ? (pct / 100) * total : 0;
 }
 
+/** Renders the editable segment list UI with color pickers, labels, and value sliders. */
 export function renderSegmentList() {
   if (!dom.segmentedList) return;
   dom.segmentedList.innerHTML = '';
@@ -192,6 +199,7 @@ function getSegmentPercent(ctx) {
   return total > 0 ? (val / total) * 100 : 0;
 }
 
+/** Builds the Chart.js config for the segmented bar chart. */
 export function buildSegmentedBarChart(c) {
   const mode = dom.segmentedMode?.value || 'percent';
   const orientation = dom.segmentedOrientation?.value || 'horizontal';
@@ -462,6 +470,7 @@ export function buildSegmentedBarChart(c) {
   };
 }
 
+/** Self-managed render: destroys previous chart and creates a new segmented bar chart instance. */
 export function renderSegmentedChart() {
   if (state.chartInstance) {
     state.chartInstance.destroy();

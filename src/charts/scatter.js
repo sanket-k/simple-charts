@@ -1,8 +1,10 @@
+/** Scatter chart — x/y point plot with multiple series support. */
 import { dom } from '../dom.js';
 import { safeInt, hexToRgba } from '../utils.js';
 import { getBaseChartOptions } from './base-options.js';
 import { registerChart } from './registry.js';
 
+/** Returns Chart.js config for a scatter plot. */
 export function buildScatterChart(labels, datasets, c, colors) {
   const opts = getBaseChartOptions();
   opts.plugins.datalabels.display = false;

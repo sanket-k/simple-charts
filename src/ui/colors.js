@@ -1,8 +1,10 @@
+/** Color picker UI — 5-color palette editor with preset palettes and reset. */
 import { DEFAULT_COLORS, PRESET_PALETTES } from '../constants.js';
 import { state } from '../state.js';
 import { dom, colorPairs } from '../dom.js';
 import { showToast } from '../utils.js';
 
+/** Wires color picker inputs, hex fields, reset button, and preset palette swatches. */
 export function initColorPickers() {
   colorPairs.forEach(({ picker, hex, idx }) => {
     if (!picker || !hex) return;

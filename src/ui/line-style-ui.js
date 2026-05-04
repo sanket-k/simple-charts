@@ -1,3 +1,4 @@
+/** Line style UI — per-dataset dash pattern selector (solid, dashed, dotted, dash-dot). */
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 
@@ -8,11 +9,13 @@ const LINE_STYLES = [
   { value: 'dash-dot', label: 'Dash-Dot', dash: [8, 4, 2, 4] },
 ];
 
+/** Returns the borderDash array for a named line style. */
 export function getLineDash(style) {
   const found = LINE_STYLES.find(s => s.value === style);
   return found ? found.dash : [];
 }
 
+/** Builds the line-style dropdown for each dataset. */
 export function renderLineStyleControls() {
   const container = dom.lineStyleList;
   if (!container || !state.rawParsedData) return;

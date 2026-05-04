@@ -1,8 +1,10 @@
+/** Radar chart — spider/polygon chart for multi-axis comparison. */
 import { dom } from '../dom.js';
 import { hexToRgba } from '../utils.js';
 import { getBaseChartOptions, FONTS } from './base-options.js';
 import { registerChart } from './registry.js';
 
+/** Returns Chart.js config for a radar chart. */
 export function buildRadarChart(labels, datasets, c, colors) {
   const opts = getBaseChartOptions();
   delete opts.scales;

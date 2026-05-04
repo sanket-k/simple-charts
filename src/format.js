@@ -1,3 +1,4 @@
+/** Number formatting — auto/short, raw, comma, currency, and percent display modes. */
 import { dom } from './dom.js';
 
 /**

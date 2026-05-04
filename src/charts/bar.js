@@ -1,9 +1,11 @@
+/** Bar chart — horizontal (H-Bar) and vertical (V-Bar) grouped bars with configurable radius. */
 import { CONFIG } from '../constants.js';
 import { dom } from '../dom.js';
 import { safeInt, hexToRgba } from '../utils.js';
 import { getBaseChartOptions } from './base-options.js';
 import { registerChart } from './registry.js';
 
+/** Returns Chart.js config for a grouped bar chart (horizontal or vertical via indexAxis). */
 export function buildBarChart(labels, datasets, c, colors, indexAxis) {
   const opts = getBaseChartOptions();
   const borderRadius = safeInt(dom.barBorderRadius?.value, 4);

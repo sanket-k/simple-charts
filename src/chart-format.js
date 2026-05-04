@@ -1,3 +1,4 @@
+/** Chart formatters — factory functions for Y-axis ticks, data labels, and tooltip callbacks. */
 import { dom } from './dom.js';
 import { state } from './state.js';
 import { formatNumber } from './format.js';

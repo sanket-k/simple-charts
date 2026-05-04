@@ -1,3 +1,4 @@
+/** Line chart — standard multi-series line with optional time axis, dual-axis, and high-low markers. */
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { safeInt, safeFloat, hexToRgba } from '../utils.js';
@@ -6,6 +7,7 @@ import { getBaseChartOptions, getMultiColors, getYAxisID } from './base-options.
 import { getLineDash } from '../ui/line-style-ui.js';
 import { registerChart } from './registry.js';
 
+/** Builds a single Chart.js dataset config for one line series. */
 export function getLineDatasetDefaults(ds, i, c, colors, tension, useTimeAxis, displayData) {
   const baseRadius = safeInt(dom.pointSize.value, 3);
   const lineWidth = safeFloat(dom.lineWidth.value, 2.5);
@@ -75,6 +77,7 @@ export function getLineDatasetDefaults(ds, i, c, colors, tension, useTimeAxis, d
   };
 }
 
+/** Returns the full Chart.js config for a line chart. */
 export function buildLineChart(labels, datasets, c, colors, tension, useTimeAxis, displayData) {
   return {
     type: 'line',

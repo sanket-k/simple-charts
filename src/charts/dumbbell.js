@@ -1,3 +1,4 @@
+/** Dumbbell chart — two-series comparison with logarithmic X-axis, connecting lines, and ratio pills. */
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { safeInt } from '../utils.js';
@@ -5,6 +6,7 @@ import { getThemeColors, bgPlugin, sourceFooterPlugin, brandPlugin, FONTS, getTo
 import { validateCompareData, calcRatios, getCompareColors, getCategoryYAxis, getLogXAxis, drawRatioPill, sortCompareData, swapSeries, formatCompareNumber } from './compare-utils.js';
 import { registerChart } from './registry.js';
 
+/** Self-managed render: builds the dumbbell comparison chart. */
 export function renderDumbbellChart() {
   if (state.chartInstance) {
     state.chartInstance.destroy();

@@ -1,6 +1,8 @@
+/** Combo chart UI — per-dataset bar/line type toggle buttons. */
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 
+/** Builds the bar/line toggle rows for each dataset in a combo chart. */
 export function renderComboDatasetTypes() {
   const container = dom.comboDatasetList;
   if (!container || !state.rawParsedData) return;

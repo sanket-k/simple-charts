@@ -1,6 +1,8 @@
+/** Dual-axis UI — per-dataset left/right/hidden axis assignment and axis name inputs. */
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 
+/** Builds the axis assignment selector rows for each dataset. */
 export function renderAxisAssignments() {
   if (!dom.axisAssignmentList || !state.rawParsedData) return;
   if (!state.dualAxisEnabled) {
@@ -82,6 +84,7 @@ export function renderAxisAssignments() {
   });
 }
 
+/** Wires the dual-axis toggle checkbox. */
 export function initDualAxis() {
   if (dom.dualAxisToggle) {
     dom.dualAxisToggle.addEventListener('change', () => {

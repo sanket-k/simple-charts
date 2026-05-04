@@ -1,3 +1,4 @@
+/** Overlay chart — two-series horizontal bar comparison with logarithmic scale and ratio labels. */
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { safeInt } from '../utils.js';
@@ -5,6 +6,7 @@ import { getThemeColors, bgPlugin, sourceFooterPlugin, brandPlugin, FONTS, getTo
 import { validateCompareData, calcRatios, getCompareColors, getLogXAxis, sortCompareData, swapSeries, formatCompareNumber } from './compare-utils.js';
 import { registerChart } from './registry.js';
 
+/** Self-managed render: builds the overlay/grouped bar comparison chart. */
 export function renderOverlayChart() {
   if (state.chartInstance) {
     state.chartInstance.destroy();

@@ -1,3 +1,4 @@
+/** Shared chart infrastructure — theme colors, font tokens, plugins, and the base options builder. */
 import { PALETTE, DEFAULT_COLORS, EXTRA_COLORS, CONFIG, SEMANTIC } from '../constants.js';
 import { state } from '../state.js';
 import { dom } from '../dom.js';

@@ -1,7 +1,9 @@
+/** Branding UI — logo upload/paste, brand name, position, and opacity controls. */
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { showToast } from '../utils.js';
 
+/** Wires logo file upload, SVG paste, brand name, position, and opacity inputs. */
 export function initBranding() {
   dom.brandLogoBtn.addEventListener('click', () => dom.brandLogoFile.click());
 

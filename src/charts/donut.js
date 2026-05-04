@@ -1,9 +1,11 @@
+/** Donut chart — ring-shaped proportional chart with external labels and auto-grouping. */
 import { CONFIG } from '../constants.js';
 import { dom } from '../dom.js';
 import { hexToRgba } from '../utils.js';
 import { getBaseChartOptions, FONTS } from './base-options.js';
 import { registerChart } from './registry.js';
 
+/** Returns Chart.js config for a doughnut chart. */
 export function buildDonutChart(labels, datasets, c, colors) {
   const opts = getBaseChartOptions();
   delete opts.scales;

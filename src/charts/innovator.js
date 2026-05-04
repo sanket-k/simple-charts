@@ -1,3 +1,4 @@
+/** Innovator's Dilemma chart — disruptive vs. incumbent technology curves with market tier lines. */
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { safeInt, safeFloat, hexToRgba, wrapText } from '../utils.js';
@@ -5,6 +6,7 @@ import { getThemeColors, getMultiColors, bgPlugin, sourceFooterPlugin, brandPlug
 import { tryParseDate } from '../date-utils.js';
 import { registerChart } from './registry.js';
 
+/** Returns the default display name for a market tier by index. */
 export function getInnovatorTierDefaultName(t, total) {
   if (total === 1) return 'Market Demand';
   if (t === 0) return 'High-end Market';
@@ -12,6 +14,7 @@ export function getInnovatorTierDefaultName(t, total) {
   return `Market Tier ${t + 1}`;
 }
 
+/** Renders the tier name input fields in the settings panel. */
 export function renderInnovatorTierNames() {
   if (!dom.innovatorTierNames) return;
   const tiers = safeInt(dom.innovatorTiers?.value, 3);
@@ -46,6 +49,7 @@ export function renderInnovatorTierNames() {
   }
 }
 
+/** Self-managed render: builds the Innovator's Dilemma chart from formula settings or parsed data. */
 export function renderInnovatorsDilemmaChart() {
   const c = getThemeColors();
   const colors = getMultiColors();

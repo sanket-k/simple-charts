@@ -1,3 +1,4 @@
+/** Application entry point — initializes all UI modules, wires events, and loads sample data. */
 import { CONFIG, EXTRA_COLORS } from './constants.js';
 import { state } from './state.js';
 import { dom, $, $$ } from './dom.js';
@@ -27,6 +28,7 @@ window.__renderChart = renderChart;
 window.__debouncedRender = debouncedRender;
 window.__loadSampleForType = loadSampleData;
 
+/** Runs the full post-parse pipeline: segmented conversion, downsampling, UI updates, and render. */
 function updateAfterDataLoad() {
   if (state.currentChartType === 'segmented' && state.rawParsedData) {
     convertParsedDataToSegments(state.rawParsedData);
@@ -48,6 +50,7 @@ function updateAfterDataLoad() {
 }
 window.__updateAfterDataLoad = updateAfterDataLoad;
 
+/** Loads sample data for the current chart type, restoring saved state when switching back. */
 async function loadSampleData() {
   const prevType = state.previousChartType;
   const newType = state.currentChartType;
@@ -131,6 +134,7 @@ async function loadSampleData() {
   updateAfterDataLoad();
 }
 
+/** Wires the data input panel tab switching (paste / upload / manual). */
 function initDataInputTabs() {
   $$('.data-input-tabs .tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -160,6 +164,7 @@ function initDataInputTabs() {
   });
 }
 
+/** Wires the CSV/TSV/JSON format toggle buttons. */
 function initFormatToggle() {
   if (dom.formatToggle) {
     dom.formatToggle.querySelectorAll('.format-opt').forEach(btn => {
@@ -173,6 +178,7 @@ function initFormatToggle() {
   }
 }
 
+/** Wires the "Parse Data" button to parse textarea input. */
 function initParseButton() {
   dom.parseDataBtn.addEventListener('click', async () => {
     const result = await parseInputText(dom.dataTextarea.value);
@@ -187,6 +193,7 @@ function initParseButton() {
   });
 }
 
+/** Wires file drag-and-drop zone and file input for CSV/TSV/JSON upload. */
 function initCSVUpload() {
   dom.fileDropZone.addEventListener('click', () => dom.csvFileInput.click());
 
@@ -214,6 +221,7 @@ function initCSVUpload() {
   });
 }
 
+/** Reads an uploaded file, parses it, and triggers the data pipeline. */
 async function handleCSVFile(file) {
   const reader = new FileReader();
   reader.onload = async (e) => {
@@ -251,6 +259,7 @@ async function handleCSVFile(file) {
   reader.readAsText(file);
 }
 
+/** Wires manual data entry: add row, add series, and debounced parse on input. */
 function initManualEntry() {
   dom.addRowBtn.addEventListener('click', () => addManualRow());
 
@@ -281,6 +290,7 @@ function initManualEntry() {
   });
 }
 
+/** Wires downsampling mode and column selector dropdowns. */
 function initDownsampleColumnListeners() {
   dom.downsampleSelect.addEventListener('change', () => {
     applyDownsampling();
@@ -294,6 +304,7 @@ function initDownsampleColumnListeners() {
   });
 }
 
+/** Wires segmented chart controls: add segment, add/remove group, group name. */
 function initSegmentedGroupListeners() {
   dom.addSegmentBtn.addEventListener('click', () => {
     const activeSegs = getActiveGroupSegments();
@@ -340,6 +351,7 @@ function initSegmentedGroupListeners() {
   });
 }
 
+/** Wires the data copy buttons (CSV, TSV, JSON format selection + copy). */
 function initCopyDataButtons() {
   const serializers = { csv: dataToCSV, tsv: dataToTSV, json: dataToJSON };
   const labels = { csv: 'CSV', tsv: 'TSV', json: 'JSON' };
@@ -373,6 +385,7 @@ function initCopyDataButtons() {
   }
 }
 
+/** Master initializer — registers Chart.js plugins, syncs UI, and starts all modules. */
 function init() {
   Chart.register(ChartDataLabels);
   Chart.defaults.plugins.datalabels.display = false;

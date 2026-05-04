@@ -1,3 +1,4 @@
+/** Bubble compare chart — area-proportional bubbles with before/after comparison and ratio arrows. */
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { safeInt } from '../utils.js';
@@ -5,6 +6,7 @@ import { getThemeColors, bgPlugin, sourceFooterPlugin, brandPlugin, FONTS, getTo
 import { validateCompareData, calcRatios, getCompareColors, getCategoryYAxis, drawRatioPill, sortCompareData, swapSeries, formatCompareNumber } from './compare-utils.js';
 import { registerChart } from './registry.js';
 
+/** Self-managed render: builds the bubble comparison chart. */
 export function renderBubbleCompareChart() {
   if (state.chartInstance) {
     state.chartInstance.destroy();

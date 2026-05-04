@@ -1,3 +1,4 @@
+/** Settings panel — visibility toggling, chart type grid, format hints, and all settings inputs. */
 import { CONFIG, DEFAULT_COLORS } from '../constants.js';
 import { state } from '../state.js';
 import { dom, $$ } from '../dom.js';
@@ -9,6 +10,7 @@ import { renderAxisAssignments } from './dual-axis.js';
 import { renderLineStyleControls } from './line-style-ui.js';
 import { updateZoomSlider } from '../data.js';
 
+/** Shows/hides settings controls based on the current chart type's capabilities. */
 export function updateSettingsVisibility() {
   const t = state.currentChartType;
   const caps = getCapabilities(t);
@@ -153,6 +155,7 @@ function buildChartTypeGrid() {
   });
 }
 
+/** Generates chart type buttons from the registry and wires selection behavior. */
 export function initChartTypeGrid() {
   // Auto-generate buttons from registry
   buildChartTypeGrid();
@@ -226,6 +229,7 @@ export function initChartTypeGrid() {
   });
 }
 
+/** Attaches debounced-render listeners to all settings input controls. */
 export function initSettingsListeners() {
   const settingsInputs = [
     dom.chartTitle, dom.chartSubtitle, dom.chartSource,

@@ -1,3 +1,4 @@
+/** Timeline chart — line chart with vertical event marker annotations and date-aware positioning. */
 import { CONFIG } from '../constants.js';
 import { state } from '../state.js';
 import { dom } from '../dom.js';
@@ -7,6 +8,7 @@ import { getLineDatasetDefaults } from './line.js';
 import { tryParseDate } from '../date-utils.js';
 import { registerChart } from './registry.js';
 
+/** Returns Chart.js config for a timeline chart with event marker annotations. */
 export function buildTimelineChart(labels, datasets, c, colors, tension, displayData, useTimeAxis) {
   const opts = getBaseChartOptions();
   const eventColor = dom.eventMarkerColor?.value || state.userColors[0] || c.hero;

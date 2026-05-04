@@ -1,3 +1,4 @@
+/** Chart render dispatcher — destroys previous instance, validates data, and builds a new Chart.js chart. */
 import { state } from './state.js';
 import { dom } from './dom.js';
 import { safeFloat, showToast } from './utils.js';

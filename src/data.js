@@ -1,3 +1,4 @@
+/** Data pipeline — parsing (CSV/TSV/JSON), downsampling, zoom, preview, and serialization. */
 import { CONFIG, DEFAULT_COLORS } from './constants.js';
 import { state } from './state.js';
 import { dom, $, $$ } from './dom.js';
@@ -10,6 +11,7 @@ import { getMultiColors } from './charts/base-options.js';
 //  Downsampling
 // ═══════════════════════════════════════════
 
+/** Reduces time-series data point count by averaging into weekly/monthly/quarterly/yearly buckets. */
 export function downsampleData(data, mode) {
   if (!data || !data.isTimeSeries || !data.dateObjects) return data;
   if (mode === 'none') return data;
@@ -78,6 +80,7 @@ export function downsampleData(data, mode) {
 //  Zoom
 // ═══════════════════════════════════════════
 
+/** Slices data to the current zoom range (percentage-based start/end). */
 export function applyZoom(data) {
   if (!data) return data;
   if (state.zoomRange[0] === 0 && state.zoomRange[1] === 100) return data;
@@ -98,6 +101,7 @@ export function applyZoom(data) {
   };
 }
 
+/** Updates the zoom slider UI labels and thumb positions to reflect the current range. */
 export function updateZoomLabels() {
   let lbls = [];
   if (state.currentChartType === 'innovator') {
@@ -123,6 +127,7 @@ export function updateZoomLabels() {
 //  Data Parsing
 // ═══════════════════════════════════════════
 
+/** Parses a numeric string with support for K/M/B suffixes, parenthesized negatives, and percent signs. */
 function smartParseNumber(v) {
   if (typeof v === 'number') return isNaN(v) ? null : v;
   if (!v || typeof v !== 'string') return null;
@@ -152,6 +157,7 @@ function smartParseNumber(v) {
   return (isNegative ? -1 : 1) * parsed * multiplier;
 }
 
+/** Parses JSON text into a normalized {labels, datasets} structure with date detection and sorting. */
 export function parseJSONData(text) {
   let json;
   try {
@@ -253,6 +259,7 @@ export function parseJSONData(text) {
   return { labels, datasets, isTimeSeries, dateObjects, dateRange };
 }
 
+/** Parses CSV/TSV text via PapaParse into a normalized {labels, datasets} structure. */
 export async function parseDataFromText(text) {
   if (!text.trim()) return null;
 
@@ -351,6 +358,7 @@ export async function parseDataFromText(text) {
   return { labels, datasets, isTimeSeries: isTS, dateObjects, dateRange };
 }
 
+/** Top-level parse dispatcher — routes to JSON or CSV/TSV parser based on format setting. */
 export function parseInputText(text) {
   if (state.dataFormat === 'json') {
     return parseJSONData(text);
@@ -369,6 +377,7 @@ export function parseInputText(text) {
 
 export { smartParseNumber };
 
+/** Converts parsed data into the segmented chart's groups/segments state structure. */
 export function convertParsedDataToSegments(data) {
   if (!data || !data.labels || !data.datasets || data.datasets.length === 0) return;
   const colors = getMultiColors();
@@ -397,12 +406,14 @@ export function convertParsedDataToSegments(data) {
   }
 }
 
+/** Applies the currently selected downsampling mode to rawParsedData and stores result in parsedData. */
 export function applyDownsampling() {
   if (!state.rawParsedData) { state.parsedData = null; return; }
   const mode = dom.downsampleSelect.value;
   state.parsedData = downsampleData(state.rawParsedData, mode);
 }
 
+/** Renders the parsed data as an HTML table in the preview panel (max 20 rows shown). */
 export function updateDataPreview() {
   if (!state.parsedData) {
     dom.dataPreview.innerHTML = '<p class="placeholder-text">No data loaded yet</p>';
@@ -446,6 +457,7 @@ export function updateDataPreview() {
   }
 }
 
+/** Updates the data info bar with row count, downsampling status, and date range. */
 export function updateDataInfo() {
   if (!state.parsedData) {
     dom.dataInfo.textContent = '';
@@ -494,6 +506,7 @@ export function dataToJSON(data) {
   return JSON.stringify(data, null, 2);
 }
 
+/** Shows/hides the data options section and populates column selector and size warnings. */
 export function updateDataOptions() {
   if (!state.rawParsedData) {
     dom.dataOptionsSection.style.display = 'none';
@@ -543,6 +556,7 @@ export function updateDataOptions() {
   }
 }
 
+/** Shows/hides the zoom slider based on chart type and data size, and syncs input values. */
 export function updateZoomSlider() {
   const isInnovator = state.currentChartType === 'innovator';
   if (!state.parsedData && !isInnovator) {
@@ -561,6 +575,7 @@ export function updateZoomSlider() {
   updateZoomLabels();
 }
 
+/** Appends a new empty row to the manual data entry grid. */
 export function addManualRow() {
   const row = document.createElement('div');
   row.className = 'manual-row';
@@ -571,6 +586,7 @@ export function addManualRow() {
   dom.manualRows.appendChild(row);
 }
 
+/** Reads all manual entry cells and builds a parsed data object from them. */
 export function parseManualData() {
   const rows = dom.manualRows.querySelectorAll('.manual-row');
   const labels = [];
