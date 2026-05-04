@@ -117,6 +117,15 @@ export function validateChartData(chartId, parsedData) {
       }
       break;
     }
+    case 'innovator': {
+      if (numLabels < 2) {
+        return 'Innovator needs at least 2 time points to plot curves.';
+      }
+      if (numDatasets === 1) {
+        return 'Using 1 dataset for disruptive curve. Incumbent and tiers will be auto-generated.';
+      }
+      break;
+    }
     case 'radar': {
       if (numLabels < 3) {
         return 'Radar needs at least 3 metric rows to form a polygon. Add more data rows.';

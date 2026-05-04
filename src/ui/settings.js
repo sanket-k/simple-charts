@@ -62,6 +62,7 @@ export function updateSettingsVisibility() {
   toggle(dom.xAxisType, caps.axisFormatting);
   toggle(dom.xAxisLabel, caps.axisFormatting);
   toggle(dom.yAxisLabel, caps.axisFormatting);
+  toggle(dom.showYAxisLabel, caps.axisFormatting);
   toggle(dom.dateFormat, caps.axisFormatting);
   toggle(dom.maxTicks, caps.axisFormatting);
   toggle(dom.yAxisScale, caps.axisFormatting);
@@ -236,7 +237,7 @@ export function initSettingsListeners() {
     dom.gridStyle, dom.barBorderRadius,
     dom.legendPosition, dom.tooltipStyle, dom.animationSpeed,
     dom.yAxisMin, dom.yAxisMax, dom.xAxisRotation,
-    dom.xAxisType, dom.xAxisLabel, dom.yAxisLabel,
+    dom.xAxisType, dom.xAxisLabel, dom.yAxisLabel, dom.showYAxisLabel,
     dom.decimalPlaces, dom.currencyPrefix,
     dom.refLineY, dom.refLineLabel,
     dom.chartBgColor, dom.chartGridColor,

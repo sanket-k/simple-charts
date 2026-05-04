@@ -78,6 +78,7 @@ export const dom = {
   xAxisType: $('#xAxisType'),
   xAxisLabel: $('#xAxisLabel'),
   yAxisLabel: $('#yAxisLabel'),
+  showYAxisLabel: $('#showYAxisLabel'),
   decimalPlaces: $('#decimalPlaces'),
   currencyPrefix: $('#currencyPrefix'),
   refLineY: $('#refLineY'),

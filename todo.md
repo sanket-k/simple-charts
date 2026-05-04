@@ -54,6 +54,50 @@
 
 ---
 
+## Phase 2: Innovator Chart — Data Input + Auto-Scaling
+
+- [ ] 2.1 Fix render.js validation for self-managed charts (skip when no parsedData)
+- [ ] 2.2 Data-driven mode — progressive data input (1/2/3+ datasets)
+- [ ] 2.3 Auto-scaling for formula mode (Y-axis range remapping)
+- [ ] 2.4 Updated registry descriptor hints (progressive format examples)
+- [ ] 2.5 Browser testing — default, auto-scaled, and data-driven modes
+
+### 2.1 Fix Validation for Self-Managed Charts
+
+- `render.js` calls `validateChartData()` before `desc.builder()` for self-managed charts
+- When `state.parsedData` is null, validation returns "No data to render" error and blocks render
+- Fix: skip validation when `parsedData` is null — self-managed charts generate their own data
+- Affects: innovator, kano, timeline (all `isSelfManaged: true` charts)
+
+### 2.2 Data-Driven Mode (Progressive Data Input)
+
+When `state.parsedData` exists:
+- **1 dataset**: Disruptive curve from data, incumbent auto-generated (scaled to data range), tiers auto-generated
+- **2 datasets**: Disruptive + incumbent from data, tiers auto-generated
+- **3+ datasets**: Disruptive + incumbent + custom tier lines from data
+- Labels come from `parsedData.labels` (replaces formula-generated labels)
+- Tier positions auto-derived from data range when not explicitly provided via datasets
+
+When `state.parsedData` is null:
+- Falls back to current formula-generated behavior (status quo)
+
+### 2.3 Auto-Scaling for Formula Mode
+
+All internal Y-position values scale proportionally when Y-axis min/max differs from default 0-90:
+- `disruptiveStart`, `disruptivePeak` → remapped linearly
+- `incumbentBase`, `incumbentSlope` → base remapped, slope scaled by range ratio
+- `marketTop`, `marketBottom` → remapped linearly
+- Tier line positions inherit scaled values
+
+### 2.4 Updated Format Hints
+
+Progressive examples in registry descriptor:
+- CSV/TSV: `Period, Disruptive, Incumbent, High-end, Mid-market, Low-end`
+- JSON: datasets array with 1-6 named series
+- Hint text explains progressive column mapping
+
+---
+
 ## Success Metrics
 
 | Metric | Before | After |

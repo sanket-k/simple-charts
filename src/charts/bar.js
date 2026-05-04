@@ -22,6 +22,15 @@ export function buildBarChart(labels, datasets, c, colors, indexAxis) {
     opts.scales.y.max = undefined;
     if (opts.scales.y.ticks) delete opts.scales.y.ticks.callback;
     delete opts.scales.y1;
+
+    // Fix annotation: swap to use value axis (X) for horizontal bars
+    if (opts.plugins.annotation?.annotations?.refLine) {
+      const ref = opts.plugins.annotation.annotations.refLine;
+      ref.xMin = ref.yMin;
+      ref.xMax = ref.yMax;
+      delete ref.yMin;
+      delete ref.yMax;
+    }
   }
   opts.plugins.datalabels.anchor = 'end';
   opts.plugins.datalabels.align = indexAxis === 'y' ? 'right' : 'top';

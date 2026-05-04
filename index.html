@@ -164,11 +164,11 @@
         <div class="input-group-row">
           <div class="input-group">
             <label for="innovatorYMin">Y-Axis Min</label>
-            <input type="number" id="innovatorYMin" value="0" min="-100" max="200">
+            <input type="number" id="innovatorYMin" value="" min="-100" max="200" placeholder="0">
           </div>
           <div class="input-group">
             <label for="innovatorYMax">Y-Axis Max</label>
-            <input type="number" id="innovatorYMax" value="0" min="0" max="500" placeholder="Auto">
+            <input type="number" id="innovatorYMax" value="" min="0" max="500" placeholder="Auto">
           </div>
         </div>
         <div class="input-group-separator"></div>
@@ -706,6 +706,10 @@
         <div class="input-group">
           <label for="yAxisLabel">Y-Axis Title</label>
           <input type="text" id="yAxisLabel" placeholder="e.g. Revenue ($), Volume">
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="showYAxisLabel" checked>
+          <label for="showYAxisLabel">Show Y-Axis Label</label>
         </div>
         <div class="input-group">
           <label for="numberFormat">Number Format</label>

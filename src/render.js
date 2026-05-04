@@ -35,12 +35,15 @@ export function renderChart() {
 
   // Self-managed charts handle their own rendering lifecycle
   if (desc?.isSelfManaged) {
-    // Validate data for self-managed charts too (they skip render.js's normal path)
-    const err = validateChartData(state.currentChartType, state.parsedData);
-    if (err) {
-      const isWarning = err.includes('ignored') || err.includes('Using') || err.includes('best with');
-      showToast(err, isWarning ? 'warning' : 'error');
-      if (!isWarning) return;
+    // Self-managed charts generate their own data, but may accept parsed data
+    // Only validate when external data is present
+    if (state.parsedData) {
+      const err = validateChartData(state.currentChartType, state.parsedData);
+      if (err) {
+        const isWarning = err.includes('ignored') || err.includes('Using') || err.includes('best with');
+        showToast(err, isWarning ? 'warning' : 'error');
+        if (!isWarning) return;
+      }
     }
     desc.builder();
     return;

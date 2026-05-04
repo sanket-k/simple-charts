@@ -50,6 +50,13 @@ export function renderInnovatorsDilemmaChart() {
   const c = getThemeColors();
   const colors = getMultiColors();
 
+  // ── Mode detection ──────────────────────────────────────────
+  const pd = state.parsedData;
+  const hasData = pd && pd.datasets && pd.datasets.length > 0
+    && pd.labels && pd.labels.length > 0;
+  const dataDsCount = hasData ? pd.datasets.length : 0;
+
+  // ── UI params ───────────────────────────────────────────────
   const tiers = safeInt(dom.innovatorTiers?.value, 3);
   const sustainingPace = safeFloat(dom.innovatorSustainingPace?.value, 1.2);
   const showIncumbent = dom.innovatorShowIncumbent?.checked ?? true;
@@ -62,15 +69,35 @@ export function renderInnovatorsDilemmaChart() {
   const xLabel = dom.innovatorXLabel?.value || 'Time';
   const yLabel = dom.innovatorYLabel?.value || 'Performance / Quality';
 
-  const disruptiveStart = safeFloat(dom.innovatorDisruptiveStart?.value, 3);
-  const disruptivePeak = safeFloat(dom.innovatorDisruptivePeak?.value, 90);
-  const incumbentBase = safeFloat(dom.innovatorIncumbentBase?.value, 75);
-  const incumbentSlope = safeFloat(dom.innovatorIncumbentSlope?.value, 11);
-  const marketTop = safeFloat(dom.innovatorMarketTop?.value, 70);
-  const marketBottom = safeFloat(dom.innovatorMarketBottom?.value, 20);
+  const rawDisruptiveStart = safeFloat(dom.innovatorDisruptiveStart?.value, 3);
+  const rawDisruptivePeak = safeFloat(dom.innovatorDisruptivePeak?.value, 90);
+  const rawIncumbentBase = safeFloat(dom.innovatorIncumbentBase?.value, 75);
+  const rawIncumbentSlope = safeFloat(dom.innovatorIncumbentSlope?.value, 11);
+  const rawMarketTop = safeFloat(dom.innovatorMarketTop?.value, 70);
+  const rawMarketBottom = safeFloat(dom.innovatorMarketBottom?.value, 20);
 
-  const yAxisMinVal = dom.innovatorYMin?.value !== '' ? safeFloat(dom.innovatorYMin.value, 0) : 0;
-  const yAxisMaxVal = dom.innovatorYMax?.value > 0 ? safeFloat(dom.innovatorYMax.value, undefined) : undefined;
+  const userYMin = dom.innovatorYMin?.value !== '';
+  const userYMax = dom.innovatorYMax?.value !== '' && safeFloat(dom.innovatorYMax.value, 0) > 0;
+  const yAxisMinVal = userYMin ? safeFloat(dom.innovatorYMin.value, 0) : undefined;
+  const yAxisMaxVal = userYMax ? safeFloat(dom.innovatorYMax.value, undefined) : undefined;
+
+  // ── Auto-scaling: remap formula values when Y-axis range ≠ default 0–90 ──
+  const defaultMin = 0;
+  const defaultMax = 90;
+  const targetMin = yAxisMinVal ?? defaultMin;
+  const targetMax = yAxisMaxVal ?? defaultMax;
+  const rangeRatio = (targetMax - targetMin) / (defaultMax - defaultMin);
+  const needsScaling = targetMin !== defaultMin || targetMax !== defaultMax;
+  const remap = needsScaling
+    ? (v) => targetMin + (v - defaultMin) * rangeRatio
+    : (v) => v;
+
+  const disruptiveStart = remap(rawDisruptiveStart);
+  const disruptivePeak = remap(rawDisruptivePeak);
+  const incumbentBase = remap(rawIncumbentBase);
+  const incumbentSlope = needsScaling ? rawIncumbentSlope * rangeRatio : rawIncumbentSlope;
+  const marketTop = remap(rawMarketTop);
+  const marketBottom = remap(rawMarketBottom);
 
   const disruptiveRange = Math.max(disruptivePeak - disruptiveStart, 1);
   const slopePerUnit = sustainingPace * 0.8;
@@ -89,10 +116,16 @@ export function renderInnovatorsDilemmaChart() {
     }
   }
 
+  // ── Labels ──────────────────────────────────────────────────
   let labels;
   let isDateAxis = false;
+  let isCategoryAxis = false;
 
-  if (timeMode === 'years') {
+  if (hasData) {
+    labels = pd.labels.map(String);
+    isDateAxis = pd.isTimeSeries || false;
+    isCategoryAxis = true;
+  } else if (timeMode === 'years') {
     const startY = safeInt(dom.innovatorStartYear?.value, 1990);
     const endY = safeInt(dom.innovatorEndYear?.value, 2020);
     const clampedEnd = Math.max(startY + 1, endY);
@@ -133,13 +166,41 @@ export function renderInnovatorsDilemmaChart() {
   const endIndex = Math.ceil(endRatio * labels.length) || 1;
   const displayLabels = labels.slice(startIndex, endIndex);
 
-  const datasets = [];
-  const tierSpacing = tiers > 1 ? (marketTop - marketBottom) / (tiers - 1) : 0;
+  // ── Data range (for auto-scaling tiers in data mode) ────────
+  let dataRangeMin = Infinity, dataRangeMax = -Infinity;
+  if (hasData) {
+    for (const ds of pd.datasets) {
+      for (const v of (ds.values || [])) {
+        if (v != null && !isNaN(v)) {
+          dataRangeMin = Math.min(dataRangeMin, v);
+          dataRangeMax = Math.max(dataRangeMax, v);
+        }
+      }
+    }
+    if (dataRangeMin === Infinity) { dataRangeMin = 0; dataRangeMax = 100; }
+  }
 
+  // Effective tier positioning params (data-derived or formula-scaled)
+  const effMarketTop = hasData ? dataRangeMax - (dataRangeMax - dataRangeMin) * 0.1 : marketTop;
+  const effMarketBottom = hasData ? dataRangeMin + (dataRangeMax - dataRangeMin) * 0.15 : marketBottom;
+  const effSlopePerUnit = hasData
+    ? slopePerUnit * ((dataRangeMax - dataRangeMin) / Math.max(defaultMax - defaultMin, 1))
+    : slopePerUnit;
+
+  // ── Build datasets ──────────────────────────────────────────
+  const datasets = [];
+  const customTierCount = hasData ? Math.max(0, dataDsCount - 2) : 0;
+  const effectiveTiers = customTierCount > 0 ? customTierCount : tiers;
+  const tierSpacing = effectiveTiers > 1 ? (effMarketTop - effMarketBottom) / (effectiveTiers - 1) : 0;
+
+  // Disruptive curve
   if (showDisruptive) {
-    const data = labels.map((_, i) => disruptiveValue(normX(i))).slice(startIndex, endIndex);
+    const data = hasData
+      ? pd.datasets[0].values.slice(startIndex, endIndex)
+      : labels.map((_, i) => disruptiveValue(normX(i))).slice(startIndex, endIndex);
+
     datasets.push({
-      label: disruptiveName,
+      label: hasData ? (pd.datasets[0].name || disruptiveName) : disruptiveName,
       data,
       borderColor: colors[0] || c.hero,
       backgroundColor: hexToRgba(colors[0] || c.hero, 0.06),
@@ -151,10 +212,22 @@ export function renderInnovatorsDilemmaChart() {
     });
   }
 
+  // Incumbent line
   if (showIncumbent) {
-    const data = labels.map((_, i) => incumbentBase + normX(i) * incumbentSlope).slice(startIndex, endIndex);
+    let data;
+    if (hasData && dataDsCount >= 2) {
+      data = pd.datasets[1].values.slice(startIndex, endIndex);
+    } else if (hasData) {
+      // Auto-generate incumbent scaled to data range
+      const incBase = dataRangeMax - (dataRangeMax - dataRangeMin) * 0.15;
+      const incSlope = (dataRangeMax - dataRangeMin) * 0.12;
+      data = labels.map((_, i) => incBase + normX(i) * incSlope).slice(startIndex, endIndex);
+    } else {
+      data = labels.map((_, i) => incumbentBase + normX(i) * incumbentSlope).slice(startIndex, endIndex);
+    }
+
     datasets.push({
-      label: incumbentName,
+      label: hasData && dataDsCount >= 2 ? (pd.datasets[1].name || incumbentName) : incumbentName,
       data,
       borderColor: colors[1] || c.secondary,
       backgroundColor: 'transparent',
@@ -167,17 +240,26 @@ export function renderInnovatorsDilemmaChart() {
     });
   }
 
+  // Tier lines
   const tierAnnotations = {};
 
-  for (let t = 0; t < tiers; t++) {
-    const baseY = tiers === 1
-      ? (marketTop + marketBottom) / 2
-      : marketTop - t * tierSpacing;
-    const data = labels.map((_, i) => baseY + normX(i) * 10 * slopePerUnit).slice(startIndex, endIndex);
+  for (let t = 0; t < effectiveTiers; t++) {
+    let data;
+    let tierName;
 
-    const tierName = (state.charts.innovator.tierCustomNames[t] && state.charts.innovator.tierCustomNames[t].trim())
-      ? state.charts.innovator.tierCustomNames[t].trim()
-      : getInnovatorTierDefaultName(t, tiers);
+    if (customTierCount > 0 && hasData) {
+      const dsIdx = t + 2;
+      data = pd.datasets[dsIdx].values.slice(startIndex, endIndex);
+      tierName = pd.datasets[dsIdx].name || getInnovatorTierDefaultName(t, effectiveTiers);
+    } else {
+      const baseY = effectiveTiers === 1
+        ? (effMarketTop + effMarketBottom) / 2
+        : effMarketTop - t * tierSpacing;
+      data = labels.map((_, i) => baseY + normX(i) * 10 * effSlopePerUnit).slice(startIndex, endIndex);
+      tierName = (state.charts.innovator.tierCustomNames[t] && state.charts.innovator.tierCustomNames[t].trim())
+        ? state.charts.innovator.tierCustomNames[t].trim()
+        : getInnovatorTierDefaultName(t, effectiveTiers);
+    }
 
     datasets.push({
       label: tierName,
@@ -209,6 +291,7 @@ export function renderInnovatorsDilemmaChart() {
     }
   }
 
+  // ── Event markers ───────────────────────────────────────────
   const showMarkers = dom.showEventMarkers?.checked ?? true;
   const eventColor = dom.eventMarkerColor?.value || state.userColors[0] || c.hero;
 
@@ -268,10 +351,12 @@ export function renderInnovatorsDilemmaChart() {
       const yAdj = 10 + (i % 4) * 20;
       const wrappedLabel = wrapText(evt.label, 18);
 
+      const xRef = (isCategoryAxis || isDateAxis) ? displayLabels[labelIndex] : labelIndex;
+
       tierAnnotations[`evtLine_${i}`] = {
         type: 'line',
-        xMin: labelIndex,
-        xMax: labelIndex,
+        xMin: xRef,
+        xMax: xRef,
         borderColor: hexToRgba(eventColor, 0.7),
         borderWidth: 2.5,
         borderDash: [8, 4],
@@ -292,7 +377,7 @@ export function renderInnovatorsDilemmaChart() {
       if (firstDsData && firstDsData[labelIndex] != null) {
         tierAnnotations[`evtPoint_${i}`] = {
           type: 'point',
-          xValue: labelIndex,
+          xValue: xRef,
           yValue: firstDsData[labelIndex],
           backgroundColor: eventColor,
           borderColor: state.userBgColor || c.bg,
@@ -303,6 +388,18 @@ export function renderInnovatorsDilemmaChart() {
     });
   }
 
+  // ── Y-axis bounds ───────────────────────────────────────────
+  // In data mode without explicit user bounds, let Chart.js auto-determine range
+  let yMin, yMax;
+  if (hasData) {
+    yMin = userYMin ? yAxisMinVal : undefined;
+    yMax = userYMax ? yAxisMaxVal : undefined;
+  } else {
+    yMin = yAxisMinVal ?? 0;
+    yMax = yAxisMaxVal;
+  }
+
+  // ── Chart config ────────────────────────────────────────────
   const animDuration = safeInt(dom.animationSpeed?.value, 600);
 
   const config = {
@@ -351,7 +448,7 @@ export function renderInnovatorsDilemmaChart() {
           mode: 'index',
           intersect: false,
           callbacks: {
-            title: (items) => isDateAxis ? items[0]?.label : `Time: ${items[0]?.label}`,
+            title: (items) => (isDateAxis || isCategoryAxis) ? items[0]?.label : `Time: ${items[0]?.label}`,
             label: (ctx) => `  ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}`,
           },
         },
@@ -360,7 +457,7 @@ export function renderInnovatorsDilemmaChart() {
       },
       scales: {
         x: {
-          type: isDateAxis ? 'category' : 'linear',
+          type: isCategoryAxis || isDateAxis ? 'category' : 'linear',
           title: {
             display: true,
             text: xLabel,
@@ -369,14 +466,14 @@ export function renderInnovatorsDilemmaChart() {
           },
           grid: { display: false },
           ticks: {
-            color: isDateAxis ? c.textMuted : c.textMuted,
-            font: isDateAxis ? FONTS.tick : FONTS.tickSmall,
-            maxTicksLimit: isDateAxis ? Math.min(labels.length, 15) : 6,
-            maxRotation: isDateAxis ? 45 : 0,
+            color: c.textMuted,
+            font: (isCategoryAxis || isDateAxis) ? FONTS.tick : FONTS.tickSmall,
+            maxTicksLimit: (isCategoryAxis || isDateAxis) ? Math.min(labels.length, 15) : 6,
+            maxRotation: (isCategoryAxis || isDateAxis) ? 45 : 0,
             autoSkip: true,
           },
           border: { display: false },
-          ...(isDateAxis ? {} : { min: 0, max: 10 }),
+          ...((isCategoryAxis || isDateAxis) ? {} : { min: 0, max: 10 }),
         },
         y: {
           title: {
@@ -392,8 +489,8 @@ export function renderInnovatorsDilemmaChart() {
             padding: 8,
           },
           border: { display: false },
-          min: yAxisMinVal,
-          ...(yAxisMaxVal != null ? { max: yAxisMaxVal } : {}),
+          ...(yMin != null ? { min: yMin } : {}),
+          ...(yMax != null ? { max: yMax } : {}),
         },
       },
     },
@@ -407,10 +504,10 @@ registerChart({
   id: 'innovator',
   label: 'Innovator',
   icon: '<svg viewBox="0 0 40 40" fill="none"><path d="M8 28L32 20" stroke="currentColor" stroke-width="1.2" opacity="0.35"/><path d="M8 20L32 12" stroke="currentColor" stroke-width="1.2" opacity="0.35"/><path d="M8 12L32 4" stroke="currentColor" stroke-width="1.2" opacity="0.35"/><path d="M8 34C14 30 22 18 28 10L34 4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-  dataHint: 'First column = dates, second column = values. Plots an S-curve showing the innovator\'s dilemma pattern with technology adoption tiers.',
-  dataExample: 'Month, Price\nJan 2024, 42000\nFeb 2024, 43500\nMar 2024, 51000',
-  dataJsonHint: 'Provide date strings as labels and a single values dataset. Plots an S-curve with adoption tiers.',
-  dataJsonExample: '{\n  "labels": ["Jan 2024", "Feb 2024", "Mar 2024", "Apr 2024"],\n  "datasets": [\n    { "name": "Price", "values": [42000, 43500, 51000, 64000] }\n  ]\n}',
+  dataHint: 'Progressive input — Col 1 = time/x-axis labels. Col 2 = Disruptive tech (required). Col 3 = Incumbent tech (optional, auto-generated if omitted). Col 4+ = Market tier lines (optional, auto-generated if omitted). 1 dataset = disruptive only. 2 = disruptive + incumbent. 3+ = disruptive + incumbent + custom tier lines.',
+  dataExample: 'Period, Disruptive, Incumbent, High-end Market, Mid Market, Low-end Market\nQ1, 12, 75, 68, 45, 22\nQ2, 28, 78, 70, 47, 23\nQ3, 45, 81, 72, 49, 24\nQ4, 61, 84, 74, 51, 25\nQ5, 78, 86, 76, 53, 26\nQ6, 89, 88, 78, 55, 27',
+  dataJsonHint: 'Progressive input — 1 dataset = disruptive curve only. 2 = disruptive + incumbent. 3+ = disruptive + incumbent + market tier lines. Omitted columns are auto-generated from formula settings.',
+  dataJsonExample: '{\n  "labels": ["Q1", "Q2", "Q3", "Q4", "Q5", "Q6"],\n  "datasets": [\n    { "name": "Disruptive", "values": [12, 28, 45, 61, 78, 89] },\n    { "name": "Incumbent", "values": [75, 78, 81, 84, 86, 88] },\n    { "name": "High-end Market", "values": [68, 70, 72, 74, 76, 78] },\n    { "name": "Mid Market", "values": [45, 47, 49, 51, 53, 55] },\n    { "name": "Low-end Market", "values": [22, 23, 24, 25, 26, 27] }\n  ]\n}',
   isSelfManaged: true,
   builder: () => renderInnovatorsDilemmaChart(),
   capabilities: { pointSize: true, lineWidth: true },

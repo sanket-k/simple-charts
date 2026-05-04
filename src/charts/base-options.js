@@ -501,7 +501,7 @@ export function getBaseChartOptions() {
   };
 
   const yAxisTitleOpts = {
-    display: !!leftAxisTitle,
+    display: !!leftAxisTitle && dom.showYAxisLabel?.checked !== false,
     text: leftAxisTitle,
     color: c.textSecondary,
     font: FONTS.axisTitle,

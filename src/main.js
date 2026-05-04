@@ -100,6 +100,11 @@ async function loadSampleData() {
     state.charts.segmented.activeGroupIndex = 0;
     renderGroupTabs();
     renderSegmentList();
+  } else if (state.currentChartType === 'innovator') {
+    // Innovator generates its own data from formula; skip sample data
+    state.rawParsedData = null;
+    state.parsedData = null;
+    dom.dataTextarea.value = '';
   } else {
     const sample = samplesByType[state.currentChartType] || samplesByType.line;
     dom.dataTextarea.value = sample;
