@@ -111,7 +111,7 @@ function exportAsSVG(w, h, filename) {
 function doExport(filename, format, ext) {
   const sizeStr = dom.exportSize.value;
   const [w, h] = sizeStr.split('x').map(Number);
-  const quality = safeInt(dom.exportQuality?.value, 2);
+  const quality = safeInt(dom.exportQuality?.value, 1);
 
   if (format === 'svg') {
     exportAsSVG(w, h, filename);
