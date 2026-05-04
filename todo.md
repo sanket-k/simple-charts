@@ -46,6 +46,14 @@
 
 ---
 
+## 1.5 Export Fix — Inline Plugins
+
+- [x] Fix missing connectors/arrows/ratio labels in dumbbell and bubble-compare chart exports
+- [x] Root cause: `doExport()` replaced entire plugins array, dropping chart-specific inline plugins (`dumbbellLines`, `bubbleGap`)
+- [x] Fix: preserve inline plugins from cloned config while replacing shared plugins with original module references
+
+---
+
 ## Success Metrics
 
 | Metric | Before | After |

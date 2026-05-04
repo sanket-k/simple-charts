@@ -1,8 +1,7 @@
 import { state } from '../state.js';
 import { dom } from '../dom.js';
-import { safeInt, safeFloat, showToast } from '../utils.js';
-import { getThemeColors, bgPlugin, brandPlugin, sourceFooterPlugin } from '../charts/base-options.js';
-import { buildYTickCallback, buildDataLabelFormatter, buildTooltipCallback } from '../chart-format.js';
+import { safeInt, showToast } from '../utils.js';
+import { getThemeColors, bgPlugin, sourceFooterPlugin, brandPlugin } from '../charts/base-options.js';
 
 function getExportFilename(ext) {
   const dateStr = new Date().toISOString().slice(0, 10);
@@ -108,6 +107,24 @@ function exportAsSVG(w, h, filename) {
   showToast('Chart exported as SVG!', 'success');
 }
 
+function deepCloneConfig(obj, seen = new WeakMap()) {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (typeof obj === 'function') return obj;
+  if (seen.has(obj)) return seen.get(obj);
+  if (Array.isArray(obj)) {
+    const arr = [];
+    seen.set(obj, arr);
+    for (let i = 0; i < obj.length; i++) arr[i] = deepCloneConfig(obj[i], seen);
+    return arr;
+  }
+  const clone = {};
+  seen.set(obj, clone);
+  for (const key of Object.keys(obj)) {
+    clone[key] = deepCloneConfig(obj[key], seen);
+  }
+  return clone;
+}
+
 function doExport(filename, format, ext) {
   const sizeStr = dom.exportSize.value;
   const [w, h] = sizeStr.split('x').map(Number);
@@ -118,10 +135,13 @@ function doExport(filename, format, ext) {
     return;
   }
 
+  const chart = state.chartInstance;
+  const mimeType = { jpg: 'image/jpeg', webp: 'image/webp' }[format] || 'image/png';
+
+  // Create offscreen wrapper to avoid ResizeObserver interference
   const wrapper = document.createElement('div');
   wrapper.className = 'export-canvas-wrapper';
-  wrapper.style.width = w + 'px';
-  wrapper.style.height = h + 'px';
+
   const offCanvas = document.createElement('canvas');
   offCanvas.width = w * quality;
   offCanvas.height = h * quality;
@@ -130,82 +150,32 @@ function doExport(filename, format, ext) {
   wrapper.appendChild(offCanvas);
   document.body.appendChild(wrapper);
 
-  const tickCallback = buildYTickCallback();
-  const dlFormatter = buildDataLabelFormatter();
-
-  const exportConfig = JSON.parse(JSON.stringify(state.chartInstance.config._config));
-
-  if (!exportConfig.options) exportConfig.options = {};
-  if (!exportConfig.options.layout) exportConfig.options.layout = { padding: { top: 4, bottom: 8, left: 4, right: 4 } };
-
-  const scaleFonts = (obj) => {
-    if (!obj) return;
-    if (typeof obj === 'object') {
-      for (const key of Object.keys(obj)) {
-        if (key === 'size' && typeof obj[key] === 'number') {
-          obj[key] = Math.round(obj[key] * (1 + quality * 0.25));
-        } else {
-          scaleFonts(obj[key]);
-        }
-      }
-    }
-  };
-  scaleFonts(exportConfig.options);
-
-  if (exportConfig.options.layout?.padding) {
-    const pad = exportConfig.options.layout.padding;
-    if (typeof pad === 'object') {
-      Object.keys(pad).forEach(k => { pad[k] = Math.round(pad[k] * (1 + quality * 0.5)); });
-    }
-  }
-
-  exportConfig.options.animation = false;
+  // Clone config preserving functions (callbacks, formatters, plugin hooks)
+  const exportConfig = deepCloneConfig(chart.config._config);
+  exportConfig.options = exportConfig.options || {};
   exportConfig.options.responsive = false;
   exportConfig.options.maintainAspectRatio = false;
+  exportConfig.options.animation = false;
+  exportConfig.options.devicePixelRatio = 1;
+  // Preserve chart-specific inline plugins (e.g. dumbbellLines, bubbleGap)
+  // while ensuring shared plugins use original module references
+  const sharedIds = new Set([bgPlugin.id, sourceFooterPlugin.id, brandPlugin.id, 'datalabels']);
+  const inlinePlugins = (exportConfig.plugins || []).filter(p => !sharedIds.has(p.id));
+  exportConfig.plugins = [...inlinePlugins, bgPlugin, sourceFooterPlugin, brandPlugin, ChartDataLabels];
 
-  if (exportConfig.options.scales?.y?.ticks) {
-    exportConfig.options.scales.y.ticks.callback = tickCallback;
-  }
-  if (exportConfig.options.scales?.y1?.ticks) {
-    exportConfig.options.scales.y1.ticks.callback = tickCallback;
-  }
-  if (exportConfig.options.plugins?.datalabels) {
-    exportConfig.options.plugins.datalabels.formatter = dlFormatter;
-  }
+  const exportChart = new Chart(offCanvas, exportConfig);
 
-  const exportChartInstance = new Chart(offCanvas, {
-    ...exportConfig,
-    plugins: [bgPlugin, {
-      id: 'sourceFooterExport',
-      afterDraw(chart) {
-        const source = dom.chartSource.value;
-        if (!source) return;
-        const ctx = chart.ctx;
-        const c = getThemeColors();
-        ctx.save();
-        ctx.font = `400 14px 'Inter', sans-serif`;
-        ctx.fillStyle = c.textMuted;
-        ctx.textAlign = 'left';
-        ctx.fillText(`Source: ${source}`, chart.chartArea.left, chart.height - 12);
-        ctx.restore();
-      }
-    }, brandPlugin, ChartDataLabels]
-  });
+  setTimeout(() => {
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = offCanvas.toDataURL(mimeType, 0.95);
+    link.click();
 
-  requestAnimationFrame(() => {
-    setTimeout(() => {
-      const mimeType = { jpg: 'image/jpeg', webp: 'image/webp' }[format] || 'image/png';
+    exportChart.destroy();
+    wrapper.remove();
 
-      const link = document.createElement('a');
-      link.download = filename;
-      link.href = offCanvas.toDataURL(mimeType, 0.95);
-      link.click();
-
-      exportChartInstance.destroy();
-      document.body.removeChild(wrapper);
-      showToast(`Chart exported as ${ext.toUpperCase()}!`, 'success');
-    }, 200);
-  });
+    showToast(`Chart exported as ${ext.toUpperCase()}!`, 'success');
+  }, 300);
 }
 
 function exportChart() {
