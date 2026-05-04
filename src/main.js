@@ -346,7 +346,7 @@ function initSegmentedGroupListeners() {
     if (state.charts.segmented.groups[state.charts.segmented.activeGroupIndex]) {
       state.charts.segmented.groups[state.charts.segmented.activeGroupIndex].name = dom.segmentedGroupName.value;
       renderGroupTabs();
-      renderChart();
+      window.__debouncedRender();
     }
   });
 }

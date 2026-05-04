@@ -1,7 +1,9 @@
+/** Timeline event UI — add/remove events with date + label inputs and bulk CSV import. */
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { showToast } from '../utils.js';
 
+/** Renders the event row inputs (date + label + remove) from state. */
 export function renderTimelineEvents() {
   dom.timelineEventsList.innerHTML = '';
   state.charts.timeline.events.forEach((evt, i) => {
@@ -54,6 +56,7 @@ export function renderTimelineEvents() {
   });
 }
 
+/** Wires the add-event and bulk-parse buttons. */
 export function initTimelineUI() {
   dom.addTimelineEvent.addEventListener('click', () => {
     state.charts.timeline.events.push({ label: '', position: '' });
