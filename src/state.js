@@ -16,6 +16,7 @@ export const state = {
   dualAxisEnabled: false,
   axisAssignments: [],
   axisNames: {},
+  axisFormats: { left: null, right: null },
   datasetChartTypes: [],
   datasetLineStyles: [],
   zoomRange: [0, 100],

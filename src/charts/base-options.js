@@ -369,7 +369,7 @@ export function getBaseChartOptions() {
   const chartBg = state.userBgColor || c.bg;
   const chartGrid = state.userGridColor || c.grid;
 
-  const tickCallback = buildYTickCallback();
+  const tickCallback = buildYTickCallback(state.axisFormats?.left || null);
   const tooltipLabelCallback = buildTooltipCallback();
   const dlFormatter = buildDataLabelFormatter();
 
@@ -730,7 +730,7 @@ export function getBaseChartOptions() {
             font: FONTS.tick,
             padding: 8,
             maxTicksLimit: maxTicks,
-            callback: tickCallback
+            callback: buildYTickCallback(state.axisFormats?.right || null)
           },
           ...(yScale === 'logarithmic' ? { afterBuildTicks: logAfterBuildTicks } : {}),
           border: { display: false }
