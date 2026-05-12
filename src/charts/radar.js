@@ -18,8 +18,7 @@ export function buildRadarChart(labels, datasets, c, colors) {
         font: FONTS.pointLabel
       },
       ticks: { display: false, backdropColor: 'transparent' },
-      suggestedMin: 0,
-      suggestedMax: 100
+      beginAtZero: true
     }
   };
   opts.plugins.datalabels.display = false;

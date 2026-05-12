@@ -205,6 +205,7 @@
 
 - [x] Use debounced render function for segmented group updates
 - [x] Add missing documentation in timeline UI
+- [x] Fix radar chart axis not auto-scaling — replaced hardcoded `suggestedMax: 100` with `beginAtZero: true`
 
 ---
 
