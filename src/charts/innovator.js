@@ -4,6 +4,8 @@ import { dom } from '../dom.js';
 import { safeInt, safeFloat, hexToRgba, wrapText } from '../utils.js';
 import { getThemeColors, getMultiColors, bgPlugin, sourceFooterPlugin, brandPlugin, FONTS, getTooltipBase, getLegendBase } from './base-options.js';
 import { tryParseDate } from '../date-utils.js';
+import { buildYTickCallback } from '../chart-format.js';
+import { formatNumber } from '../format.js';
 import { registerChart } from './registry.js';
 
 /** Returns the default display name for a market tier by index. */
@@ -453,7 +455,7 @@ export function renderInnovatorsDilemmaChart() {
           intersect: false,
           callbacks: {
             title: (items) => (isDateAxis || isCategoryAxis) ? items[0]?.label : `Time: ${items[0]?.label}`,
-            label: (ctx) => `  ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(1)}`,
+            label: (ctx) => `  ${ctx.dataset.label}: ${formatNumber(ctx.parsed.y)}`,
           },
         },
         datalabels: { display: false },
@@ -491,6 +493,7 @@ export function renderInnovatorsDilemmaChart() {
             color: c.textSecondary,
             font: FONTS.tick,
             padding: 8,
+            callback: buildYTickCallback(),
           },
           border: { display: false },
           ...(yMin != null ? { min: yMin } : {}),

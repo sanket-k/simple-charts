@@ -4,10 +4,8 @@ import { state } from './state.js';
 import { formatNumber } from './format.js';
 
 /** Creates a Y-axis tick formatting function using the current number format settings */
-export function buildYTickCallback() {
-  const fmt = dom.numberFormat.value;
-  const decimals = dom.decimalPlaces ? dom.decimalPlaces.value : 'auto';
-  const currency = dom.currencyPrefix ? dom.currencyPrefix.value || '$' : '$';
+export function buildYTickCallback(overrideFormat) {
+  const fmt = overrideFormat || dom.numberFormat.value;
   return (value) => formatNumber(value, fmt);
 }
 
