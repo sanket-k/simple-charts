@@ -512,7 +512,7 @@ export function renderInnovatorsDilemmaChart() {
             color: c.textSecondary,
             font: FONTS.tick,
             padding: 8,
-            callback: buildYTickCallback(),
+            callback: buildYTickCallback(null, { logScale: yScaleType === 'logarithmic' }),
           },
           border: { display: false },
           ...(yMin != null ? { min: yMin } : {}),
