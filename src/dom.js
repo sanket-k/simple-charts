@@ -137,6 +137,7 @@ export const dom = {
   innovatorIncumbentSlopeValue: $('#innovatorIncumbentSlopeValue'),
   innovatorYMin: $('#innovatorYMin'),
   innovatorYMax: $('#innovatorYMax'),
+  innovatorYScale: $('#innovatorYScale'),
   innovatorTierNames: $('#innovatorTierNames'),
   innovatorCurveType: $('#innovatorCurveType'),
   innovatorTimeMode: $('#innovatorTimeMode'),

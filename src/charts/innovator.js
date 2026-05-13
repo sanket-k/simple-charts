@@ -405,6 +405,24 @@ export function renderInnovatorsDilemmaChart() {
     yMax = yAxisMaxVal;
   }
 
+  const yScaleType = dom.innovatorYScale?.value || 'linear';
+
+  const logAfterBuildTicks = (scale) => {
+    const min = scale.min;
+    const max = scale.max;
+    if (min <= 0 || max <= 0 || !isFinite(min) || !isFinite(max)) return;
+    const ticks = [];
+    const minPow = Math.floor(Math.log10(min));
+    const maxPow = Math.ceil(Math.log10(max));
+    for (let p = minPow; p <= maxPow; p++) {
+      for (const b of [1, 2, 5]) {
+        const v = b * Math.pow(10, p);
+        if (v >= min && v <= max) ticks.push({ value: v });
+      }
+    }
+    if (ticks.length) scale.ticks = ticks;
+  };
+
   // ── Chart config ────────────────────────────────────────────
   const animDuration = safeInt(dom.animationSpeed?.value, 600);
 
@@ -482,6 +500,7 @@ export function renderInnovatorsDilemmaChart() {
           ...((isCategoryAxis || isDateAxis) ? {} : { min: 0, max: 10 }),
         },
         y: {
+          type: yScaleType,
           title: {
             display: true,
             text: yLabel,
@@ -498,6 +517,7 @@ export function renderInnovatorsDilemmaChart() {
           border: { display: false },
           ...(yMin != null ? { min: yMin } : {}),
           ...(yMax != null ? { max: yMax } : {}),
+          ...(yScaleType === 'logarithmic' ? { afterBuildTicks: logAfterBuildTicks } : {}),
         },
       },
     },

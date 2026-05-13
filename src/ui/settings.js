@@ -254,7 +254,7 @@ export function initSettingsListeners() {
     dom.innovatorDisruptiveStart, dom.innovatorDisruptivePeak,
     dom.innovatorMarketTop, dom.innovatorMarketBottom,
     dom.innovatorIncumbentBase, dom.innovatorIncumbentSlope,
-    dom.innovatorYMin, dom.innovatorYMax,
+    dom.innovatorYMin, dom.innovatorYMax, dom.innovatorYScale,
     dom.innovatorCurveType, dom.innovatorTimeMode,
     dom.innovatorStartYear, dom.innovatorEndYear,
     dom.innovatorStartMonth, dom.innovatorEndMonth,
