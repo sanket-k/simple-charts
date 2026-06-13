@@ -1,5 +1,4 @@
 /** Waterfall chart — stacked bar decomposition showing incremental gains and losses with a total bar. */
-import { SEMANTIC } from '../constants.js';
 import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { safeInt, hexToRgba } from '../utils.js';
@@ -59,12 +58,12 @@ export function buildWaterfallChart(labels, datasets, c, colors) {
   };
 
   const barColorsBg = values.map((v, i) => {
-    if (isTotal[i]) return hexToRgba(state.userColors[0], 0.85);
-    return (v || 0) >= 0 ? hexToRgba(SEMANTIC.up, 0.85) : hexToRgba(SEMANTIC.down, 0.85);
+    if (isTotal[i]) return hexToRgba(state.userColors[1], 0.85);
+    return (v || 0) >= 0 ? hexToRgba(state.userColors[0], 0.85) : hexToRgba(state.userColors[1], 0.85);
   });
   const barColorsBorder = values.map((v, i) => {
-    if (isTotal[i]) return state.userColors[0];
-    return (v || 0) >= 0 ? SEMANTIC.up : SEMANTIC.down;
+    if (isTotal[i]) return state.userColors[1];
+    return (v || 0) >= 0 ? state.userColors[0] : state.userColors[1];
   });
 
   return {
@@ -90,7 +89,8 @@ export function buildWaterfallChart(labels, datasets, c, colors) {
           borderRadius: { topLeft: Math.min(borderRadius, 6), topRight: Math.min(borderRadius, 6) },
           borderSkipped: false,
           barPercentage: 0.6,
-          categoryPercentage: 0.8
+          categoryPercentage: 0.8,
+          legendColor: state.userColors[0]
         },
         {
           label: 'Decrease',
@@ -101,7 +101,8 @@ export function buildWaterfallChart(labels, datasets, c, colors) {
           borderRadius: { topLeft: Math.min(borderRadius, 6), topRight: Math.min(borderRadius, 6) },
           borderSkipped: false,
           barPercentage: 0.6,
-          categoryPercentage: 0.8
+          categoryPercentage: 0.8,
+          legendColor: state.userColors[1]
         }
       ]
     },
@@ -109,7 +110,24 @@ export function buildWaterfallChart(labels, datasets, c, colors) {
       ...opts,
       plugins: {
         ...opts.plugins,
-        legend: { display: dom.showLegend?.checked ?? false }
+        legend: {
+          display: dom.showLegend?.checked ?? false,
+          labels: {
+            generateLabels: (chart) => {
+              return chart.data.datasets
+                .filter(ds => ds.label !== 'Base')
+                .map(ds => ({
+                  text: ds.label,
+                  fillStyle: ds.legendColor,
+                  strokeStyle: ds.legendColor,
+                  lineWidth: 0,
+                  hidden: false,
+                  index: chart.data.datasets.indexOf(ds)
+                }));
+            }
+          },
+          onClick: () => {}
+        }
       }
     }
   };
@@ -120,7 +138,7 @@ registerChart({
   label: 'Waterfall',
   icon: '<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="6" y="10" width="5" height="16" fill="currentColor" opacity="0.3"/><rect x="13" y="8" width="5" height="6" fill="currentColor" opacity="0.2"/><rect x="20" y="14" width="5" height="8" fill="currentColor" opacity="0.2"/><rect x="27" y="6" width="5" height="20" fill="currentColor" opacity="0.3"/><line x1="11" y1="10" x2="13" y2="10" stroke-dasharray="1 1"/><line x1="18" y1="14" x2="20" y2="14" stroke-dasharray="1 1"/><line x1="25" y1="22" x2="27" y2="22" stroke-dasharray="1 1"/></svg>',
   dataHint: 'First column = bar labels, second column = values. Use positive numbers for gains, negative for losses. Automatically calculates subtotals.',
-  dataExample: 'Category, Value\nRevenue, 5000\nCOGS, -2100\nGross Profit, 2900\nSalaries, -1200',
+  dataExample: 'Category, Value\nRevenue, 5000\nCOGS, -2100\nSalaries, -1200\nMarketing, -400',
   dataJsonHint: 'Provide labels and a single dataset of values. Positive = gains, negative = losses.',
   dataJsonExample: '{\n  "labels": ["Revenue", "COGS", "Salaries", "Marketing", "R&D"],\n  "datasets": [\n    { "name": "Value", "values": [5000, -2100, -1200, -400, -350] }\n  ]\n}',
   isSelfManaged: false,
