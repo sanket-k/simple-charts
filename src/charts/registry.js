@@ -82,6 +82,15 @@ export function validateChartData(chartId, parsedData) {
       }
       break;
     }
+    case 'dual-bar': {
+      if (numDatasets < 2) {
+        return `${chartName} requires exactly 2 data series (Target and Current). Currently only ${numDatasets} series found. Add a second value column.`;
+      }
+      if (numDatasets > 2) {
+        return `${chartName} uses the first 2 columns only (outer and inner bars). Extra columns will be ignored.`;
+      }
+      break;
+    }
     case 'dumbbell':
     case 'bubble-compare':
     case 'overlay': {

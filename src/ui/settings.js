@@ -38,6 +38,7 @@ export function updateSettingsVisibility() {
     dumbbell: dom.dumbbellSettings,
     'bubble-compare': dom.bubbleCompareSettings,
     overlay: dom.overlaySettings,
+    'dual-bar': dom.dualBarSettings,
   };
   Object.entries(chartPanelMap).forEach(([id, panel]) => {
     if (panel) panel.style.display = t === id ? 'block' : 'none';
@@ -276,6 +277,7 @@ export function initSettingsListeners() {
     dom.overlayNumberFormat, dom.overlayRatioDecimals,
     dom.overlayBarOpacity, dom.overlayFgOpacity, dom.overlayBorderRadius,
     dom.overlayBorderStyle, dom.overlayDisplayMode, dom.overlayShowRatio, dom.overlayShowValues,
+    dom.dualBarInnerWidth, dom.dualBarOuterOpacity, dom.dualBarBorderRadius, dom.dualBarShowValues,
   ];
 
   settingsInputs.forEach(el => {
@@ -385,6 +387,15 @@ export function initSettingsListeners() {
       }
       if (el === dom.overlayRatioDecimals && dom.overlayRatioDecimalsValue) {
         dom.overlayRatioDecimalsValue.textContent = dom.overlayRatioDecimals.value;
+      }
+      if (el === dom.dualBarInnerWidth && dom.dualBarInnerWidthValue) {
+        dom.dualBarInnerWidthValue.textContent = dom.dualBarInnerWidth.value + '%';
+      }
+      if (el === dom.dualBarOuterOpacity && dom.dualBarOuterOpacityValue) {
+        dom.dualBarOuterOpacityValue.textContent = dom.dualBarOuterOpacity.value + '%';
+      }
+      if (el === dom.dualBarBorderRadius && dom.dualBarBorderRadiusValue) {
+        dom.dualBarBorderRadiusValue.textContent = dom.dualBarBorderRadius.value;
       }
       if (window.__debouncedRender) window.__debouncedRender();
     });

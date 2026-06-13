@@ -23,6 +23,7 @@ import './charts/kano.js';
 import './charts/dumbbell.js';
 import './charts/bubble-compare.js';
 import './charts/overlay.js';
+import './charts/dual-bar.js';
 
 /** Main chart render function */
 export function renderChart() {

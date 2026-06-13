@@ -229,6 +229,15 @@ export const dom = {
   overlayShowRatio: $('#overlayShowRatio'),
   overlayShowValues: $('#overlayShowValues'),
 
+  dualBarSettings: $('#dualBarSettings'),
+  dualBarInnerWidth: $('#dualBarInnerWidth'),
+  dualBarInnerWidthValue: $('#dualBarInnerWidthValue'),
+  dualBarOuterOpacity: $('#dualBarOuterOpacity'),
+  dualBarOuterOpacityValue: $('#dualBarOuterOpacityValue'),
+  dualBarBorderRadius: $('#dualBarBorderRadius'),
+  dualBarBorderRadiusValue: $('#dualBarBorderRadiusValue'),
+  dualBarShowValues: $('#dualBarShowValues'),
+
   comboSettings: $('#comboSettings'),
   lineStyleSection: $('#lineStyleSection'),
   comboDatasetList: $('#comboDatasetList'),

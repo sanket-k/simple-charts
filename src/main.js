@@ -86,11 +86,12 @@ async function loadSampleData() {
     area: "Quarter, AI, Crypto, Fintech\nQ1 '24, 120, 80, 60\nQ2 '24, 180, 110, 75\nQ3 '24, 240, 150, 95\nQ4 '24, 310, 200, 120\nQ1 '25, 380, 260, 145",
     radar: "Metric, Us, Competitor\nSpeed, 90, 65\nCost, 75, 80\nAccuracy, 95, 70\nScale, 85, 60\nUX, 88, 72\nSupport, 92, 55",
     scatter: "X, Y\n10, 25\n22, 38\n35, 52\n18, 30\n42, 61\n28, 44\n55, 72\n15, 28\n48, 65\n33, 48\n60, 78\n25, 40\n38, 55\n45, 68\n12, 22",
-    waterfall: "Category, Value\nRevenue, 5000\nCOGS, -2100\nGross Profit, 2900\nSalaries, -1200\nMarketing, -400\nR&D, -350\nNet Income, 950",
+    waterfall: "Category, Value\nRevenue, 5000\nCOGS, -2100\nSalaries, -1200\nMarketing, -400\nR&D, -350\nNet Income, 0",
     kano: "Feature, Implementation, Satisfaction\nTouchscreen, 8, 9\nFast Charging, 6, 7\nUSB-C, 9, 3\nFaceID, 3, 8\nHeadphone Jack, 7, -2\nWireless Charging, 5, 8\nNFC Payments, 8, 2\n5G Connectivity, 6, 6\nIP68 Rating, 9, 4\nAlways-On Display, 4, 7",
     dumbbell: "Metric, Before, After\nHorsepower, 10, 430\nTop Speed (mph), 35, 120\nRange (miles), 150, 700\nTowing (lbs), 10, 13500",
     'bubble-compare': "Metric, Before, After\nHorsepower, 10, 430\nTop Speed (mph), 35, 120\nRange (miles), 150, 700\nTowing (lbs), 10, 13500",
     overlay: "Metric, Before, After\nHorsepower, 10, 430\nTop Speed (mph), 35, 120\nRange (miles), 150, 700\nTowing (lbs), 10, 13500",
+    'dual-bar': "Department, Target, Current\nEngineering, 100, 78\nMarketing, 100, 92\nSales, 100, 65\nDesign, 100, 88\nOperations, 100, 71\nFinance, 100, 95\nSupport, 100, 83",
   };
 
   if (state.currentChartType === 'segmented') {
@@ -416,6 +417,9 @@ function init() {
   if (dom.overlayBarOpacityValue) dom.overlayBarOpacityValue.textContent = dom.overlayBarOpacity.value;
   if (dom.bubbleMinRadiusValue) dom.bubbleMinRadiusValue.textContent = dom.bubbleMinRadius.value;
   if (dom.overlayBorderRadiusValue) dom.overlayBorderRadiusValue.textContent = dom.overlayBorderRadius.value;
+  if (dom.dualBarInnerWidthValue) dom.dualBarInnerWidthValue.textContent = dom.dualBarInnerWidth.value + '%';
+  if (dom.dualBarOuterOpacityValue) dom.dualBarOuterOpacityValue.textContent = dom.dualBarOuterOpacity.value + '%';
+  if (dom.dualBarBorderRadiusValue) dom.dualBarBorderRadiusValue.textContent = dom.dualBarBorderRadius.value;
 
   renderInnovatorTierNames();
 
