@@ -32,7 +32,7 @@ A browser-based, publication-quality chart creation tool designed for producing 
 
 ## Overview
 
-Simple Charts lets you paste, upload, or manually enter data and instantly generate polished, branded charts. It supports 17 chart types, dark/light themes, social-media-optimized export sizes, and advanced features like dual axes, timeline event markers, a segmented bar chart editor, a Kano Model for feature prioritization, a unique "Innovator's Dilemma" visualization, an inflation / purchasing-power calculator, and comparison charts (dumbbell, bubble compare, overlay).
+Simple Charts lets you paste, upload, or manually enter data and instantly generate polished, branded charts. It supports 19 chart types, dark/light themes, social-media-optimized export sizes, and advanced features like dual axes, timeline event markers, a segmented bar chart editor, a Kano Model for feature prioritization, a unique "Innovator's Dilemma" visualization, an inflation / purchasing-power calculator, combo (bar + line) charts, and comparison charts (dumbbell, bubble compare, overlay, dual-bar).
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -248,6 +248,13 @@ Shows incremental positive (green) and negative (red) changes, ending with a cum
 
 **When to use:** Profit/loss breakdowns, variance analysis, step-by-step contributions to a total.
 
+### Combo Chart
+A mixed chart that combines bar and line series in a single visualization. Each data series is independently assigned a type (bar or line) via the **Dataset Type** control, so you can overlay a trend line on categorical bars — e.g., revenue as bars with a cost line on top. Supports the dual Y-axis, so bars and lines can use different scales.
+
+**When to use:** Related series with different units or magnitudes (volume as bars, growth rate as a line), financial reports that combine totals with trends.
+
+**Data format:** Multi-column CSV — first column is the X-axis labels, each additional column is a series (e.g., `Quarter, Revenue, Costs`). Works best with 2+ series.
+
 ### Innovator's Dilemma
 A specialized visualization of Clayton Christensen's theory of disruptive innovation. Renders parametric curves instead of user data — showing how incumbent and disruptive technologies evolve over time against market tier expectations.
 
@@ -358,6 +365,20 @@ A horizontal bar chart that overlays two series on a logarithmic scale. The seco
 | Border Radius | 0 – 12 | Corner rounding of bars |
 | Show Improvement Ratios | On/Off | Display "xN" ratio in data labels |
 | Show Values | On/Off | Display actual values as data labels |
+
+### Dual-Bar Chart
+A horizontal bar chart with concentric layers: a wide, translucent **outer bar** (the target or ceiling) and a narrower, solid **inner bar** (the current value or progress). This shows progress toward a goal per category at a glance — how close "current" is to "target" for each row.
+
+**When to use:** Goal/actual comparisons, quota attainment, budget vs. spend, capacity utilization.
+
+**Data format:** 3-column CSV — `Category, Target, Current` (e.g., `Department, Target, Current`). Requires exactly 2 data series; inner values should be ≤ outer values (a warning is shown otherwise). All rows must share the same unit.
+
+| Setting | Options | Description |
+|---|---|---|
+| Inner Bar Width | 30% – 90% | Height of the solid inner bar relative to the outer bar |
+| Outer Bar Opacity | 5% – 50% | Translucency of the wide target bar |
+| Border Radius | 0 – 12 | Corner rounding of bars |
+| Show Values | On/Off | Display "current → target" labels beside each bar |
 
 ### Inflation (Value Track)
 
@@ -494,6 +515,7 @@ Automatically available when data has 2+ series on axis-based chart types:
 - Toggle to enable/disable
 - Assign each series to Left Y, Right Y, or Hidden
 - Custom names for both axes
+- Per-axis number format (Left / Right) — Auto, Raw, Commas, Short, Currency, or Percentage; "Use global" inherits the main Number Format
 - Right axis renders with independent scale, grid hidden to avoid clutter
 
 ### Timeline Events
@@ -659,6 +681,7 @@ graphs/
 │   │   ├── dumbbell.js     # Dumbbell gap comparison chart
 │   │   ├── bubble-compare.js # Area-proportional bubble comparison chart
 │   │   ├── overlay.js      # Before/after overlay bar chart
+│   │   ├── dual-bar.js     # Target-vs-current concentric bar chart
 │   │   └── inflation.js    # Inflation (value-track) chart builder
 │   └── ui/
 │       ├── theme.js        # Dark/light theme toggle

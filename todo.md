@@ -209,21 +209,62 @@
 
 ---
 
-# Phase 7: Inflation Chart — 29-06-2026
+# Phase 7: Y-Axis Formatting, Log Scale & Dual-Bar Chart — 2026-05-12 to 2026-06-13
 
-- [x] 7.1 Inflation variant gallery (prototype playground)
-- [x] 7.2 Value-Track chart integration into the main app
+- [x] 7.1 Per-axis number formatting (dual-axis UI)
+- [x] 7.2 Y-axis tick formatting overrides + Innovator integration
+- [x] 7.3 Y-axis scale selection (linear / logarithmic)
+- [x] 7.4 Waterfall chart color & legend refinement
+- [x] 7.5 Dual-Bar (target vs. current) chart
 
 ---
 
-### 7.1 Inflation Variant Gallery (Prototype)
+### 7.1 Per-Axis Number Formatting (Dual-Axis UI)
+
+- [x] Add `state.axisFormats = { left, right }` for independent left/right axis number formats
+- [x] Format selects in the dual-axis assignment UI — Auto, Raw, Commas, Short, Currency, Percentage, and "Use global"
+- [x] Wire into Y-tick callbacks for both axes via `buildYTickCallback(state.axisFormats.*)`
+
+### 7.2 Y-Axis Tick Formatting Overrides
+
+- [x] Allow per-chart Y-tick formatting overrides via `buildYTickCallback(format, { logScale })`
+- [x] Integrate explicit tick formatting in the Innovator's Dilemma chart
+
+### 7.3 Y-Axis Scale Selection (Linear / Logarithmic)
+
+- [x] Add Y-Axis Scale control (Linear / Logarithmic) in the Formatting panel, gated by the `axisFormatting` capability
+- [x] Apply logarithmic Y-axis in `getBaseChartOptions()` (left, right, and single-axis paths) — only when min > 0
+- [x] Nice logarithmic tick generation (1 / 2 / 5 pattern across orders of magnitude) via `logAfterBuildTicks`
+- [x] Add linear + logarithmic Y-axis scale selection to the Innovator's Dilemma chart
+
+### 7.4 Waterfall Chart Refinement
+
+- [x] Update waterfall colors and legend configuration for improved clarity (semantic up/down colors, total bar in the brand color)
+
+### 7.5 Dual-Bar Chart
+
+- [x] Self-managed `charts/dual-bar.js` + `registerChart({ id: 'dual-bar' })` — concentric horizontal bars (translucent outer/target + solid inner/current)
+- [x] `#dualBarSettings` panel: Inner Bar Width (30–90%), Outer Bar Opacity (5–50%), Border Radius (0–12), Show Values toggle
+- [x] Validation: requires exactly 2 data series; warns when inner > outer; square aspect ratio
+- [x] Wired across `dom.js`, `render.js` (side-effect import), `settings.js` (`chartPanelMap`), `main.js` (sample data)
+
+---
+
+# Phase 8: Inflation Chart — 29-06-2026
+
+- [x] 8.1 Inflation variant gallery (prototype playground)
+- [x] 8.2 Value-Track chart integration into the main app
+
+---
+
+### 8.1 Inflation Variant Gallery (Prototype)
 
 - [x] Standalone playground at `inflation/` (`index.html`, `styles.css`, `app.js`) — CDN Chart.js, no build step
 - [x] 8 live variants driven by shared sliders (amount, rate, base/target year): value-track line, power donut, then-vs-now dumbbell, yearly bars, erosion waterfall, power gauge, rate-sensitivity columns, decade polar
 - [x] Rate-based model: `equivalent = amount × (1 + r)^(target − base)`
 - [x] All-visible gallery, debounced live re-render, dark/light tokens mirrored from the main app
 
-### 7.2 Value-Track Chart Integration
+### 8.2 Value-Track Chart Integration
 
 - [x] Self-managed `charts/inflation.js` + `registerChart({ id: 'inflation' })` (modeled on `dual-bar.js`)
 - [x] `#inflationSettings` panel: Amount, Rate, Base Year, Target Year — each a number input **and** a slider — plus line-tension slider and base/target markers toggle
