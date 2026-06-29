@@ -21,6 +21,7 @@ A browser-based, publication-quality chart creation tool designed for producing 
   - [Innovator's Dilemma](#innovators-dilemma)
   - [Segmented Bar Chart](#segmented-bar-chart)
   - [Kano Model](#kano-model)
+  - [Inflation Calculator](#inflation-calculator)
   - [Export & Sharing](#export--sharing)
   - [Keyboard Shortcuts](#keyboard-shortcuts)
 - [Dependencies](#dependencies)
@@ -31,7 +32,7 @@ A browser-based, publication-quality chart creation tool designed for producing 
 
 ## Overview
 
-Simple Charts lets you paste, upload, or manually enter data and instantly generate polished, branded charts. It supports 16 chart types, dark/light themes, social-media-optimized export sizes, and advanced features like dual axes, timeline event markers, a segmented bar chart editor, a Kano Model for feature prioritization, a unique "Innovator's Dilemma" visualization, and comparison charts (dumbbell, bubble compare, overlay).
+Simple Charts lets you paste, upload, or manually enter data and instantly generate polished, branded charts. It supports 17 chart types, dark/light themes, social-media-optimized export sizes, and advanced features like dual axes, timeline event markers, a segmented bar chart editor, a Kano Model for feature prioritization, a unique "Innovator's Dilemma" visualization, an inflation / purchasing-power calculator, and comparison charts (dumbbell, bubble compare, overlay).
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -358,6 +359,14 @@ A horizontal bar chart that overlays two series on a logarithmic scale. The seco
 | Show Improvement Ratios | On/Off | Display "xN" ratio in data labels |
 | Show Values | On/Off | Display actual values as data labels |
 
+### Inflation (Value Track)
+
+A self-managed chart that shows what an amount of money is worth over time at a given annual inflation rate. It plots the equivalent value across a year range (with ~20% context padding around the base and target years) and marks both endpoints with their values. A live subtitle states the headline conversion, e.g. `$1,000 in 2000 ≈ $2,033 in 2024 · 3.0%/yr`.
+
+**When to use:** Purchasing-power comparisons, "what would it cost today" / "what was it worth then" illustrations, and savings-vs-inflation narratives.
+
+**No data input required** — the chart is driven entirely by its controls. Model: `equivalent = amount × (1 + rate)^(target − base)`. Works in both directions: target later than base ("worth today") or earlier ("worth previously").
+
 ---
 
 ## Features
@@ -517,6 +526,21 @@ A parametric chart that generates curves from configuration rather than user dat
 | Curve Shape | Exponential / S-Curve / Linear / Power Law | Mathematical model for the disruption |
 | Time Axis Mode | Abstract / Year Range / Month Range | How the X-axis is labeled |
 
+### Inflation Calculator
+
+A config-driven chart (no pasted data) where each value is available as both a precise number input and a quick slider — the two stay in sync and re-render the chart live.
+
+| Parameter | Input | Description |
+|---|---|---|
+| Amount | Number + slider (0 – 1,000,000) | The starting value, denominated in the base year |
+| Annual Inflation | Number + slider (0 – 20%) | Yearly rate used to compound / discount |
+| Base Year | Number + slider (1970 – 2026) | The year the amount is stated in |
+| Target Year | Number + slider (1970 – 2026) | The year to convert to (may be before or after the base) |
+| Line Tension | Slider (0 – 0.5) | Curve smoothness of the value track |
+| Mark Base & Target | On/Off | Show endpoint markers with their values |
+
+The number inputs accept values outside the slider range (e.g. larger amounts or years beyond 2026); the slider pegs at its bounds for visual feedback only.
+
 ### Export & Sharing
 
 #### Formats
@@ -634,7 +658,8 @@ graphs/
 │   │   ├── compare-utils.js # Log/category axis helpers, ratio pill drawing, compare data validation
 │   │   ├── dumbbell.js     # Dumbbell gap comparison chart
 │   │   ├── bubble-compare.js # Area-proportional bubble comparison chart
-│   │   └── overlay.js      # Before/after overlay bar chart
+│   │   ├── overlay.js      # Before/after overlay bar chart
+│   │   └── inflation.js    # Inflation (value-track) chart builder
 │   └── ui/
 │       ├── theme.js        # Dark/light theme toggle
 │       ├── colors.js       # Color pickers, preset palette listeners
@@ -646,7 +671,9 @@ graphs/
 │       ├── timeline-ui.js  # Timeline event editor UI
 │       ├── zoom-ui.js      # Zoom slider controls
 │       ├── export.js       # Export modal: PNG, JPG, SVG, WebP
-│       └── clipboard.js    # Paste handler, keyboard shortcuts (Cmd+E/C/Shift+D)
+│       ├── clipboard.js    # Paste handler, keyboard shortcuts (Cmd+E/C/Shift+D)
+│       └── inflation-ui.js # Inflation slider/number-input sync
+├── inflation/              # Inflation variant gallery (standalone prototype)
 └── *.csv                   # Sample datasets
 ```
 

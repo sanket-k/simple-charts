@@ -21,6 +21,7 @@ import { initTimelineUI } from './ui/timeline-ui.js';
 import { initZoomUI } from './ui/zoom-ui.js';
 import { initExport } from './ui/export.js';
 import { initClipboard } from './ui/clipboard.js';
+import { initInflationUI } from './ui/inflation-ui.js';
 
 // Expose render functions globally for UI module callbacks
 const debouncedRender = debounce(() => renderChart(), CONFIG.debounceMs);
@@ -106,6 +107,11 @@ async function loadSampleData() {
     renderSegmentList();
   } else if (state.currentChartType === 'innovator') {
     // Innovator generates its own data from formula; skip sample data
+    state.rawParsedData = null;
+    state.parsedData = null;
+    dom.dataTextarea.value = '';
+  } else if (state.currentChartType === 'inflation') {
+    // Inflation is driven by its own panel controls; no pasted data
     state.rawParsedData = null;
     state.parsedData = null;
     dom.dataTextarea.value = '';
@@ -438,6 +444,7 @@ function init() {
   initZoomUI();
   initExport();
   initClipboard();
+  initInflationUI();
   initDataInputTabs();
   initFormatToggle();
   initParseButton();

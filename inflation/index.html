@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inflation Chart — Variant Gallery</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="styles.css" />
+  <!-- CDN globals (same versions as the main app); classic scripts work even from file:// -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">$</span>
+      <div>
+        <h1>Inflation Calculator — Variants</h1>
+        <p class="subtitle">Drag any slider to compare every chart live. Pick one to integrate later.</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button id="resetBtn" class="btn-ghost" type="button">Reset</button>
+      <button id="themeToggle" class="btn-ghost" type="button">🌙 Dark</button>
+    </div>
+  </header>
+
+  <section class="controls" aria-label="Shared controls">
+    <div class="input-group">
+      <label for="amount">Amount <span class="muted">USD</span></label>
+      <input type="range" id="amount" min="100" max="1000000" step="100" value="1000" />
+      <span class="range-value" id="amountValue">$1,000</span>
+    </div>
+    <div class="input-group">
+      <label for="rate">Annual Inflation <span class="muted">%</span></label>
+      <input type="range" id="rate" min="0" max="20" step="0.1" value="3" />
+      <span class="range-value" id="rateValue">3.0%</span>
+    </div>
+    <div class="input-group">
+      <label for="baseYear">Base Year</label>
+      <input type="range" id="baseYear" min="1970" max="2026" step="1" value="2000" />
+      <span class="range-value" id="baseYearValue">2000</span>
+    </div>
+    <div class="input-group">
+      <label for="targetYear">Target Year</label>
+      <input type="range" id="targetYear" min="1970" max="2026" step="1" value="2024" />
+      <span class="range-value" id="targetYearValue">2024</span>
+    </div>
+    <div class="input-group">
+      <label for="rangeMin">Range Start</label>
+      <input type="range" id="rangeMin" min="1970" max="2025" step="1" value="1970" />
+      <span class="range-value" id="rangeMinValue">1970</span>
+    </div>
+    <div class="input-group">
+      <label for="rangeMax">Range End</label>
+      <input type="range" id="rangeMax" min="1971" max="2026" step="1" value="2026" />
+      <span class="range-value" id="rangeMaxValue">2026</span>
+    </div>
+  </section>
+
+  <section class="summary" id="summary" aria-live="polite"></section>
+
+  <main class="grid">
+    <!-- 1 · Value Track -->
+    <article class="card">
+      <header class="card-head"><span class="num">1</span><h3>Value Track</h3></header>
+      <p class="desc">What your money is worth across the whole year range, with base &amp; target marked.</p>
+      <div class="canvas-wrap"><canvas id="v1"></canvas></div>
+      <div class="local">
+        <label class="local-slider">Line tension
+          <input type="range" id="v1-tension" min="0" max="0.5" step="0.05" value="0.35" />
+          <span class="range-value" id="v1-tensionValue">0.35</span>
+        </label>
+        <label class="chk"><input type="checkbox" id="v1-markers" checked /> Markers</label>
+      </div>
+    </article>
+
+    <!-- 2 · Purchasing-Power Donut -->
+    <article class="card">
+      <header class="card-head"><span class="num">2</span><h3>Power Donut</h3></header>
+      <p class="desc">Share of purchasing power retained vs lost to inflation over base→target.</p>
+      <div class="canvas-wrap"><canvas id="v2"></canvas></div>
+      <div class="local">
+        <label class="local-slider">Cutout
+          <input type="range" id="v2-cutout" min="40" max="80" step="1" value="62" />
+          <span class="range-value" id="v2-cutoutValue">62%</span>
+        </label>
+        <label class="chk"><input type="checkbox" id="v2-center" checked /> Center label</label>
+      </div>
+    </article>
+
+    <!-- 3 · Then-vs-Now Dumbbell -->
+    <article class="card">
+      <header class="card-head"><span class="num">3</span><h3>Then vs Now</h3></header>
+      <p class="desc">Original amount and its equivalent today, connected with a ratio multiplier.</p>
+      <div class="canvas-wrap"><canvas id="v3"></canvas></div>
+      <div class="local">
+        <label class="local-slider">Point size
+          <input type="range" id="v3-point" min="4" max="16" step="1" value="9" />
+          <span class="range-value" id="v3-pointValue">9</span>
+        </label>
+        <label class="chk"><input type="checkbox" id="v3-pill" checked /> Ratio pill</label>
+      </div>
+    </article>
+
+    <!-- 4 · Yearly-Equivalent Bars -->
+    <article class="card">
+      <header class="card-head"><span class="num">4</span><h3>Yearly Bars</h3></header>
+      <p class="desc">Equivalent value, one bar per year — scan a specific year at a glance.</p>
+      <div class="canvas-wrap tall"><canvas id="v4"></canvas></div>
+      <div class="local">
+        <label class="local-slider">Max years
+          <input type="range" id="v4-max" min="8" max="30" step="1" value="18" />
+          <span class="range-value" id="v4-maxValue">18</span>
+        </label>
+        <label class="local-slider">Decimals
+          <input type="range" id="v4-dec" min="0" max="2" step="1" value="0" />
+          <span class="range-value" id="v4-decValue">0</span>
+        </label>
+      </div>
+    </article>
+
+    <!-- 5 · Cumulative-Erosion Waterfall -->
+    <article class="card">
+      <header class="card-head"><span class="num">5</span><h3>Erosion Waterfall</h3></header>
+      <p class="desc">Each step is one year of inflation compounding on the running equivalent.</p>
+      <div class="canvas-wrap tall"><canvas id="v5"></canvas></div>
+      <div class="local">
+        <label class="local-slider">Bar opacity
+          <input type="range" id="v5-opacity" min="20" max="100" step="5" value="80" />
+          <span class="range-value" id="v5-opacityValue">80%</span>
+        </label>
+        <label class="chk"><input type="checkbox" id="v5-highlight" checked /> Highlight target</label>
+      </div>
+    </article>
+
+    <!-- 6 · Purchasing-Power Gauge -->
+    <article class="card">
+      <header class="card-head"><span class="num">6</span><h3>Power Gauge</h3></header>
+      <p class="desc">A dashboard dial: how much purchasing power remains at the target year.</p>
+      <div class="canvas-wrap"><canvas id="v6"></canvas></div>
+      <div class="local">
+        <label class="local-slider">Cutout
+          <input type="range" id="v6-cutout" min="50" max="85" step="1" value="72" />
+          <span class="range-value" id="v6-cutoutValue">72%</span>
+        </label>
+        <label class="chk"><input type="checkbox" id="v6-label" checked /> Show %</label>
+      </div>
+    </article>
+
+    <!-- 7 · Rate-Sensitivity Columns -->
+    <article class="card">
+      <header class="card-head"><span class="num">7</span><h3>Rate Sensitivity</h3></header>
+      <p class="desc">Equivalent at the target year across several inflation rates; yours is highlighted.</p>
+      <div class="canvas-wrap"><canvas id="v7"></canvas></div>
+      <div class="local">
+        <label class="local-slider">Highlight opacity
+          <input type="range" id="v7-hl" min="30" max="100" step="5" value="100" />
+          <span class="range-value" id="v7-hlValue">100%</span>
+        </label>
+        <label class="chk"><input type="checkbox" id="v7-log" /> Y log scale</label>
+      </div>
+    </article>
+
+    <!-- 8 · Decade Polar -->
+    <article class="card">
+      <header class="card-head"><span class="num">8</span><h3>Decade Polar</h3></header>
+      <p class="desc">Equivalent value sampled at decade milestones, radiating outward.</p>
+      <div class="canvas-wrap"><canvas id="v8"></canvas></div>
+      <div class="local">
+        <label class="local-slider">Start angle
+          <input type="range" id="v8-angle" min="-90" max="0" step="15" value="-90" />
+          <span class="range-value" id="v8-angleValue">-90°</span>
+        </label>
+        <label class="local-slider">Opacity floor
+          <input type="range" id="v8-floor" min="10" max="50" step="5" value="25" />
+          <span class="range-value" id="v8-floorValue">0.25</span>
+        </label>
+      </div>
+    </article>
+  </main>
+
+  <footer class="foot">Prototype playground — rate-based model: equivalent = amount × (1 + r)<sup>(target − base)</sup>. Not financial advice.</footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

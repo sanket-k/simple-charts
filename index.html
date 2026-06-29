@@ -631,6 +631,42 @@
         </div>
       </div>
 
+      <div class="panel-section" id="inflationSettings" style="display:none;">
+        <h3 class="panel-title">Inflation</h3>
+        <div class="input-group">
+          <label for="inflationAmount">Amount (USD)</label>
+          <input type="number" id="inflationAmount" min="0" step="100" value="1000">
+          <input type="range" id="inflationAmountRange" min="0" max="1000000" step="100" value="1000">
+        </div>
+        <div class="input-group">
+          <label for="inflationRate">Annual Inflation (%)</label>
+          <input type="number" id="inflationRate" min="0" max="50" step="0.1" value="3">
+          <input type="range" id="inflationRateRange" min="0" max="20" step="0.1" value="3">
+        </div>
+        <div class="input-group-row">
+          <div class="input-group">
+            <label for="inflationBaseYear">Base Year</label>
+            <input type="number" id="inflationBaseYear" min="1900" max="2100" step="1" value="2000">
+            <input type="range" id="inflationBaseYearRange" min="1970" max="2026" step="1" value="2000">
+          </div>
+          <div class="input-group">
+            <label for="inflationTargetYear">Target Year</label>
+            <input type="number" id="inflationTargetYear" min="1900" max="2100" step="1" value="2024">
+            <input type="range" id="inflationTargetYearRange" min="1970" max="2026" step="1" value="2024">
+          </div>
+        </div>
+        <div class="input-group-separator"></div>
+        <div class="input-group">
+          <label for="inflationTension">Line Tension</label>
+          <input type="range" id="inflationTension" min="0" max="0.5" step="0.05" value="0.35">
+          <span class="range-value" id="inflationTensionValue">0.35</span>
+        </div>
+        <div class="input-group checkbox-group">
+          <input type="checkbox" id="inflationMarkers" checked>
+          <label for="inflationMarkers">Mark Base &amp; Target</label>
+        </div>
+      </div>
+
       <!-- Style -->
       <div class="panel-section">
         <h3 class="panel-title">Style</h3>

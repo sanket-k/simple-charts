@@ -209,6 +209,31 @@
 
 ---
 
+# Phase 7: Inflation Chart — 29-06-2026
+
+- [x] 7.1 Inflation variant gallery (prototype playground)
+- [x] 7.2 Value-Track chart integration into the main app
+
+---
+
+### 7.1 Inflation Variant Gallery (Prototype)
+
+- [x] Standalone playground at `inflation/` (`index.html`, `styles.css`, `app.js`) — CDN Chart.js, no build step
+- [x] 8 live variants driven by shared sliders (amount, rate, base/target year): value-track line, power donut, then-vs-now dumbbell, yearly bars, erosion waterfall, power gauge, rate-sensitivity columns, decade polar
+- [x] Rate-based model: `equivalent = amount × (1 + r)^(target − base)`
+- [x] All-visible gallery, debounced live re-render, dark/light tokens mirrored from the main app
+
+### 7.2 Value-Track Chart Integration
+
+- [x] Self-managed `charts/inflation.js` + `registerChart({ id: 'inflation' })` (modeled on `dual-bar.js`)
+- [x] `#inflationSettings` panel: Amount, Rate, Base Year, Target Year — each a number input **and** a slider — plus line-tension slider and base/target markers toggle
+- [x] `ui/inflation-ui.js` with bidirectional slider↔number sync + debounced render
+- [x] Wired across `dom.js`, `render.js` (side-effect import), `settings.js` (`chartPanelMap`), `main.js` (`initInflationUI()` + no-data sample branch)
+- [x] Both directions supported: target later than base ("worth today") and earlier ("worth previously")
+- [x] Browser-verified: console-clean, slider/number sync, math propagation, chart-type round-trip with value retention
+
+---
+
 ## Success Metrics
 
 | Metric | Before | After |

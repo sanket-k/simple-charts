@@ -39,6 +39,7 @@ export function updateSettingsVisibility() {
     'bubble-compare': dom.bubbleCompareSettings,
     overlay: dom.overlaySettings,
     'dual-bar': dom.dualBarSettings,
+    inflation: dom.inflationSettings,
   };
   Object.entries(chartPanelMap).forEach(([id, panel]) => {
     if (panel) panel.style.display = t === id ? 'block' : 'none';
