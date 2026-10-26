@@ -14,7 +14,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.3/papaparse.min.js" crossorigin="anonymous"></script>
   <link rel="icon" href="favicon.ico" type="image/x-icon">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
   <!-- Top Navigation -->
@@ -76,6 +76,10 @@
             <option value="3">3x</option>
           </select>
         </div>
+        <button class="btn-secondary" id="topbarSavedBtn" title="Browse saved graphs (⌘K)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          <span>Saved (<span id="topbarSavedCount">0</span>)</span>
+        </button>
         <button class="btn-secondary" id="copyJsonBtn" title="Copy chart data as JSON">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
           JSON
@@ -950,7 +954,11 @@
     <!-- Right Panel: Data Input -->
     <aside class="panel panel-right">
       <div class="panel-section">
-        <h3 class="panel-title">Data <button type="button" class="info-tip-btn" id="chartDataFormatBtn" aria-label="Show data format">?</button></h3>
+        <h3 class="panel-title">
+          Data
+          <button type="button" class="info-tip-btn" id="chartDataFormatBtn" aria-label="Show data format">?</button>
+          <button type="button" class="save-trigger-btn" id="openQuickSaveBtn" title="Save current values to library">+ Save</button>
+        </h3>
         <div class="info-tip visible" id="chartDataFormatTip">
           <div class="info-tip-header">
             <span id="chartDataFormatTitle">Data format</span>
@@ -964,10 +972,38 @@
           </div>
           <p class="hint-text" id="chartDataFormatHint" style="margin-top:6px;margin-bottom:0;"></p>
         </div>
+
+        <!-- Quick Save Values Box (Auto-detects Sector + Custom Override) -->
+        <div class="quick-save-box" id="quickSaveBox">
+          <div class="quick-save-header">
+            <span>Save Graph Values</span>
+            <button type="button" class="quick-save-close" id="closeQuickSaveBtn" aria-label="Close save form">&times;</button>
+          </div>
+          <div class="quick-save-field">
+            <label for="saveNameInput">Name</label>
+            <input type="text" id="saveNameInput" class="saved-input" placeholder="e.g. Q3 Revenue vs Costs">
+          </div>
+          <div class="quick-save-row">
+            <div class="quick-save-field">
+              <label for="saveCategoryInput">
+                Sector
+                <span class="sector-detect-badge auto" id="saveSectorBadge">Auto</span>
+              </label>
+              <input type="text" id="saveCategoryInput" class="saved-input" list="savedCategoryDatalist" placeholder="e.g. Finance">
+            </div>
+            <div class="quick-save-field">
+              <label for="saveDateInput">Date</label>
+              <input type="date" id="saveDateInput" class="saved-input">
+            </div>
+          </div>
+          <div class="quick-save-chips" id="quickSaveSectorChips"></div>
+          <button type="button" class="btn-primary full-width quick-save-submit" id="confirmSaveGraphBtn">Save Values Snapshot</button>
+        </div>
         <div class="data-input-tabs" role="tablist" aria-label="Data Input Methods">
           <button class="tab-btn active" data-tab="paste" role="tab" aria-selected="true">Paste</button>
           <button class="tab-btn" data-tab="csv" role="tab" aria-selected="false">File</button>
           <button class="tab-btn" data-tab="manual" role="tab" aria-selected="false">Manual</button>
+          <button class="tab-btn" data-tab="saved" id="savedTabBtn" role="tab" aria-selected="false">Saved <span class="badge" id="savedCountBadge"></span></button>
         </div>
 
         <div class="tab-content active" id="tab-paste">
@@ -1010,6 +1046,33 @@
               </div>
             </div>
             <button class="btn-secondary full-width" id="addRowBtn">+ Add Row</button>
+          </div>
+        </div>
+
+        <!-- Option A: Inline Saved Graphs Tab -->
+        <div class="tab-content" id="tab-saved">
+          <div class="saved-filter-bar">
+            <input type="text" id="savedSearchInput" class="saved-input" placeholder="Search name, sector, series, date…">
+            <div class="saved-filter-selects">
+              <select id="savedTypeFilter" class="saved-select" aria-label="Filter by chart type">
+                <option value="all">Type: All</option>
+              </select>
+              <select id="savedSortSelect" class="saved-select" aria-label="Sort saved graphs">
+                <option value="newest">Date: Newest</option>
+                <option value="oldest">Date: Oldest</option>
+                <option value="name">Name: A–Z</option>
+              </select>
+            </div>
+            <div class="saved-category-pills" id="savedCategoryPills"></div>
+          </div>
+          <div class="saved-graphs-list" id="savedGraphsList"></div>
+          <div class="saved-footer-actions">
+            <button type="button" class="saved-link-btn" id="openSavedModalBtn" title="Open 2-pane inspector (⌘K)">⤢ Inspect All (⌘K)</button>
+            <div class="saved-footer-right">
+              <button type="button" class="saved-link-btn" id="exportSavedLibBtn" title="Download saved graphs as JSON">↓ Export</button>
+              <button type="button" class="saved-link-btn" id="importSavedLibBtn" title="Import saved graphs JSON">↑ Import</button>
+              <input type="file" id="importSavedLibInput" accept=".json" hidden>
+            </div>
           </div>
         </div>
       </div>
@@ -1073,7 +1136,16 @@
 
       <!-- Branding -->
       <div class="panel-section">
-        <h3 class="panel-title">Branding</h3>
+        <h3 class="panel-title">
+          Branding
+          <span class="brand-kit-status" id="brandKitStatus" title="Brand Kit and personal defaults are automatically saved locally in your browser">Auto-Saved</span>
+          <div class="panel-title-actions">
+            <button type="button" class="brand-kit-action-btn" id="exportBrandKitBtn" title="Export Brand Kit as JSON">Export</button>
+            <button type="button" class="brand-kit-action-btn" id="importBrandKitBtn" title="Import Brand Kit JSON">Import</button>
+            <button type="button" class="brand-kit-action-btn danger" id="resetBrandKitBtn" title="Reset Brand Kit &amp; preferences to defaults">Reset</button>
+            <input type="file" id="importBrandKitFile" accept=".json" hidden>
+          </div>
+        </h3>
         <div class="input-group">
           <label for="brandName">Brand Name</label>
           <input type="text" id="brandName" placeholder="e.g. Simple Charts" value="Simple Charts">
@@ -1128,6 +1200,37 @@
       </div>
     </aside>
   </main>
+
+  <!-- Shared Datalist for Sector Suggestions -->
+  <datalist id="savedCategoryDatalist"></datalist>
+
+  <!-- Option C: 2-Pane Spotlight Modal for Saved Graphs -->
+  <div class="saved-modal-backdrop" id="savedGraphsModal" role="dialog" aria-modal="true" aria-label="Saved Graphs Library">
+    <div class="saved-modal-dialog">
+      <div class="saved-modal-left">
+        <div class="saved-modal-left-header">
+          <h3 class="saved-modal-title">Saved Graphs Library</h3>
+          <button type="button" class="quick-save-close" id="closeSavedModalBtn" title="Close (Esc)" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="saved-filter-bar">
+          <input type="text" id="modalSavedSearch" class="saved-input" placeholder="Filter by name, sector, date, or column…">
+          <div class="saved-filter-selects">
+            <select id="modalSavedTypeFilter" class="saved-select" aria-label="Filter by chart type">
+              <option value="all">Type: All</option>
+            </select>
+            <select id="modalSavedSort" class="saved-select" aria-label="Sort saved graphs">
+              <option value="newest">Date: Newest</option>
+              <option value="oldest">Date: Oldest</option>
+              <option value="name">Name: A–Z</option>
+            </select>
+          </div>
+          <div class="saved-category-pills" id="modalCategoryPills"></div>
+        </div>
+        <div class="saved-graphs-list modal-list" id="modalSavedList"></div>
+      </div>
+      <div class="saved-modal-right" id="modalPreviewPane"></div>
+    </div>
+  </div>
 
   <noscript>
     <div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:Inter,-apple-system,sans-serif;background:#111622;color:#F8FAFC;text-align:center;padding:2rem;">

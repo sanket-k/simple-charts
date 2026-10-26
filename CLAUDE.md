@@ -43,7 +43,7 @@ Then open `http://localhost:8080`. No test suite exists.
 │       ├── theme.js, colors.js, settings.js
 │       ├── dual-axis.js, combo-ui.js, line-style-ui.js
 │       ├── branding.js, timeline-ui.js, zoom-ui.js
-│       ├── export.js, clipboard.js
+│       ├── export.js, clipboard.js, saved-graphs.js, user-profile.js
 ├── hub/                        # Product docs (PRD, tech spec, user manual, style guide)
 └── dist/                       # Pre-built deployed output
 ```

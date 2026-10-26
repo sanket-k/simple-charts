@@ -17,6 +17,7 @@ export function initBranding() {
       img.onload = () => {
         state.brandLogoImg = img;
         dom.brandLogoPreview.innerHTML = `<img src="${state.brandLogoUrl}" alt="Logo">`;
+        if (window.__debouncedSaveProfile) window.__debouncedSaveProfile();
         if (window.__renderChart) window.__renderChart();
       };
       img.src = state.brandLogoUrl;
@@ -29,6 +30,7 @@ export function initBranding() {
     state.brandLogoImg = null;
     dom.brandLogoFile.value = '';
     dom.brandLogoPreview.innerHTML = `<svg width="16" height="16" viewBox="-2 -4 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M10 1L18.66 15H1.34L10 1z"/></svg>`;
+    if (window.__debouncedSaveProfile) window.__debouncedSaveProfile();
     if (window.__renderChart) window.__renderChart();
   });
 
@@ -59,6 +61,7 @@ export function initBranding() {
       state.brandLogoUrl = url;
       state.brandLogoImg = img;
       dom.brandLogoPreview.innerHTML = `<img src="${url}" alt="Logo">`;
+      if (window.__debouncedSaveProfile) window.__debouncedSaveProfile();
       if (window.__renderChart) window.__renderChart();
     };
     img.onerror = () => {
@@ -73,6 +76,7 @@ export function initBranding() {
     state.brandLogoUrl = null;
     state.brandLogoImg = null;
     dom.brandLogoPreview.innerHTML = `<svg width="16" height="16" viewBox="-2 -4 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"><path d="M10 1L18.66 15H1.34L10 1z"/></svg>`;
+    if (window.__debouncedSaveProfile) window.__debouncedSaveProfile();
     if (window.__renderChart) window.__renderChart();
   });
 
@@ -82,6 +86,7 @@ export function initBranding() {
       if (el === dom.brandOpacity && dom.brandOpacityValue) {
         dom.brandOpacityValue.textContent = dom.brandOpacity.value;
       }
+      if (window.__debouncedSaveProfile) window.__debouncedSaveProfile();
       if (window.__debouncedRender) window.__debouncedRender();
     });
   });

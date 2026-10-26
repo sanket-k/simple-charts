@@ -284,3 +284,14 @@
 | `state.js` flat chart-specific props | 7 | 0 (all namespaced under `charts.*`) |
 | `render.js` dispatch branches | 17 (6 ifs + 11 cases) | 1 registry lookup |
 | Chart type grid | 68 lines hardcoded HTML | Auto-generated from registry |
+
+---
+
+# Retrospective — 31-08-2026 (repo-story v1)
+
+- [x] Mined repository forensics: 70 commits (2026-04-16 → 2026-06-29), 3 stashes, 6 branches, month buckets Apr 47 / May 19 / Jun 4
+- [x] Story skeleton approved: 14 rubrics (mean 6.7/10), 18-row trade-off ledger, 6 blocker post-mortems, 10 hero stats
+- [x] Built `view-project-story.html` (118 KB, single file, zero deps): 9 tabs, 6 Mermaid diagrams (lazy CDN + source fallback), dark/light themes with persisted toggle, animated counters, searchable 70-commit log, era filters, copy-hash
+- [x] Built `view-project-story.md` (46 KB companion): sections 1-9, ToC verified resolving, 6 mermaid fences with classDef stripped
+- [x] Browser verification passed: 0 console messages; 0 horizontal overflow on all 9 tabs at 1440 / 390 / 360 px; 0 gradients in source and DOM; keyboard tab nav with wrap-around; default tab = Project 101; theme switch re-renders diagrams in both themes (light uses #C2410C accent)
+- [x] Discrepancy register surfaced (8 items) — see Data room §Discrepancies: stashed hub/ docs, stale CLAUDE.md, brand fork (Simple Charts vs Charts BeamDelta), todo.md §5.1 checkbox vs shipped code, "4700+ lines" vs measured 4,417

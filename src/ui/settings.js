@@ -399,10 +399,12 @@ export function initSettingsListeners() {
         dom.dualBarBorderRadiusValue.textContent = dom.dualBarBorderRadius.value;
       }
       if (window.__debouncedRender) window.__debouncedRender();
+      if (window.__debouncedSaveProfile) window.__debouncedSaveProfile();
     });
   });
 
   dom.maxRowsInput.addEventListener('change', () => {
     CONFIG.hardRowLimit = parseInt(dom.maxRowsInput.value) || 50000;
+    if (window.__debouncedSaveProfile) window.__debouncedSaveProfile();
   });
 }

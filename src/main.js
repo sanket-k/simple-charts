@@ -22,12 +22,16 @@ import { initZoomUI } from './ui/zoom-ui.js';
 import { initExport } from './ui/export.js';
 import { initClipboard } from './ui/clipboard.js';
 import { initInflationUI } from './ui/inflation-ui.js';
+import { initSavedGraphs } from './ui/saved-graphs.js';
+import { loadUserProfile, initUserProfile, debouncedSaveUserProfile, saveUserProfile } from './ui/user-profile.js';
 
 // Expose render functions globally for UI module callbacks
 const debouncedRender = debounce(() => renderChart(), CONFIG.debounceMs);
 window.__renderChart = renderChart;
 window.__debouncedRender = debouncedRender;
 window.__loadSampleForType = loadSampleData;
+window.__debouncedSaveProfile = debouncedSaveUserProfile;
+window.__saveProfileImmediate = saveUserProfile;
 
 /** Runs the full post-parse pipeline: segmented conversion, downsampling, UI updates, and render. */
 function updateAfterDataLoad() {
@@ -180,6 +184,7 @@ function initFormatToggle() {
         btn.classList.add('active');
         state.dataFormat = btn.dataset.format;
         updateDataFormatTip();
+        if (window.__debouncedSaveProfile) window.__debouncedSaveProfile();
       });
     });
   }
@@ -454,6 +459,11 @@ function init() {
   initDownsampleColumnListeners();
   initSegmentedGroupListeners();
 
+  // Hydrate persistent Brand Kit and user preferences (overrides defaults if profile exists)
+  loadUserProfile();
+  initUserProfile();
+
+  initSavedGraphs();
   loadSampleData();
 }
 

@@ -1,0 +1,1570 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0b0e16">
+<title>Simple Charts — Expert-Panel Repository Retrospective</title>
+<script>
+(function(){try{var t=localStorage.getItem('rs-theme');if(!t){t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+</script>
+<style>
+:root{
+  --bg:#0b0e16; --bg2:#0f1420; --panel:#131a2a; --panel2:#182136;
+  --line:#243049; --line2:#2e3d5c;
+  --text:#e8edf7; --text2:#aab6cc; --text3:#7d8aa5;
+  --accent:#F7931A; --accent2:#ffb95c; --accent-soft:rgba(247,147,26,.13);
+  --good:#34d399; --bad:#f87171; --warn:#fbbf24; --info:#60a5fa; --muted:#94a3b8;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif;
+  --shadow:0 1px 2px rgba(0,0,0,.35);
+}
+[data-theme="light"]{
+  --bg:#f6f7fb; --bg2:#eef0f6; --panel:#ffffff; --panel2:#f3f5fa;
+  --line:#dde2ec; --line2:#c2ccdd;
+  --text:#1b2437; --text2:#43506a; --text3:#5f6c86;
+  --accent:#C2410C; --accent2:#9a3412; --accent-soft:rgba(194,65,12,.10);
+  --good:#047857; --bad:#b91c1c; --warn:#92600a; --info:#1d4ed8; --muted:#5b6779;
+  --shadow:0 1px 2px rgba(27,36,55,.08);
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto;}
+  *,*::before,*::after{animation-duration:.001ms !important; transition-duration:.001ms !important;}
+}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:var(--sans); font-size:15px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent2); text-decoration:none;}
+a:hover{text-decoration:underline;}
+code,.mono{font-family:var(--mono); font-size:.92em;}
+h1,h2,h3,h4{line-height:1.25; margin:0 0 8px;}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px;}
+.skip{position:absolute; left:-9999px; top:0; background:var(--accent); color:#0b0e16; padding:8px 14px; z-index:100; border-radius:0 0 8px 0; font-weight:700;}
+.skip:focus{left:0;}
+
+/* progress + back to top */
+#progress{position:fixed; top:0; left:0; height:3px; width:0%; background:var(--accent); z-index:60;}
+#totop{position:fixed; right:18px; bottom:18px; z-index:60; background:var(--panel2); color:var(--text);
+  border:1px solid var(--line2); border-radius:10px; padding:9px 13px; cursor:pointer; opacity:0;
+  pointer-events:none; transition:opacity .2s; box-shadow:var(--shadow); font-size:13px;}
+#totop.show{opacity:1; pointer-events:auto;}
+
+/* layout */
+.wrap{max-width:1240px; margin:0 auto; padding:0 20px;}
+header.site{padding:34px 0 10px; border-bottom:1px solid var(--line);}
+.title-row{display:flex; flex-wrap:wrap; gap:14px; align-items:flex-start; justify-content:space-between;}
+.kicker{font-family:var(--mono); font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); margin:0 0 6px;}
+h1{font-size:clamp(24px,4vw,38px); margin:0 0 6px;}
+.subtitle{color:var(--text2); max-width:70ch; margin:0 0 10px;}
+.meta-line{font-family:var(--mono); font-size:12px; color:var(--text3);}
+.theme-btn{background:var(--panel2); color:var(--text); border:1px solid var(--line2); border-radius:10px;
+  padding:9px 14px; cursor:pointer; font-size:13px; box-shadow:var(--shadow); white-space:nowrap;}
+
+/* hero counters */
+.hero{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; padding:22px 0 6px;}
+.stat{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; box-shadow:var(--shadow);}
+.stat-num{font-size:clamp(24px,3vw,34px); font-weight:800; color:var(--accent); font-variant-numeric:tabular-nums; letter-spacing:-.02em;}
+.stat-label{font-size:12.5px; color:var(--text2); margin-top:2px;}
+
+/* tabs */
+nav.tabs{position:sticky; top:0; z-index:50; background:var(--bg); border-bottom:1px solid var(--line); margin-top:14px;}
+.tablist{display:flex; gap:4px; overflow-x:auto; padding:8px 0; scrollbar-width:thin;}
+.tablist::-webkit-scrollbar{height:6px;}
+.tablist::-webkit-scrollbar-thumb{background:var(--line2); border-radius:3px;}
+[role="tab"]{background:none; border:1px solid transparent; color:var(--text2); font:inherit; font-size:13.5px;
+  padding:8px 13px; border-radius:9px; cursor:pointer; white-space:nowrap;}
+[role="tab"]:hover{color:var(--text); background:var(--panel);}
+[role="tab"][aria-selected="true"]{background:var(--accent-soft); color:var(--accent); border-color:var(--accent); font-weight:600;}
+[role="tabpanel"]{padding:26px 0 60px;}
+.paneltitle{font-size:clamp(20px,3vw,28px); margin-bottom:4px;}
+.lede{color:var(--text2); max-width:78ch; margin:0 0 18px;}
+
+/* cards + grids */
+.grid2{display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:14px;}
+.grid3{display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:14px;}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 18px; box-shadow:var(--shadow);}
+.card h3,.card h4{margin-top:0;}
+.card .small,.small{font-size:12.5px; color:var(--text3);}
+.section{margin:26px 0;}
+.section > h3{font-size:18px; padding-bottom:6px; border-bottom:1px solid var(--line); margin-bottom:12px;}
+
+/* tables */
+.twrap{overflow-x:auto; border:1px solid var(--line); border-radius:12px; background:var(--panel); box-shadow:var(--shadow);}
+table{border-collapse:collapse; width:100%; font-size:13.5px; min-width:560px;}
+th{font-family:var(--mono); font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--text3);
+  text-align:left; padding:10px 12px; border-bottom:1px solid var(--line2); white-space:nowrap;}
+td{padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:var(--panel2);}
+
+/* chips */
+.chips{display:flex; flex-wrap:wrap; gap:8px; margin:10px 0 14px;}
+.chip{background:var(--panel); border:1px solid var(--line2); color:var(--text2); border-radius:999px;
+  padding:5px 12px; font-size:12.5px; cursor:pointer; font-family:var(--mono);}
+.chip:hover{color:var(--text);}
+.chip[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--accent); font-weight:600;}
+.tag{display:inline-block; font-family:var(--mono); font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--line2); color:var(--text2); white-space:nowrap;}
+.tag.feat{border-color:var(--accent); color:var(--accent);}
+.tag.fix{border-color:var(--bad); color:var(--bad);}
+.tag.docs{border-color:var(--info); color:var(--info);}
+.tag.refactor{border-color:var(--warn); color:var(--warn);}
+.tag.chore,.tag.clean,.tag.update,.tag.none{color:var(--muted);}
+.tag.good{border-color:var(--good); color:var(--good);}
+.tag.bad{border-color:var(--bad); color:var(--bad);}
+.tag.warn{border-color:var(--warn); color:var(--warn);}
+
+/* hash pills + copy */
+.hash{font-family:var(--mono); font-size:12px; background:var(--bg2); border:1px solid var(--line2);
+  color:var(--text); padding:2px 8px; border-radius:6px;}
+.copybtn{background:var(--bg2); border:1px solid var(--line2); color:var(--text3); border-radius:6px;
+  font-family:var(--mono); font-size:11px; padding:2px 8px; cursor:pointer;}
+.copybtn:hover{color:var(--text); border-color:var(--accent);}
+.copybtn.copied{background:var(--good); border-color:var(--good); color:#04231a; font-weight:700;}
+[data-theme="light"] .copybtn.copied{color:#ffffff;}
+.hashrow{display:flex; flex-wrap:wrap; gap:6px; align-items:center;}
+
+/* accordions */
+details.acc{background:var(--panel); border:1px solid var(--line); border-radius:12px; margin:10px 0; box-shadow:var(--shadow);}
+details.acc > summary{cursor:pointer; padding:12px 16px; font-weight:600; list-style:none; display:flex; justify-content:space-between; gap:10px; align-items:center;}
+details.acc > summary::-webkit-details-marker{display:none;}
+details.acc > summary::after{content:"+"; font-family:var(--mono); color:var(--accent); font-size:16px;}
+details.acc[open] > summary::after{content:"−";}
+details.acc > summary:hover{color:var(--accent);}
+.acc-body{padding:0 16px 14px; border-top:1px solid var(--line);}
+.acc-body ul{margin:10px 0; padding-left:20px;}
+.acc-body li{margin:6px 0;}
+.choose{color:var(--good);} .rejected{color:var(--bad);}
+
+/* scorecard */
+.score-row{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin:10px 0; box-shadow:var(--shadow);}
+.score-top{display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; align-items:baseline;}
+.score-name{font-weight:700;}
+.score-val{font-family:var(--mono); color:var(--accent); font-weight:700;}
+.bar{height:10px; background:var(--bg2); border:1px solid var(--line); border-radius:999px; margin:8px 0; overflow:hidden;}
+.bar-fill{height:100%; width:0%; background:var(--accent); border-radius:999px; transition:width 1s cubic-bezier(.16,1,.3,1);}
+.score-just{color:var(--text2); font-size:13.5px; margin:4px 0 6px;}
+
+/* callouts */
+.callout{border:1px solid var(--bad); background:var(--panel); border-radius:12px; padding:14px 16px; margin:16px 0;}
+.callout h4{color:var(--bad); margin:0 0 6px;}
+.callout.accent{border-color:var(--accent);}
+.callout.accent h4{color:var(--accent);}
+.callout ul{margin:8px 0 2px; padding-left:20px;}
+.callout li{margin:5px 0;}
+
+/* mini bar charts (solid fills) */
+.hbar{display:grid; grid-template-columns:minmax(120px,220px) 1fr auto; gap:10px; align-items:center; margin:6px 0; font-size:13px;}
+.hbar .lab{font-family:var(--mono); font-size:12px; color:var(--text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.hbar .track{background:var(--bg2); border:1px solid var(--line); border-radius:6px; height:16px; position:relative;}
+.hbar .fill{position:absolute; inset:0 auto 0 0; background:var(--accent); border-radius:5px;}
+.hbar .num{font-family:var(--mono); font-size:12px; color:var(--text); min-width:34px; text-align:right;}
+.hbar.alt .fill{background:var(--info);}
+.daygrid{display:flex; flex-wrap:wrap; gap:4px; margin-top:8px;}
+.daycell{width:26px; height:26px; border-radius:5px; border:1px solid var(--line); background:var(--bg2);
+  display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:10px; color:var(--text3); position:relative;}
+.daycell.has{background:var(--accent); border-color:var(--accent); color:#20150a; font-weight:700;}
+[data-theme="light"] .daycell.has{color:#ffffff;}
+
+/* mermaid */
+.mmd-wrap{overflow-x:auto; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px; box-shadow:var(--shadow);}
+.mermaid{display:flex; justify-content:center; min-height:40px;}
+.mermaid svg{max-width:100%; height:auto;}
+.mmd-src{font-family:var(--mono); font-size:12px; color:var(--text2); white-space:pre; overflow-x:auto; margin:0;}
+.mmd-note{font-size:12px; color:var(--text3); margin:6px 0 0;}
+
+/* commit log */
+.searchbox{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:12px 0;}
+.searchbox input[type="search"]{flex:1 1 260px; background:var(--panel); border:1px solid var(--line2); color:var(--text);
+  border-radius:10px; padding:9px 13px; font:inherit; font-size:14px;}
+.count-line{font-family:var(--mono); font-size:12.5px; color:var(--text3); margin:6px 0;}
+.noresults{display:none; padding:18px; color:var(--text2); font-size:14px;}
+
+/* footer */
+footer.site{border-top:1px solid var(--line); padding:22px 0 40px; color:var(--text3); font-size:13px;}
+footer.site .mono{color:var(--text2);}
+
+@media (max-width:640px){
+  .wrap{padding:0 12px;}
+  header.site{padding-top:22px;}
+  .stat{padding:11px 12px;}
+  [role="tabpanel"]{padding:18px 0 44px;}
+}
+@media print{
+  nav.tabs,#totop,#progress,.theme-btn{display:none;}
+  [role="tabpanel"]{display:block !important;}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div id="progress" role="presentation"></div>
+<div class="wrap">
+<header class="site">
+  <div class="title-row">
+    <div>
+      <p class="kicker">Expert-Panel Repository Retrospective</p>
+      <h1>Simple Charts</h1>
+      <p class="subtitle">How a solo developer and a small fleet of AI tools built a 19-chart, zero-build,
+      client-side charting studio in 75 days &mdash; what it cost, where it creaks, and what a newcomer needs to know.
+      Every number and quote below is anchored to a commit hash, a <code>path:line</code>, a stash id, or a config key.</p>
+      <p class="meta-line">Generated 2026-08-31 &middot; evidence base: 70 commits (2026-04-16 &rarr; 2026-06-29) &middot; 1 author &middot; 3 stashes &middot; 6 branches &middot; companion: view-project-story.md</p>
+    </div>
+    <button class="theme-btn" id="themeToggle" type="button" aria-label="Switch color theme">Theme: dark</button>
+  </div>
+  <div class="hero" id="hero">
+    <div class="stat"><div class="stat-num" data-target="70">0</div><div class="stat-label">commits, all by one author</div></div>
+    <div class="stat"><div class="stat-num" data-target="19">0</div><div class="stat-label">chart types registered</div></div>
+    <div class="stat"><div class="stat-num" data-target="12844" data-format="comma">0</div><div class="stat-label">lines tracked (excl. dist)</div></div>
+    <div class="stat"><div class="stat-num" data-target="75">0</div><div class="stat-label">days, first commit to last</div></div>
+    <div class="stat"><div class="stat-num" data-target="4814" data-format="comma">0</div><div class="stat-label">lines of docs hiding in a stash</div></div>
+    <div class="stat"><div class="stat-num" data-target="0">0</div><div class="stat-label">committed tests</div></div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <div class="tablist" id="tablist" role="tablist" aria-label="Retrospective sections">
+    <button role="tab" id="tabbtn-p101" data-tab="p101" aria-controls="panel-p101" aria-selected="true" tabindex="0">Project 101</button>
+    <button role="tab" id="tabbtn-timeline" data-tab="timeline" aria-controls="panel-timeline" aria-selected="false" tabindex="-1">Timeline</button>
+    <button role="tab" id="tabbtn-score" data-tab="score" aria-controls="panel-score" aria-selected="false" tabindex="-1">Rubric scorecard</button>
+    <button role="tab" id="tabbtn-fleet" data-tab="fleet" aria-controls="panel-fleet" aria-selected="false" tabindex="-1">Fleet roster</button>
+    <button role="tab" id="tabbtn-ledger" data-tab="ledger" aria-controls="panel-ledger" aria-selected="false" tabindex="-1">Trade-off ledger</button>
+    <button role="tab" id="tabbtn-blockers" data-tab="blockers" aria-controls="panel-blockers" aria-selected="false" tabindex="-1">Blocker post-mortems</button>
+    <button role="tab" id="tabbtn-commits" data-tab="commits" aria-controls="panel-commits" aria-selected="false" tabindex="-1">Commit log</button>
+    <button role="tab" id="tabbtn-data" data-tab="data" aria-controls="panel-data" aria-selected="false" tabindex="-1">Data room</button>
+    <button role="tab" id="tabbtn-lessons" data-tab="lessons" aria-controls="panel-lessons" aria-selected="false" tabindex="-1">Lessons</button>
+  </div>
+</nav>
+
+<main id="main">
+
+<!-- ============================== TAB 1: PROJECT 101 ============================== -->
+<section role="tabpanel" id="panel-p101" aria-labelledby="tabbtn-p101">
+  <h2 class="paneltitle">Project 101</h2>
+  <p class="lede">A stranger should reach &ldquo;I understand this system&rdquo; in ten minutes. Start here.</p>
+
+  <div class="section">
+    <h3>The pitch</h3>
+    <div class="card">
+      <p><strong>Simple Charts answers one question: how do I turn raw spreadsheet data into a branded,
+      publication-quality chart sized for social media &mdash; without installing anything, signing up, or writing code?</strong></p>
+      <p>It is a single-page, browser-only studio: paste CSV/TSV/JSON or type rows, pick from 19 chart
+      types, style it, drop in a logo, and export a PNG/JPG/WebP/SVG at exactly 1200&times;675 (Twitter/X),
+      1080&times;1080 (Instagram), 1200&times;627 (LinkedIn) or 1200&times;900 (general). No backend, no accounts,
+      no telemetry; the only network requests are five pinned CDN libraries at page load
+      (README.md:35, index.html:55, README &ldquo;Export &amp; Sharing&rdquo;).</p>
+      <p><strong>The moat is the method, not the data.</strong> Generic tools ship line/bar/pie. This app ships the
+      charts analysts actually argue with: an <em>Innovator&rsquo;s Dilemma</em> disruption curve (541 lines of formula-driven
+      geometry, src/charts/innovator.js), a <em>Kano</em> feature-prioritization model (402 lines), a segmented-bar editor with
+      multi-group support, dumbbell / bubble-compare / overlay comparisons on shared log-axis helpers, a dual-bar
+      target-vs-current chart, and an inflation purchasing-power calculator. Stack: vanilla ES2020+ modules,
+      Chart.js 4.5.1, PapaParse 5.5.3, plain CSS &mdash; zero build step (CLAUDE.md; .agent/rules/rules.md:7-15).</p>
+      <p><strong>Who built it and how:</strong> Sanket, solo, 2026-04-16 &rarr; 2026-06-29 (70 commits), working AI-assisted.
+      No Co-Authored-By trailers exist, so attribution is artifact-based: Kilo Code planning files predate the repo
+      (2026-03-20, stash@{0} .kilo/plans/) and a committed AI-rules doc governs the codebase (87e9e6a);
+      three <code>worktree-agent-*</code> branches mark Claude Code sessions. See the Fleet roster tab.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Stack &amp; hosting footprint</h3>
+    <div class="twrap"><table>
+      <thead><tr><th>Layer</th><th>Choice</th><th>Version</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Language</td><td>Vanilla JS, ES modules, no TypeScript</td><td>ES2020+</td><td>CLAUDE.md; .agent/rules/rules.md:7</td></tr>
+        <tr><td>Charts</td><td>Chart.js as <code>window.Chart</code> CDN global</td><td>4.5.1</td><td>index.html (CDN tags); upgraded from 4.4.7 in ee6a9fd</td></tr>
+        <tr><td>Data labels</td><td>chartjs-plugin-datalabels</td><td>2.2.0</td><td>index.html</td></tr>
+        <tr><td>CSV/TSV</td><td>PapaParse as <code>window.Papa</code></td><td>5.5.3</td><td>index.html; upgraded from 5.4.1 in ee6a9fd</td></tr>
+        <tr><td>Time axis</td><td>chartjs-adapter-date-fns</td><td>3.0.0</td><td>index.html</td></tr>
+        <tr><td>Annotations</td><td>chartjs-plugin-annotation</td><td>3.1.0</td><td>index.html</td></tr>
+        <tr><td>CSS</td><td>Single plain file, CSS variables, both theme blocks</td><td>&mdash;</td><td>styles.css (1,923 lines)</td></tr>
+        <tr><td>Build</td><td><strong>None</strong></td><td>&mdash;</td><td>CLAUDE.md &ldquo;No build system, no npm&rdquo;</td></tr>
+      </tbody>
+    </table></div>
+    <div class="twrap" style="margin-top:12px"><table>
+      <thead><tr><th>Footprint item</th><th>Reality</th></tr></thead>
+      <tbody>
+        <tr><td>Hosting</td><td>Any static file server; <code>python3 -m http.server 8080</code> is the documented dev loop (ES modules need http)</td></tr>
+        <tr><td>Monthly cost</td><td>$0 &mdash; static hosting only, no servers, no databases, no accounts</td></tr>
+        <tr><td>Containers / background jobs</td><td>Zero containers. Only in-page timers: one 300ms debounced render (<code>constants.js:51</code>) and PapaParse web workers</td></tr>
+        <tr><td>Deployed output</td><td><code>dist/</code> is committed but <strong>60 days stale</strong> (last touched 28e7cd7, 2026-04-30) &mdash; see Bodies buried</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="section">
+    <h3>The core mechanism</h3>
+    <div class="grid2">
+      <div class="card">
+        <h4>Data pipeline (the machine every chart runs through)</h4>
+        <p class="small mono">Input &rarr; parseInputText() &rarr; rawParsedData &rarr; applyDownsampling() &rarr; parsedData &rarr; applyZoom() &rarr; validateChartData() &rarr; builder &rarr; chartInstance</p>
+        <p>One parse pipeline feeds all 19 charts. The registry (<code>src/charts/registry.js:1</code>) is the single
+        source of truth: each chart module registers a descriptor (<code>id, label, icon, builder, isSelfManaged, capabilities</code>)
+        at import time, and <code>render.js</code> dispatches with one lookup instead of a 17-branch switch
+        (todo.md &ldquo;Success Metrics&rdquo;: 17 &rarr; 1).</p>
+      </div>
+      <div class="card">
+        <h4>Worked example: the inflation formula</h4>
+        <p class="small mono">equivalent = amount &times; (1 + r) ^ (target &minus; base)</p>
+        <p>Configured values from the shipped sample: amount <strong>$1,000</strong>, rate <strong>3%</strong>, base year <strong>2026</strong>,
+        target year <strong>2036</strong> &rarr; 1000 &times; 1.03<sup>10</sup> = <strong>$1,343.92</strong> (&ldquo;what today&rsquo;s money is worth then&rdquo;).
+        Reverse the years (target 2016) and the same formula returns 1000 &times; 1.03<sup>&minus;10</sup> = <strong>$744.09</strong>
+        (&ldquo;what it was worth previously&rdquo;) &mdash; both directions are supported (todo.md &sect;8.2).</p>
+        <p class="small">The prototype playground with 8 live variants lives at <code>inflation/</code>; the integrated
+        &ldquo;Value-Track&rdquo; chart is <code>src/charts/inflation.js</code> registered as <code>id: 'inflation'</code>.</p>
+      </div>
+    </div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="card">
+        <h4>Thresholds &amp; bands (constants.js:44-52)</h4>
+        <ul style="margin:6px 0 0; padding-left:20px;">
+          <li>&le;500 rows &rarr; pass through untouched (data.js:23)</li>
+          <li>&le;2,000 rows &rarr; monthly downsample (data.js:24)</li>
+          <li>&gt;10,000 rows &rarr; warning toast (<code>warnRowLimit</code>)</li>
+          <li>&gt;50,000 rows &rarr; hard stop (<code>hardRowLimit</code>)</li>
+          <li>30 bars max; 12 pie / 10 donut slices max</li>
+          <li>300ms render debounce (<code>debounceMs</code>)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>Missing-data behavior &amp; guarantees</h4>
+        <ul style="margin:6px 0 0; padding-left:20px;">
+          <li>Empty or non-numeric data &rarr; <code>validateChartData()</code> returns a specific human message per chart
+          (&ldquo;No valid numeric data found. &lt;chart&gt; requires numbers in the value columns.&rdquo;) and render is blocked with a toast (render.js:66-72)</li>
+          <li>Self-managed charts (innovator, kano, timeline, dual-bar, inflation) generate their own data when the
+          textarea is empty &mdash; validation only runs when parsed data exists (render.js:40-48)</li>
+          <li>Guarantees: nothing leaves the browser; same input + same settings = same pixels; no server-side truth to drift</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Why it works &mdash; design bets as threat &rarr; mechanism pairs</h3>
+    <div class="twrap"><table>
+      <thead><tr><th>Threat</th><th>Mechanism</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td>Huge pastes freeze the tab</td><td>Downsample ladder + hard limits</td><td class="mono">data.js:23-24, constants.js:45-46</td></tr>
+        <tr><td>Sliders firing hundreds of renders</td><td>One 300ms debounced render bridge, mandated by convention</td><td class="mono">constants.js:51; rules.md:85</td></tr>
+        <tr><td>Every new chart type costs many file edits</td><td>Registry + capability auto-discovery cuts it to 2 files</td><td class="mono">registry.js:13; todo.md Success Metrics (6&rarr;2)</td></tr>
+        <tr><td>Formula-driven charts fail data validation</td><td><code>isSelfManaged</code> flag + validate-only-when-data</td><td class="mono">render.js:40-48</td></tr>
+        <tr><td>Exports lose custom canvas drawings</td><td>Inline plugins preserved when the config is cloned</td><td class="mono">1d659bc (2026-05-04)</td></tr>
+        <tr><td>Theme flip leaves stale chart colors</td><td><code>getThemeColors()</code> read inside <code>beforeDraw</code> at draw time</td><td class="mono">rules.md:111; charts/base-options.js</td></tr>
+      </tbody>
+    </table></div>
+    <div class="mmd-wrap" style="margin-top:14px">
+      <div class="mermaid">flowchart LR
+  T1["THREAT - 50K rows freeze the tab"] --> M1["GUARD - downsample ladder 500 then 2K, hard stop 50K"]
+  T2["THREAT - sliders fire hundreds of renders"] --> M2["GUARD - one 300ms debounced render bridge"]
+  T3["THREAT - a new chart type costs many file edits"] --> M3["GUARD - registry descriptor cuts it to 2 files"]
+  T4["THREAT - formula charts fail data validation"] --> M4["GUARD - isSelfManaged skips the empty-data gate"]
+  T5["THREAT - exports lose connectors and pills"] --> M5["GUARD - inline plugins preserved when cloning"]
+  T6["THREAT - theme flip leaves stale chart colors"] --> M6["GUARD - getThemeColors read at draw time"]
+  classDef threat fill:#131a2a,stroke:#f87171,color:#e8edf7;
+  classDef mech fill:#131a2a,stroke:#60a5fa,color:#e8edf7;
+  class T1,T2,T3,T4,T5,T6 threat
+  class M1,M2,M3,M4,M5,M6 mech</div>
+      <p class="mmd-note">Diagram 2 of 6 &mdash; why-it-works pairs. Source text is the offline fallback.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>How it works end-to-end</h3>
+    <div class="twrap"><table>
+      <thead><tr><th>Step</th><th>Module</th><th>What happens</th><th>On failure</th></tr></thead>
+      <tbody>
+        <tr><td>1. Input</td><td class="mono">index.html + ui/clipboard.js</td><td>Paste, file upload, or manual rows in the Data panel; format toggle csv/tsv/json</td><td>&mdash;</td></tr>
+        <tr><td>2. Parse</td><td class="mono">data.js parseInputText()</td><td>PapaParse (auto-delimiter) or JSON.parse; builds <code>{labels, datasets}</code></td><td>Toast error, textarea preserved</td></tr>
+        <tr><td>3. Downsample</td><td class="mono">data.js applyDownsampling()</td><td>500/2,000-row ladder to monthly/quarterly buckets &rarr; <code>rawParsedData</code> stays pristine</td><td>Warning toast at 10K, hard stop at 50K</td></tr>
+        <tr><td>4. Zoom</td><td class="mono">data.js applyZoom()</td><td>Slices the range to the zoom window (if enabled)</td><td>&mdash;</td></tr>
+        <tr><td>5. Validate</td><td class="mono">charts/registry.js validateChartData()</td><td>Per-chart column/type checks with helpful messages</td><td>Warning vs error decided per message; errors block render</td></tr>
+        <tr><td>6. Build</td><td class="mono">charts/&lt;type&gt;.js builder</td><td>Returns a full Chart.js config; self-managed charts build their own options + data</td><td>&mdash;</td></tr>
+        <tr><td>7. Render</td><td class="mono">render.js renderChart()</td><td>Destroys previous <code>chartInstance</code>, creates the new one; theme plugins re-read colors at draw time</td><td>&mdash;</td></tr>
+      </tbody>
+    </table></div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="mmd-wrap">
+        <div class="mermaid">flowchart TD
+  A["Input textarea"] --> B["parseInputText"]
+  B --> C["rawParsedData"]
+  C --> D{"row count"}
+  D -- "500 or fewer" --> E["parsedData unchanged"]
+  D -- "501 to 2000" --> F["monthly downsample"]
+  D -- "over 2000" --> G["quarterly downsample"]
+  F --> E
+  G --> E
+  E --> H["applyZoom"]
+  H --> I{"self-managed chart"}
+  I -- "yes" --> K["builder generates its own data"]
+  I -- "no" --> J{"validateChartData"}
+  J -- "error" --> X["toast error - render blocked"]
+  J -- "ok" --> L["builder context"]
+  K --> N["chartInstance rendered"]
+  L --> N
+  classDef stage fill:#182136,stroke:#F7931A,color:#e8edf7;
+  classDef gate fill:#131a2a,stroke:#fbbf24,color:#e8edf7;
+  classDef bad fill:#131a2a,stroke:#f87171,color:#e8edf7;
+  class A,B,C,E,H,L,N stage
+  class D,I,J gate
+  class X bad</div>
+        <p class="mmd-note">Diagram 3 of 6 &mdash; the pipeline with its two decision gates.</p>
+      </div>
+      <div class="mmd-wrap">
+        <div class="mermaid">stateDiagram-v2
+  [*] --> RawText: paste or upload
+  RawText --> RawParsed: parseInputText succeeds
+  RawText --> RawText: parse error toast
+  RawParsed --> Parsed: applyDownsampling
+  Parsed --> Display: applyZoom
+  Display --> Gate: validation
+  Gate --> Rendered: data valid
+  Gate --> Blocked: error message
+  Blocked --> RawText: user edits input
+  Rendered --> Destroyed: any re-render
+  Destroyed --> Rendered: rebuild from state
+  Rendered --> DataStore: switch chart type
+  DataStore --> RawText: switch back
+  Rendered --> [*]: tab closed</div>
+        <p class="mmd-note">Diagram 5 of 6 &mdash; entity lifecycle of one chart session, including the validation
+        guard (render.js:40-72) and the per-type data store (<code>state.chartDataStore</code>).</p>
+      </div>
+    </div>
+    <div class="mmd-wrap" style="margin-top:14px">
+      <div class="mermaid">flowchart LR
+  subgraph IN["Messy inputs"]
+    CSV["CSV paste"]
+    TSV["TSV from Sheets"]
+    JSN["JSON array"]
+    MAN["Manual rows"]
+  end
+  subgraph MAC["The machine - browser only"]
+    P["PapaParse parseInputText"]
+    DS["applyDownsampling"]
+    Z["applyZoom"]
+    R["registry 19 descriptors"]
+    B["builder returns Chart.js config"]
+  end
+  subgraph OUT["One comparable output"]
+    C["rendered canvas"]
+    E["PNG JPG WebP SVG at social sizes"]
+  end
+  CSV --> P
+  TSV --> P
+  JSN --> P
+  MAN --> P
+  P --> DS --> Z --> R --> B --> C --> E
+  classDef input fill:#131a2a,stroke:#60a5fa,color:#e8edf7;
+  classDef machine fill:#182136,stroke:#F7931A,color:#e8edf7;
+  classDef output fill:#131a2a,stroke:#34d399,color:#e8edf7;
+  class CSV,TSV,JSN,MAN input
+  class P,DS,Z,R,B machine
+  class C,E output</div>
+      <p class="mmd-note">Diagram 1 of 6 &mdash; the idea: messy inputs in, one comparable branded output out.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Repo map (real paths)</h3>
+    <div class="twrap"><table>
+      <thead><tr><th>Path</th><th>Lines</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">index.html</td><td>1,142</td><td>All markup: 3-column layout, every control, CDN tags</td></tr>
+        <tr><td class="mono">styles.css</td><td>1,923</td><td>All CSS: tokens &rarr; theme blocks &rarr; layout &rarr; components</td></tr>
+        <tr><td class="mono">src/main.js</td><td>460</td><td>Entry: init(), event wiring, sample data</td></tr>
+        <tr><td class="mono">src/render.js</td><td>94</td><td>Render dispatcher &mdash; registry lookup, not a switch</td></tr>
+        <tr><td class="mono">src/state.js</td><td>&mdash;</td><td>Single mutable state; <code>charts.*</code> namespace; chartDataStore</td></tr>
+        <tr><td class="mono">src/dom.js</td><td>267</td><td>DOM cache, 245 refs queried once at load</td></tr>
+        <tr><td class="mono">src/charts/registry.js</td><td>149</td><td>19 descriptors, capabilities, validateChartData</td></tr>
+        <tr><td class="mono">src/charts/base-options.js</td><td>741</td><td>FONTS tokens, tooltip/legend helpers, theme plugins</td></tr>
+        <tr><td class="mono">src/charts/*.js (19 builders)</td><td>&mdash;</td><td>One file per chart type; innovator.js 541 lines is the largest</td></tr>
+        <tr><td class="mono">src/ui/*.js (13 modules)</td><td>&mdash;</td><td>theme, colors, settings (116 wired inputs), export, branding, dual-axis, &hellip;</td></tr>
+        <tr><td class="mono">src/data.js</td><td>619</td><td>Parse pipeline, downsampling, zoom</td></tr>
+        <tr><td class="mono">inflation/</td><td>&mdash;</td><td>Standalone 8-variant prototype playground (second app in the repo)</td></tr>
+        <tr><td class="mono">dist/</td><td>&mdash;</td><td>Committed build output, 60 days stale</td></tr>
+        <tr><td class="mono">.agent/rules/rules.md</td><td>160</td><td>AI assistant rules &mdash; committed 2026-04-27 (87e9e6a)</td></tr>
+        <tr><td class="mono">todo.md</td><td>286</td><td>8-phase plan with checkboxes &mdash; the plan-vs-actual record</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="section">
+    <h3>Running services, data model, API, access</h3>
+    <div class="twrap"><table>
+      <thead><tr><th>Service / store</th><th>Kind</th><th>Limits</th></tr></thead>
+      <tbody>
+        <tr><td>Dev server</td><td>Ad-hoc static server (python3 / npx serve / php)</td><td>None; developer-run, not deployed</td></tr>
+        <tr><td>Containers</td><td><strong>None</strong></td><td>No Dockerfile, no compose file in the repo</td></tr>
+        <tr><td>state.js object</td><td>In-memory, single mutable</td><td>Cleared on reload; <code>charts.*</code> namespaced; chartDataStore keyed by type</td></tr>
+        <tr><td>localStorage</td><td>Persistent, tiny</td><td>Theme choice only</td></tr>
+        <tr><td>IndexedDB</td><td><strong>Proposed, not built</strong></td><td>feature-request/save-search-request.md recommends it for chart save/search</td></tr>
+      </tbody>
+    </table></div>
+    <p class="small" style="margin-top:10px"><strong>API surface:</strong> none public &mdash; the app is a page, not a service.
+    The internal surface is the registry contract (<code>registerChart / getChartDescriptor / getAllChartDescriptors /
+    getCapabilities / validateChartData</code>, registry.js:13-36) plus three <code>window.__</code> bridges
+    (<code>__renderChart</code>, <code>__debouncedRender</code>, <code>__updateAfterDataLoad</code>) that break the import DAG.
+    <strong>Access model:</strong> no auth, no accounts, no network calls after CDN load.</p>
+  </div>
+
+  <div class="section">
+    <h3>Two-minute reading order</h3>
+    <ol style="max-width:78ch">
+      <li><code>README.md</code> &mdash; Overview + Architecture + ASCII wireframe (what the product is)</li>
+      <li><code>CLAUDE.md</code> &mdash; architecture, conventions, how to add a chart (with the caveats in the discrepancies table, Data room)</li>
+      <li><code>.agent/rules/rules.md</code> &mdash; the design-token and component law</li>
+      <li><code>src/charts/registry.js</code> &mdash; the single source of truth</li>
+      <li><code>src/render.js</code> &mdash; the whole dispatch in 94 lines</li>
+      <li><code>todo.md</code> &mdash; what was planned vs what shipped</li>
+    </ol>
+    <p class="small"><strong>Glossary:</strong> <em>parsedData</em> (post-downsample data actually rendered) &middot;
+    <em>rawParsedData</em> (pre-downsample original) &middot; <em>chartInstance</em> (live Chart.js object, destroyed each re-render) &middot;
+    <em>currentChartType</em> (string id into the registry) &middot; <em>descriptor / capabilities</em> (registry entry + feature flags) &middot;
+    <em>self-managed chart</em> (builds its own data &amp; options) &middot; <em>downsample</em> (time-bucketing ladder) &middot;
+    <em>window.__ bridges</em> (globals that break the import DAG).</p>
+  </div>
+
+  <div class="callout">
+    <h4>Where the bodies are buried</h4>
+    <ul>
+      <li><strong>stash@{0} &mdash; 4,814 lines</strong>: the entire product documentation set (hub/PRD.md 415, TECHNICAL_SPECIFICATION.md 862, USER_MANUAL.md 688, STYLE_GUIDE.md 556), 7 Kilo Code plan files (one dated 2026-03-20 &mdash; before the repo exists), and an 883-line auto-comparison.html. One <code>git stash drop</code> from oblivion.</li>
+      <li><strong>stash@{2} &mdash; the abandoned test setup</strong>: test/utilities.test.js (153 lines), package.json, LICENSE and .gitignore &mdash; none of which are committed to main. The repo has no license file and no tests.</li>
+      <li><strong>dist/ is a false signal</strong>: committed, last built 2026-04-30 (28e7cd7), 60 days behind main.</li>
+      <li><strong>.vite/deps/ is tracked</strong> in a repository whose first law is &ldquo;no build system, no npm&rdquo;.</li>
+      <li><strong>CLAUDE.md has drifted</strong>: says switch-dispatch (it is registry dispatch), lists no registry.js/dual-bar.js/inflation.js, and cites CDN versions (4.4.7/5.4.1) superseded in ee6a9fd.</li>
+      <li><strong>The brand is forked</strong>: README says &ldquo;Simple Charts&rdquo;, the stashed PRD says &ldquo;Charts BeamDelta&rdquo;, and the rename commit 8d04f14 sits unmerged on <code>brand-update</code>.</li>
+      <li><strong>Small but real</strong>: settings.js duplicates <code>dom.innovatorDisruptiveStart/Peak</code> in its 116-entry input array (settings.js:253-254); inflation/ is a second app sharing no code with the first.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================== TAB 2: TIMELINE ============================== -->
+<section role="tabpanel" id="panel-timeline" aria-labelledby="tabbtn-timeline" hidden>
+  <h2 class="paneltitle">Timeline</h2>
+  <p class="lede">Four eras. Filter by chip; open the accordions inside each month chapter for decisions (with the
+  rejected alternative), challenges, blockers, trade-offs, and copyable evidence.</p>
+  <div class="chips" id="eraChips" role="group" aria-label="Era filter">
+    <button class="chip" data-era="all" aria-pressed="true">All eras</button>
+    <button class="chip" data-era="prologue" aria-pressed="false">Prologue (pre-repo)</button>
+    <button class="chip" data-era="april" aria-pressed="false">April 2026 &middot; 47 commits</button>
+    <button class="chip" data-era="may" aria-pressed="false">May 2026 &middot; 19 commits</button>
+    <button class="chip" data-era="june" aria-pressed="false">June 2026 &middot; 4 commits</button>
+  </div>
+
+  <div class="section era" data-era="prologue">
+    <h3>Prologue &mdash; before the repo (2026-03-20 &rarr; 2026-04-15)</h3>
+    <div class="card">
+      <p>The repo&rsquo;s first commit is a <strong>squash</strong>: 6,814 lines in one commit (036d040) &mdash; a 1,208-line
+      <code>app.js</code>, 344-line index.html, 887-line styles.css, and a 4,375-line cryptocurrency CSV. History before
+      2026-04-16 does not exist in git &mdash; but it happened: <strong>stash@{0} contains a Kilo Code plan dated
+      2026-03-20</strong> (<code>.kilo/plans/1773987449-happy-mokey.md</code>), and five more plans follow through 2026-04-27.
+      The story therefore starts at chapter two.</p>
+    </div>
+    <details class="acc"><summary>Decision: squash history into one &ldquo;initial commit&rdquo;</summary>
+      <div class="acc-body"><ul>
+        <li><span class="choose">Chose:</span> one clean 6,814-line initial commit (036d040, 2026-04-16).</li>
+        <li><span class="rejected">Rejected:</span> importing real pre-history &mdash; would have exposed scratch work and the crypto dataset.</li>
+        <li><span class="rejected">Cost accepted:</span> ~4 weeks of evolution are invisible; day-one file sizes look like magic.</li>
+      </ul></div>
+    </details>
+    <details class="acc"><summary>Evidence</summary>
+      <div class="acc-body"><div class="hashrow">
+        <span class="hash">036d040</span><button class="copybtn" type="button" data-copy="036d040" aria-label="Copy hash 036d040">copy</button>
+        <span class="small">initial commit &mdash; 4 files, 6,814 insertions</span>
+      </div>
+      <p class="small" style="margin-top:8px">Stash evidence: <code>git show 'stash@{0}:.kilo/plans/1773987449-happy-mokey.md'</code> &mdash; filename epoch 1773987449 = 2026-03-20.</p></div>
+    </details>
+    <p class="small"><strong>Sets up:</strong> a clean slate for the April burst &mdash; and a permanently invisible pre-history.</p>
+  </div>
+
+  <div class="section era" data-era="april">
+    <h3>April 2026 &mdash; The Big Bang (47 commits, 67% of all history, in 15 days)</h3>
+    <div class="card">
+      <p>Theme: <strong>monolith &rarr; machine</strong>. app.js grows 1,208 &rarr; 4,417 lines in six days of additive
+      building, then the whole thing is split into a modular <code>src/</code> tree &mdash; inside a feature commit.
+      Thirteen chart types, the registry rewrite, the committed AI-rules doc, and the comparison-chart family all land
+      this month. The app is renamed twice: ChartForge &rarr; Simple Charts on day two (57d7c31).</p>
+    </div>
+    <details class="acc" open><summary>Decisions (chosen vs rejected)</summary>
+      <div class="acc-body"><ul>
+        <li><span class="choose">Chose:</span> build-then-split &mdash; additive monolith until 2026-04-21, modular split on 04-22. <span class="rejected">Rejected:</span> modular-from-start (slower iteration); cost: 6 days of rework.</li>
+        <li><span class="choose">Chose:</span> land the monolith deletion inside feature commit c025719 (branding + clipboard + color pickers + dual-axis). <span class="rejected">Rejected:</span> a separate refactor commit; cost: history reads as if features deleted the monolith.</li>
+        <li><span class="choose">Chose:</span> registry + capabilities as single source of truth (28e7cd7, 4649433). <span class="rejected">Rejected:</span> keep the 6-if/11-case switch; cost: 3 days with no user-visible feature.</li>
+        <li><span class="choose">Chose:</span> commit the AI assistant rules into the repo (87e9e6a). <span class="rejected">Rejected:</span> keep tool rules local; benefit: the law travels with the code.</li>
+        <li><span class="choose">Chose:</span> upgrade CDN deps mid-flight (ee6a9fd: Chart.js 4.5.1, PapaParse 5.5.3). <span class="rejected">Cost:</span> docs left citing 4.4.7/5.4.1 to this day.</li>
+        <li><span class="choose">Chose:</span> delete the 4,375-line crypto CSV (&ldquo;clean up: removed unused file&rdquo;, 08fea6a). <span class="rejected">Rejected:</span> keeping demo data in-tree.</li>
+      </ul></div>
+    </details>
+    <details class="acc"><summary>Challenges</summary>
+      <div class="acc-body"><ul>
+        <li>Settings visibility was 39 <code>.includes(t)</code> calls scattered in settings.js &mdash; replaced by capability flags in Phase 3 (todo.md &sect;3.4).</li>
+        <li>Chart-specific state sat flat on the global state object; namespacing under <code>state.charts.*</code> came in May (788c2f5).</li>
+        <li>Rendering throughput: every color/zoom tweak re-rendered synchronously &mdash; fixed with the debounced bridge (be14bfc, 88f65e8).</li>
+      </ul></div>
+    </details>
+    <details class="acc"><summary>Blockers hit</summary>
+      <div class="acc-body"><ul>
+        <li><strong>Debounce race, act I</strong> (2026-04-19/20): be14bfc raised debounce time; 88f65e8 replaced direct <code>renderChart</code> calls for color and zoom paths. Same bug class returns in May &mdash; see Blockers tab.</li>
+        <li><strong>The node_modules mirage</strong> (2026-04-17): commits 5b8164b/3f8c9a8 are titled &ldquo;add Zod v4 and Kilocode SDK dependencies to project node_modules&rdquo; / &ldquo;update kilo dependencies&rdquo; but touch only app.js, index.html, styles.css. No node_modules was ever tracked; the experiment was abandoned within hours; <code>.vite/deps/</code> artifacts remain tracked.</li>
+      </ul></div>
+    </details>
+    <details class="acc"><summary>Trade-offs accepted</summary>
+      <div class="acc-body"><ul>
+        <li>CDN globals over npm &mdash; version drift between docs and reality becomes possible (and happened).</li>
+        <li>Chart.js + plugins over D3 &mdash; fast to build, ceiling on exotic visuals.</li>
+        <li>Bitcoin-orange brand <code>#F7931A</code> (rules.md:57) &mdash; strong identity, fails AA contrast on white (light theme needs the darker <code>#C2410C</code> variant).</li>
+      </ul></div>
+    </details>
+    <details class="acc"><summary>Evidence (click to copy)</summary>
+      <div class="acc-body"><div class="hashrow">
+        <span class="hash">036d040</span><button class="copybtn" type="button" data-copy="036d040" aria-label="Copy 036d040">copy</button>
+        <span class="hash">ecb4e2d</span><button class="copybtn" type="button" data-copy="ecb4e2d" aria-label="Copy ecb4e2d">copy</button>
+        <span class="hash">57d7c31</span><button class="copybtn" type="button" data-copy="57d7c31" aria-label="Copy 57d7c31">copy</button>
+        <span class="hash">5b8164b</span><button class="copybtn" type="button" data-copy="5b8164b" aria-label="Copy 5b8164b">copy</button>
+        <span class="hash">ba28153</span><button class="copybtn" type="button" data-copy="ba28153" aria-label="Copy ba28153">copy</button>
+        <span class="hash">be14bfc</span><button class="copybtn" type="button" data-copy="be14bfc" aria-label="Copy be14bfc">copy</button>
+        <span class="hash">88f65e8</span><button class="copybtn" type="button" data-copy="88f65e8" aria-label="Copy 88f65e8">copy</button>
+        <span class="hash">f93e364</span><button class="copybtn" type="button" data-copy="f93e364" aria-label="Copy f93e364">copy</button>
+        <span class="hash">1737ac9</span><button class="copybtn" type="button" data-copy="1737ac9" aria-label="Copy 1737ac9">copy</button>
+        <span class="hash">08fea6a</span><button class="copybtn" type="button" data-copy="08fea6a" aria-label="Copy 08fea6a">copy</button>
+        <span class="hash">d50fb7b</span><button class="copybtn" type="button" data-copy="d50fb7b" aria-label="Copy d50fb7b">copy</button>
+        <span class="hash">c025719</span><button class="copybtn" type="button" data-copy="c025719" aria-label="Copy c025719">copy</button>
+        <span class="hash">9135a51</span><button class="copybtn" type="button" data-copy="9135a51" aria-label="Copy 9135a51">copy</button>
+        <span class="hash">87e9e6a</span><button class="copybtn" type="button" data-copy="87e9e6a" aria-label="Copy 87e9e6a">copy</button>
+        <span class="hash">ee6a9fd</span><button class="copybtn" type="button" data-copy="ee6a9fd" aria-label="Copy ee6a9fd">copy</button>
+        <span class="hash">c133e42</span><button class="copybtn" type="button" data-copy="c133e42" aria-label="Copy c133e42">copy</button>
+        <span class="hash">f4cd692</span><button class="copybtn" type="button" data-copy="f4cd692" aria-label="Copy f4cd692">copy</button>
+        <span class="hash">28e7cd7</span><button class="copybtn" type="button" data-copy="28e7cd7" aria-label="Copy 28e7cd7">copy</button>
+      </div></div>
+    </details>
+    <p class="small"><strong>Sets up:</strong> the registry makes the next 6 chart types ~2-file additions, and the
+    committed rules doc makes AI-assisted work consistent. <strong>What April proves:</strong> a solo + AI fleet can
+    ship a differentiated product in 15 days; it does not yet prove it can maintain one.</p>
+  </div>
+
+  <div class="section era" data-era="may">
+    <h3>May 2026 &mdash; Consolidation (19 commits, front-loaded into two days)</h3>
+    <div class="card">
+      <p>Theme: <strong>quality, export fidelity, and the platform</strong>. A four-day sprint (May 1-4) lands the export
+      pipeline, data export formats, JSDoc sweep, validation, and per-chart state namespacing. Then a 7-day silence,
+      a two-day axis-formatting pass (May 12-13), and another 29-day silence. The month ends with the platform
+      measurably better and the test suite still in a stash.</p>
+    </div>
+    <details class="acc" open><summary>Decisions (chosen vs rejected)</summary>
+      <div class="acc-body"><ul>
+        <li><span class="choose">Chose:</span> registry-native validation with helpful per-chart messages (788c2f5 Phase 3.3). <span class="rejected">Rejected:</span> silent best-effort rendering.</li>
+        <li><span class="choose">Chose:</span> preserve inline plugins on export clone (1d659bc) instead of re-drawing connectors after export. <span class="rejected">Root cause:</span> <code>doExport()</code> replaced the whole plugins array.</li>
+        <li><span class="choose">Chose:</span> flip default theme to light (0c9b43f, 2026-04-30 boundary). <span class="rejected">Rejected:</span> dark-first default; the brand orange reads better on dark.</li>
+        <li><span class="choose">Chose:</span> defer the test suite &mdash; package.json + test/utilities.test.js stay in stash@{2}. <span class="rejected">Rejected:</span> committing them (would have required admitting a dev-toolchain layer into a no-build repo).</li>
+      </ul></div>
+    </details>
+    <details class="acc"><summary>Challenges</summary>
+      <div class="acc-body"><ul>
+        <li>Self-managed charts (innovator, kano, timeline) generate their own data &mdash; the validation gate blocked them with &ldquo;No data to render&rdquo;. Fix shipped in render.js:40-48, yet todo.md &sect;5.1 is still unchecked &mdash; a plan-vs-actual conflict (see Data room).</li>
+        <li>Export fidelity: dumbbell connectors, bubble-compare arrows and ratio pills vanished from PNGs until inline-plugin preservation landed.</li>
+      </ul></div>
+    </details>
+    <details class="acc"><summary>Blockers hit</summary>
+      <div class="acc-body"><ul>
+        <li><strong>Debounce race, act II</strong> (dfc2798, 2026-05-04): segmented group updates still used the immediate render &mdash; the same bug class fixed twice in two weeks.</li>
+        <li><strong>Radar axis hardcoded</strong> (ad7bac1, 2026-05-12): <code>suggestedMax: 100</code> clamped real data; replaced with <code>beginAtZero: true</code>.</li>
+        <li><strong>Segmented validation too strict</strong> (150feb4, 2026-05-01): required &ge;2 value columns; relaxed to &ge;1.</li>
+      </ul></div>
+    </details>
+    <details class="acc"><summary>Trade-offs accepted</summary>
+      <div class="acc-body"><ul>
+        <li>Warning-vs-error decided by sniffing the message text (<code>err.includes('ignored')</code>, render.js:47) instead of structured error objects &mdash; brittle but shipped.</li>
+        <li>Per-chart textarea/data cache (<code>state.chartDataStore</code>) costs memory to preserve user data on type switches.</li>
+        <li>JSDoc everywhere (f93e364, a3aace2) instead of tests &mdash; documentation of intent, zero verification of behavior.</li>
+      </ul></div>
+    </details>
+    <details class="acc"><summary>Evidence (click to copy)</summary>
+      <div class="acc-body"><div class="hashrow">
+        <span class="hash">150feb4</span><button class="copybtn" type="button" data-copy="150feb4" aria-label="Copy 150feb4">copy</button>
+        <span class="hash">c589cbf</span><button class="copybtn" type="button" data-copy="c589cbf" aria-label="Copy c589cbf">copy</button>
+        <span class="hash">1d659bc</span><button class="copybtn" type="button" data-copy="1d659bc" aria-label="Copy 1d659bc">copy</button>
+        <span class="hash">4791d71</span><button class="copybtn" type="button" data-copy="4791d71" aria-label="Copy 4791d71">copy</button>
+        <span class="hash">a3aace2</span><button class="copybtn" type="button" data-copy="a3aace2" aria-label="Copy a3aace2">copy</button>
+        <span class="hash">dfc2798</span><button class="copybtn" type="button" data-copy="dfc2798" aria-label="Copy dfc2798">copy</button>
+        <span class="hash">788c2f5</span><button class="copybtn" type="button" data-copy="788c2f5" aria-label="Copy 788c2f5">copy</button>
+        <span class="hash">ad7bac1</span><button class="copybtn" type="button" data-copy="ad7bac1" aria-label="Copy ad7bac1">copy</button>
+        <span class="hash">cb03c7e</span><button class="copybtn" type="button" data-copy="cb03c7e" aria-label="Copy cb03c7e">copy</button>
+        <span class="hash">474b8c3</span><button class="copybtn" type="button" data-copy="474b8c3" aria-label="Copy 474b8c3">copy</button>
+      </div></div>
+    </details>
+    <p class="small"><strong>Sets up:</strong> per-axis formats and log-scale ticks (cb03c7e, b625be1, 474b8c3) make the
+    chart engine credible for real analyst data. <strong>What May proves:</strong> the platform can absorb hardening
+    &mdash; but sustained maintenance never arrives.</p>
+  </div>
+
+  <div class="section era" data-era="june">
+    <h3>June 2026 &mdash; The long tail (4 commits, &minus;89% velocity)</h3>
+    <div class="card">
+      <p>Two commits on Jun 13 (waterfall polish 7806271; dual-bar chart 78b7eb8 &mdash; the first chart written
+      registry-native from birth), a 16-day gap, then two commits on Jun 29: the standalone inflation gallery
+      (<code>inflation/</code>, 8 live variants) and its integrated Value-Track chart (28e81d4), closed by the README
+      update (4b236bb). The last commit is documentation &mdash; the code had already stopped moving.</p>
+    </div>
+    <details class="acc" open><summary>Decisions (chosen vs rejected)</summary>
+      <div class="acc-body"><ul>
+        <li><span class="choose">Chose:</span> ship new chart shapes (dual-bar, inflation) over the save/search library.
+        <span class="rejected">Rejected:</span> building persistence now &mdash; it was instead fully designed in
+        <code>feature-request/save-search-request.md</code> (IndexedDB + portable files + schema versioning), unbuilt.</li>
+        <li><span class="choose">Chose:</span> prototype the inflation calculator as a standalone second app (<code>inflation/</code>), then integrate one variant into the registry. <span class="rejected">Cost:</span> a second app sharing no code with the first.</li>
+        <li><span class="choose">Chose:</span> merge via fast-forward from <code>feat/inflation-chart</code> (reflog: HEAD@{0} &ldquo;merge origin/feat/inflation-chart: Fast-forward&rdquo;) &mdash; the only branch ever fully merged and deleted upstream-side (remote still exists).</li>
+      </ul></div>
+    </details>
+    <details class="acc"><summary>Challenges &amp; trade-offs</summary>
+      <div class="acc-body"><ul>
+        <li>Velocity decay: 61 commits in the first 19 days, 9 in the following 56. The project shifted from
+        &ldquo;build the machine&rdquo; to &ldquo;feed the machine&rdquo; &mdash; and the queue is now a feature-request doc, not a roadmap.</li>
+        <li>Each new chart still touches dom.js, settings.js, main.js sample data despite the registry &mdash; the
+        2-files-per-chart promise holds only for the chart module itself (todo.md &sect;7.5, &sect;8.2 wiring lists prove it).</li>
+      </ul></div>
+    </details>
+    <details class="acc"><summary>Evidence (click to copy)</summary>
+      <div class="acc-body"><div class="hashrow">
+        <span class="hash">7806271</span><button class="copybtn" type="button" data-copy="7806271" aria-label="Copy 7806271">copy</button>
+        <span class="hash">78b7eb8</span><button class="copybtn" type="button" data-copy="78b7eb8" aria-label="Copy 78b7eb8">copy</button>
+        <span class="hash">28e81d4</span><button class="copybtn" type="button" data-copy="28e81d4" aria-label="Copy 28e81d4">copy</button>
+        <span class="hash">4b236bb</span><button class="copybtn" type="button" data-copy="4b236bb" aria-label="Copy 4b236bb">copy</button>
+      </div></div>
+    </details>
+    <p class="small"><strong>Sets up:</strong> the current fork in the road &mdash; persistence (save/search, designed) vs
+    more chart types (shipped). The repo stops exactly at the decision point.</p>
+  </div>
+</section>
+
+<!-- ============================== TAB 3: SCORECARD ============================== -->
+<section role="tabpanel" id="panel-score" aria-labelledby="tabbtn-score" hidden>
+  <h2 class="paneltitle">Rubric scorecard</h2>
+  <p class="lede">Fourteen rubrics fit to this domain (a client-side analyst tool), each scored 1-10 with evidence.
+  Weighted-average (unweighted mean): <strong class="mono">6.7 / 10</strong> &mdash; a strong prototype platform
+  with real operational debt.</p>
+  <div id="scoreList">
+    <div class="score-row"><div class="score-top"><span class="score-name">1 &middot; Architecture discipline</span><span class="score-val">9/10</span></div><div class="bar"><div class="bar-fill" data-w="90"></div></div>
+      <p class="score-just">Strict DAG with documented <code>window.__</code> bridges, named exports only, a 245-ref DOM cache queried once, and a registry as single source of truth. The 94-line render dispatcher is the proof the architecture is real, not aspirational.</p>
+      <span class="small mono">registry.js:1-36; render.js:94 lines; todo.md Success Metrics; rules.md:31-36</span></div>
+    <div class="score-row"><div class="score-top"><span class="score-name">2 &middot; Refactor courage &amp; timing</span><span class="score-val">8/10</span></div><div class="bar"><div class="bar-fill" data-w="80"></div></div>
+      <p class="score-just">Splitting a 4,417-line monolith at day 6 and rewriting dispatch into a registry at week 2 took judgment most solo projects never show. The deduction: both refactors hide inside feature commits, so the history never shows the true cost.</p>
+      <span class="small mono">c025719 (split inside feature commit); 28e7cd7 + 4649433 (registry)</span></div>
+    <div class="score-row"><div class="score-top"><span class="score-name">3 &middot; State &amp; data model</span><span class="score-val">7/10</span></div><div class="bar"><div class="bar-fill" data-w="70"></div></div>
+      <p class="score-just">Single mutable state with <code>charts.*</code> namespacing and a per-type data store is coherent and fast. The structural cost: the bulk of UI truth lives in ~116 DOM inputs read at render time, which is precisely why the save/search feature is hard and was designed but not built.</p>
+      <span class="small mono">788c2f5; settings.js:236-281; feature-request/save-search-request.md</span></div>
+    <div class="score-row"><div class="score-top"><span class="score-name">4 &middot; Testing</span><span class="score-val">2/10</span></div><div class="bar"><div class="bar-fill" data-w="20"></div></div>
+      <p class="score-just">Zero committed tests at 12,844 LOC. The intent existed &mdash; a 153-line test file plus package.json sit in stash@{2} &mdash; but was abandoned, leaving every regression guard to be human attention. The two debounce fixes and the export-plugin bug are the direct receipts.</p>
+      <span class="small mono">stash@{2} test/utilities.test.js; CLAUDE.md &ldquo;No test suite exists&rdquo;</span></div>
+    <div class="score-row"><div class="score-top"><span class="score-name">5 &middot; Documentation</span><span class="score-val">7/10</span></div><div class="bar"><div class="bar-fill" data-w="70"></div></div>
+      <p class="score-just">A 730-line README with wireframe and ToC, a 160-line AI-rules doc, and a JSDoc sweep across modules &mdash; exceptional for a solo project. But docs rot: CLAUDE.md is wrong on dispatch style, versions, and file list; the PRD lives in a stash; rules.md says &ldquo;14 types&rdquo; of 19.</p>
+      <span class="small mono">README.md (730 ln); 87e9e6a; f93e364; discrepancy table in Data room</span></div>
+    <div class="score-row"><div class="score-top"><span class="score-name">6 &middot; DX / onboarding</span><span class="score-val">9/10</span></div><div class="bar"><div class="bar-fill" data-w="90"></div></div>
+      <p class="score-just">No build, no install, no accounts: clone, run one static server, open the page. Five pinned CDN tags are the whole dependency story. The per-chart data-format hint panel (registry-driven) self-documents each chart&rsquo;s expected input.</p>
+      <span class="small mono">CLAUDE.md dev server section; registry dataHint/dataExample (todo.md &sect;3.3)</span></div>
+    <div class="score-row"><div class="score-top"><span class="score-name">7 &middot; Dependency discipline</span><span class="score-val">8/10</span></div><div class="bar"><div class="bar-fill" data-w="80"></div></div>
+      <p class="score-just">Five runtime CDN dependencies, all version-pinned in markup, zero npm runtime deps. Deduction: a mid-flight upgrade (ee6a9fd) was never propagated to the docs, and build-tool artifacts (<code>.vite/deps/</code>) from the abandoned experiment are still tracked.</p>
+      <span class="small mono">index.html CDN tags; ee6a9fd; git ls-files .vite</span></div>
+    <div class="score-row"><div class="score-top"><span class="score-name">8 &middot; Performance engineering</span><span class="score-val">7/10</span></div><div class="bar"><div class="bar-fill" data-w="70"></div></div>
+      <p class="score-just">A real ladder (500/2,000-row downsampling, 10K warning, 50K hard stop), a 300ms debounce convention, canvas zoom, and an offscreen export canvas with quality scaling. Deduction: no measurement culture &mdash; no traces, no budgets, only thresholds.</p>
+      <span class="small mono">data.js:23-24,530-532; constants.js:44-52; ui/export.js:133-153</span></div>
+    <div class="score-row"><div class="score-top"><span class="score-name">9 &middot; Guardrails &amp; validation</span><span class="score-val">7/10</span></div><div class="bar"><div class="bar-fill" data-w="70"></div></div>
+      <p class="score-just">Per-chart validation with actionable messages plus canvas limits (30 bars, 12/10 slices) protects the product from its users&rsquo; worst pastes. Deduction: warning-vs-error is decided by sniffing message substrings &mdash; one reworded string away from silently blocking renders.</p>
+      <span class="small mono">registry.js validateChartData; render.js:47,69; constants.js:47-49</span></div>
+    <div class="score-row"><div class="score-top"><span class="score-name">10 &middot; Git hygiene</span><span class="score-val">4/10</span></div><div class="bar"><div class="bar-fill" data-w="40"></div></div>
+      <p class="score-just">Conventional prefixes are used (52 feat / 6 fix / 2 docs / 1 each refactor, chore, clean up, update &mdash; plus 6 untyped), but two commits describe dependencies that were never committed, refactors hide in feature commits, and neither LICENSE nor .gitignore exists on main (both live in stash@{2}).</p>
+      <span class="small mono">5b8164b, 3f8c9a8 (messages vs diffs); c025719; stash@{2}</span></div>
+    <div class="score-row"><div class="score-top"><span class="score-name">11 &middot; Release hygiene</span><span class="score-val">3/10</span></div><div class="bar"><div class="bar-fill" data-w="30"></div></div>
+      <p class="score-just">dist/ is committed and 60 days stale &mdash; a false deploy signal sitting in the tree. No tags, no CI, no release notes. For a tool whose whole promise is &ldquo;open the page&rdquo;, the page itself is never refreshed.</p>
+      <span class="small mono">git log -- dist (28e7cd7, 2026-04-30); git tag (empty)</span></div>
+    <div class="score-row"><div class="score-top"><span class="score-name">12 &middot; Scope discipline</span><span class="score-val">6/10</span></div><div class="bar"><div class="bar-fill" data-w="60"></div></div>
+      <p class="score-just">19 chart types, export presets, branding, zoom, dual axes, timeline events, an inflation calculator &mdash; in 75 days, all cohesive around one job. Breadth-first means every feature is 80% deep; persistence (the actual moat-extender) was designed and shelved, and a second app (inflation/) now lives in-tree.</p>
+      <span class="small mono">README.md:35; feature-request doc; inflation/</span></div>
+    <div class="score-row"><div class="score-top"><span class="score-name">13 &middot; Velocity</span><span class="score-val">9/10</span></div><div class="bar"><div class="bar-fill" data-w="90"></div></div>
+      <p class="score-just">61 commits in the first 19 days &mdash; 3.2/day sustained, solo, including 13 chart modules and two refactors. The fades (May 5-11, May 14-Jun 12) are honest rest, not thrash: nothing was reverted, nothing force-pushed.</p>
+      <span class="small mono">git log dates; zero revert commits; reflog clean of force-pushes</span></div>
+    <div class="score-row"><div class="score-top"><span class="score-name">14 &middot; AI-assisted workflow maturity</span><span class="score-val">8/10</span></div><div class="bar"><div class="bar-fill" data-w="80"></div></div>
+      <p class="score-just">Committed AI rules (87e9e6a), mandated todo.md discipline (rules.md &sect;tasks tracking), Kilo planning artifacts predating the repo, and Claude Code worktree branches &mdash; a real, governable fleet. Deduction: zero attribution trailers, so per-commit credit is unknowable, and the fleet&rsquo;s one browser-testing plan (&sect;5.5) was left unchecked.</p>
+      <span class="small mono">87e9e6a; stash@{0} .kilo/plans; branches worktree-agent-*; rules.md:157-161</span></div>
+  </div>
+</section>
+
+<!-- ============================== TAB 4: FLEET ============================== -->
+<section role="tabpanel" id="panel-fleet" aria-labelledby="tabbtn-fleet" hidden>
+  <h2 class="paneltitle">Fleet &amp; tooling roster</h2>
+  <p class="lede">Git shows one author and zero attribution trailers. The fleet is reconstructed from artifacts &mdash;
+  plan files, rules docs, and branch names &mdash; and labeled as inference, not fact.</p>
+  <div class="grid3">
+    <div class="card">
+      <h4>Sanket</h4>
+      <p class="small"><span class="tag feat">human</span> <span class="tag">70/70 commits</span></p>
+      <p>Sole git author (sanket0249@gmail.com), 2026-04-16 &rarr; 2026-06-29. Every commit, every stash, every branch.
+      Authored the plan discipline (todo.md, 8 phases) that the AI work was held to.</p>
+    </div>
+    <div class="card">
+      <h4>Kilo Code</h4>
+      <p class="small"><span class="tag docs">ai &middot; inferred</span> <span class="tag">2026-03-20 &rarr; 04-27 era</span></p>
+      <p>Seven <code>.kilo/plans/*.md</code> files (431+364 lines of planning) live in stash@{0}, the earliest dated
+      2026-03-20 &mdash; four weeks before the first commit. The committed rules doc (87e9e6a, &ldquo;rules and guidelines
+      for Simple Charts AI Assistant&rdquo;) and the two &ldquo;kilo dependencies&rdquo; commits (5b8164b, 3f8c9a8) mark its era.
+      The hub/ product docs (PRD, spec, manual, style guide) were produced in this window and stashed.</p>
+    </div>
+    <div class="card">
+      <h4>Claude Code</h4>
+      <p class="small"><span class="tag docs">ai &middot; inferred</span> <span class="tag">worktree era</span></p>
+      <p>Three <code>worktree-agent-*</code> branches (a7e440a1, adebde9f, ae9bde8c) all point at c133e42 (2026-04-29) &mdash;
+      sessions that produced no commits, only scars. CLAUDE.md governs the repo for CLI use, and the
+      feature-request analysis doc carries its distinctive design-documentation style. The three stashes of WIP
+      (branding, line styles, docs) are consistent with agent-assisted working sessions.</p>
+    </div>
+  </div>
+  <div class="section">
+    <h3>Evidence table</h3>
+    <div class="twrap"><table>
+      <thead><tr><th>Signal</th><th>Artefact</th><th>Interpretation</th></tr></thead>
+      <tbody>
+        <tr><td>Zero Co-Authored-By trailers</td><td class="mono">git log --format=%B | grep -i co-authored &rarr; empty</td><td>Attribution cannot be read from history; roster is inference</td></tr>
+        <tr><td>Committed AI rules</td><td class="mono">.agent/rules/rules.md (160 ln), commit 87e9e6a (2026-04-27)</td><td>AI work governed by written law, checked into the repo</td></tr>
+        <tr><td>Kilo plans predate repo</td><td class="mono">stash@{0} .kilo/plans/1773987449-* &rarr; 2026-03-20</td><td>Planning tooling in use ~4 weeks before the first commit</td></tr>
+        <tr><td>Worktree agent branches</td><td class="mono">worktree-agent-{a7e440a1,adebde9f,ae9bde8c} &rarr; c133e42</td><td>Three isolated agent sessions; none landed commits</td></tr>
+        <tr><td>Misleading dep commits</td><td class="mono">5b8164b/3f8c9a8 &ldquo;node_modules/Zod/Kilocode&rdquo; touch app.js only</td><td>Tool-generated commit titles written by a different tool than the diff</td></tr>
+        <tr><td>todo.md discipline</td><td class="mono">rules.md:157-161 mandates checkbox updates</td><td>Process enforced on both human and AI contributors</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- ============================== TAB 5: LEDGER ============================== -->
+<section role="tabpanel" id="panel-ledger" aria-labelledby="tabbtn-ledger" hidden>
+  <h2 class="paneltitle">Trade-off ledger</h2>
+  <p class="lede">Eighteen decisions, the alternative on the table, the price paid, and the panel&rsquo;s verdict.</p>
+  <div class="twrap"><table>
+    <thead><tr><th>#</th><th>Choice</th><th>Alternative</th><th>Cost paid</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Five pinned CDN globals</td><td>npm + bundler + lockfile</td><td>Docs drifted from real versions (4.4.7&rarr;4.5.1 unrecorded)</td><td><span class="tag good">Right call</span></td></tr>
+      <tr><td>2</td><td>Vanilla ES modules, no framework</td><td>React/Vue + store</td><td>Manual render triggers; <code>window.__</code> bridges for cycles</td><td><span class="tag good">Right call</span></td></tr>
+      <tr><td>3</td><td>Single mutable state, DOM read at render</td><td>Framework-style owned state</td><td>~116 inputs of UI truth live in the DOM; persistence became hard</td><td><span class="tag warn">Fine until it wasn&rsquo;t</span></td></tr>
+      <tr><td>4</td><td>Build-then-split monolith (1,208&rarr;4,417 lines)</td><td>Modular from commit one</td><td>6 days of rework; split hidden in a feature commit</td><td><span class="tag warn">Velocity won, history lost</span></td></tr>
+      <tr><td>5</td><td>Registry rewrite at week 2</td><td>Keep switch dispatch</td><td>3 days, zero user-visible features</td><td><span class="tag good">Paid off measurably</span></td></tr>
+      <tr><td>6</td><td>Self-managed chart pattern</td><td>Uniform data-driven builders</td><td>Two render lifecycles; special validation path</td><td><span class="tag good">Necessary for formula charts</span></td></tr>
+      <tr><td>7</td><td>Squashed initial commit</td><td>Import real history</td><td>~4 weeks pre-history invisible (Kilo plan 2026-03-20)</td><td><span class="tag warn">Pragmatic, lossy</span></td></tr>
+      <tr><td>8</td><td>Product docs stashed, not committed</td><td>Commit hub/ as written in CLAUDE.md</td><td>CLAUDE.md references a directory that does not exist in-tree</td><td><span class="tag bad">Accident &mdash; unstash it</span></td></tr>
+      <tr><td>9</td><td>Commit dist/</td><td>Build on release / ignore it</td><td>60-day stale build reads as a deploy signal</td><td><span class="tag bad">Drop or automate</span></td></tr>
+      <tr><td>10</td><td>Abandon the test setup</td><td>Commit stash@{2}&rsquo;s suite + package.json</td><td>Zero regression safety; bugs fixed twice (debounce)</td><td><span class="tag bad">Biggest debt</span></td></tr>
+      <tr><td>11</td><td>Refactor inside feature commit c025719</td><td>Separate refactor commit</td><td>History cannot show refactor cost</td><td><span class="tag warn">Velocity over hygiene</span></td></tr>
+      <tr><td>12</td><td>Upgrade CDN deps mid-flight</td><td>Pin + update docs together</td><td>CLAUDE.md/rules.md still cite old versions</td><td><span class="tag warn">Forgotten follow-up</span></td></tr>
+      <tr><td>13</td><td>Bitcoin-orange <code>#F7931A</code> brand</td><td>Neutral accessible palette</td><td>Brand hue fails AA on white; light theme needs <code>#C2410C</code></td><td><span class="tag warn">Identity vs contrast</span></td></tr>
+      <tr><td>14</td><td>Warning-vs-error by message sniffing</td><td>Structured error objects</td><td>Brittle string coupling in render.js:47,69</td><td><span class="tag warn">Shipped-fast compromise</span></td></tr>
+      <tr><td>15</td><td>Hard guardrails (50K rows, 30 bars, 12/10 slices)</td><td>Unlimited input</td><td>Power users blocked at the canvas</td><td><span class="tag good">Protects the product</span></td></tr>
+      <tr><td>16</td><td>Per-chart data store on type switch</td><td>One shared dataset</td><td>Memory; more state to serialize</td><td><span class="tag good">Preserves user work</span></td></tr>
+      <tr><td>17</td><td>Rename twice; park &ldquo;Charts BeamDelta&rdquo; on a branch</td><td>Pick one name and commit</td><td>PRD brand &ne; product brand; rename stranded (8d04f14)</td><td><span class="tag bad">Unresolved</span></td></tr>
+      <tr><td>18</td><td>Design save/search, ship charts instead</td><td>Build persistence now</td><td>The moat-extender waits; design doc ages</td><td><span class="tag warn">Documented fork</span></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ============================== TAB 6: BLOCKERS ============================== -->
+<section role="tabpanel" id="panel-blockers" aria-labelledby="tabbtn-blockers" hidden>
+  <h2 class="paneltitle">Blocker post-mortems</h2>
+  <p class="lede">Six moments the project stalled, what actually broke, the fix as shipped, and the transferable lesson.</p>
+  <div class="grid2">
+    <div class="card">
+      <h4>1 &middot; Exports silently lost custom drawings <span class="hash">1d659bc</span></h4>
+      <p><strong>Broke:</strong> dumbbell connectors, bubble-compare arrows, ratio pills &mdash; anything drawn by chart-specific
+      inline plugins &mdash; vanished from exported PNGs.</p>
+      <p><strong>Why:</strong> <code>doExport()</code> built its config by replacing the entire plugins array, dropping the
+      chart&rsquo;s inline plugins (todo.md &sect;4.1 records the root cause).</p>
+      <p><strong>Fix:</strong> clone the config but preserve inline plugins, replacing only the shared ones.</p>
+      <p><strong>Lesson:</strong> config cloning must be identity-preserving for chart-specific extensions &mdash;
+      any &ldquo;fresh options object&rdquo; shortcut eats plugin data.</p>
+    </div>
+    <div class="card">
+      <h4>2 &middot; The debounce race, fixed twice <span class="hash">be14bfc</span> <span class="hash">88f65e8</span> <span class="hash">dfc2798</span></h4>
+      <p><strong>Broke:</strong> color/zoom controls re-rendered synchronously (Apr 19-20); a month later segmented group
+      updates still did (May 4).</p>
+      <p><strong>Why:</strong> the render trigger is a judgment call at every call site &mdash; there was no single policy.</p>
+      <p><strong>Fix:</strong> <code>window.__debouncedRender()</code> became the convention; rules.md:85 now mandates it.</p>
+      <p><strong>Lesson:</strong> a bug fixed twice in two weeks is a missing convention, not two bugs.</p>
+    </div>
+    <div class="card">
+      <h4>3 &middot; Radar chart clamped at 100 <span class="hash">ad7bac1</span></h4>
+      <p><strong>Broke:</strong> radar data above 100 rendered wrong; the axis refused to auto-scale.</p>
+      <p><strong>Why:</strong> <code>suggestedMax: 100</code> hardcoded in the shared options.</p>
+      <p><strong>Fix:</strong> replaced with <code>beginAtZero: true</code> (2026-05-12).</p>
+      <p><strong>Lesson:</strong> magic numbers in shared options silently clamp user data &mdash; defaults must derive from the data, not the developer&rsquo;s sample.</p>
+    </div>
+    <div class="card">
+      <h4>4 &middot; Validation gate blocked self-managed charts <span class="hash">render.js:40-48</span></h4>
+      <p><strong>Broke:</strong> innovator/kano/timeline &mdash; charts that generate their own data &mdash; hit &ldquo;No data to
+      render&rdquo; because validation ran with an empty textarea.</p>
+      <p><strong>Why:</strong> the registry applied one validation path to two chart lifecycles.</p>
+      <p><strong>Fix:</strong> validate only when <code>state.parsedData</code> exists; self-managed charts skip the gate.</p>
+      <p><strong>Lesson:</strong> a gate needs lifecycle awareness. <em>Post-script:</em> the fix is demonstrably in the code,
+      yet todo.md &sect;5.1 remains unchecked &mdash; the plan and the code disagree (see Data room).</p>
+    </div>
+    <div class="card">
+      <h4>5 &middot; The node_modules mirage <span class="hash">5b8164b</span> <span class="hash">3f8c9a8</span></h4>
+      <p><strong>Broke:</strong> nothing user-facing &mdash; but two commits titled &ldquo;add Zod v4 and Kilocode SDK dependencies
+      to project node_modules&rdquo; and &ldquo;update kilo dependencies and sync zod v3/v4 modules&rdquo; contain only app.js /
+      index.html / styles.css diffs. No node_modules, package.json, or lockfile was ever tracked.</p>
+      <p><strong>Why:</strong> an experiment (a toolchain layer) was abandoned within hours; the commit titles were written for work that never landed.</p>
+      <p><strong>Fix:</strong> the experiment was dropped; its residue (<code>.vite/deps/</code>) is still tracked.</p>
+      <p><strong>Lesson:</strong> commit messages are documentation. In an AI-assisted fleet, the tool writing the title may not be the tool writing the diff &mdash; verify.</p>
+    </div>
+    <div class="card">
+      <h4>6 &middot; The 6,814-line first breath <span class="hash">036d040</span></h4>
+      <p><strong>Broke:</strong> nothing &mdash; but the &ldquo;initial commit&rdquo; is a squash: a 1,208-line app.js, full styles,
+      markup, and a 4,375-line cryptocurrency CSV in one shot, dated 2026-04-16.</p>
+      <p><strong>Why:</strong> scratch work was collapsed into a clean entry point; a Kilo plan dated 2026-03-20 proves the missing weeks.</p>
+      <p><strong>Fix:</strong> the CSV was deleted eight days later (08fea6a, &ldquo;clean up: removed unused file&rdquo;).</p>
+      <p><strong>Lesson:</strong> the repo starts at chapter two of this story &mdash; size your expectations of &ldquo;day one&rdquo; accordingly.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== TAB 7: COMMIT LOG ============================== -->
+<section role="tabpanel" id="panel-commits" aria-labelledby="tabbtn-commits" hidden>
+  <h2 class="paneltitle">Commit log</h2>
+  <p class="lede">All 70 commits, none sampled. Search by hash, subject, or type; filter by month. Copy any hash.</p>
+  <div class="searchbox">
+    <input type="search" id="commitSearch" placeholder="Search hash, subject, or type&hellip;" aria-label="Search commits">
+    <span class="count-line" id="commitCount" aria-live="polite"></span>
+  </div>
+  <div class="chips" id="monthChips" role="group" aria-label="Filter by month"></div>
+  <div class="twrap"><table id="commitTable">
+    <thead><tr><th>Hash</th><th>Date</th><th>Type</th><th>Subject (verbatim)</th></tr></thead>
+    <tbody id="commitBody"></tbody>
+  </table></div>
+  <p class="noresults" id="noResults">No commits match that search.</p>
+  <div class="section">
+    <h3>Type mix</h3>
+    <div class="hbar"><span class="lab">feat</span><div class="track"><div class="fill" style="width:74%"></div></div><span class="num">52</span></div>
+    <div class="hbar alt"><span class="lab">fix</span><div class="track"><div class="fill" style="width:8.6%"></div></div><span class="num">6</span></div>
+    <div class="hbar alt"><span class="lab">docs</span><div class="track"><div class="fill" style="width:2.9%"></div></div><span class="num">2</span></div>
+    <div class="hbar alt"><span class="lab">untyped</span><div class="track"><div class="fill" style="width:8.6%"></div></div><span class="num">6</span></div>
+    <div class="hbar alt"><span class="lab">refactor</span><div class="track"><div class="fill" style="width:1.4%"></div></div><span class="num">1</span></div>
+    <div class="hbar alt"><span class="lab">chore</span><div class="track"><div class="fill" style="width:1.4%"></div></div><span class="num">1</span></div>
+    <div class="hbar alt"><span class="lab">clean up</span><div class="track"><div class="fill" style="width:1.4%"></div></div><span class="num">1</span></div>
+    <div class="hbar alt"><span class="lab">update</span><div class="track"><div class="fill" style="width:1.4%"></div></div><span class="num">1</span></div>
+    <p class="small">Note the lone &ldquo;update:&rdquo; &mdash; a type outside the documented vocabulary (rules.md:140 lists feat/fix/clean up/refactor/docs/style/chore). One commit (ba594be) uses it.</p>
+  </div>
+</section>
+
+<!-- ============================== TAB 8: DATA ROOM ============================== -->
+<section role="tabpanel" id="panel-data" aria-labelledby="tabbtn-data" hidden>
+  <h2 class="paneltitle">Data room</h2>
+  <p class="lede">Cadence, plan-vs-actual, migrations, the stash museum, branch registry, and every discrepancy the
+  panel could not resolve.</p>
+
+  <div class="section">
+    <h3>Cadence &mdash; commits per active day</h3>
+    <div class="twrap"><table>
+      <thead><tr><th>Month</th><th>Commits</th><th>Active days</th><th>Silent stretches</th></tr></thead>
+      <tbody>
+        <tr><td>April 2026</td><td>47</td><td>14 of 15 (Apr 16-30)</td><td>Only Apr 25</td></tr>
+        <tr><td>May 2026</td><td>19</td><td>6</td><td>May 5-11 (7d), May 14-31 (18d)</td></tr>
+        <tr><td>June 2026</td><td>4</td><td>2</td><td>Jun 1-12 (12d), Jun 14-28 (15d)</td></tr>
+      </tbody>
+    </table></div>
+    <div class="daygrid" id="dayGrid" aria-label="Commit heat by day"></div>
+    <p class="small">Each cell is one day, labeled with its commit count; empty cells are the silence, left visible on purpose. 61 of 70 commits (87%) land in the first 19 days.</p>
+  </div>
+
+  <div class="section">
+    <h3>Plan vs actual (todo.md, all 8 phases)</h3>
+    <div class="twrap"><table>
+      <thead><tr><th>Phase</th><th>Dates in plan</th><th>Checkbox status</th><th>Panel&rsquo;s finding</th></tr></thead>
+      <tbody>
+        <tr><td>1 &middot; Modular architecture</td><td>04-16 &rarr; 04-28</td><td><span class="tag good">5/5 done</span></td><td>Verified: src/ exists; monolith deleted in c025719</td></tr>
+        <tr><td>2 &middot; Comparison charts</td><td>04-29 &rarr; 04-30</td><td><span class="tag good">5/5 done</span></td><td>Verified: dumbbell, bubble-compare, overlay, compare-utils (f4cd692)</td></tr>
+        <tr><td>3 &middot; Chart registration</td><td>04-30 &rarr; 05-02</td><td><span class="tag good">11/11 done</span></td><td>Verified: registry.js + metrics table (39&rarr;0 includes, 17&rarr;1 branches)</td></tr>
+        <tr><td>4 &middot; Export &amp; data pipeline</td><td>05-03 &rarr; 05-04</td><td><span class="tag good">8/8 done</span></td><td>Verified: TSV/JSON I/O, inline plugin fix (1d659bc)</td></tr>
+        <tr><td>5 &middot; Innovator data + auto-scale</td><td>05-04</td><td><span class="tag warn">3/5 checked</span></td><td><strong>Conflict:</strong> &sect;5.1 unchecked but its fix ships in render.js:40-48; &sect;5.4 hints and &sect;5.5 browser testing genuinely open</td></tr>
+        <tr><td>6 &middot; Docs &amp; polish</td><td>05-04</td><td><span class="tag good">2/2 done</span></td><td>Verified: JSDoc sweep (f93e364, a3aace2), radar fix (ad7bac1)</td></tr>
+        <tr><td>7 &middot; Axis formats, log scale, dual-bar</td><td>05-12 &rarr; 06-13</td><td><span class="tag good">5/5 done</span></td><td>Verified: cb03c7e, a0f7b66, b625be1, 474b8c3, 78b7eb8</td></tr>
+        <tr><td>8 &middot; Inflation</td><td>06-29</td><td><span class="tag good">2/2 done</span></td><td>Verified: inflation/ gallery + charts/inflation.js (28e81d4); same-day design &amp; ship</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="section">
+    <h3>Migration timeline</h3>
+    <div class="twrap"><table>
+      <thead><tr><th>When</th><th>Migration</th><th>Commit</th><th>Measured effect</th></tr></thead>
+      <tbody>
+        <tr><td>2026-04-22</td><td>Monolith app.js (4,417 lines) &rarr; src/ module tree</td><td class="mono">c025719</td><td>45 JS files, 7,537 src LOC; strict DAG + window.__ bridges</td></tr>
+        <tr><td>2026-04-30</td><td>Switch dispatch &rarr; chart registry + capabilities</td><td class="mono">28e7cd7</td><td>17 dispatch branches &rarr; 1 lookup; 39 .includes &rarr; 0</td></tr>
+        <tr><td>2026-05-04</td><td>Flat chart state &rarr; state.charts.* namespacing</td><td class="mono">788c2f5</td><td>7 flat props &rarr; 0; per-chart validation live</td></tr>
+        <tr><td>2026-06-13</td><td>First registry-native chart (dual-bar born inside the pattern)</td><td class="mono">78b7eb8</td><td>Chart modules now self-register via side-effect import</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="section">
+    <h3>The stash museum</h3>
+    <div class="grid3">
+      <div class="card">
+        <h4>stash@{0} &mdash; &ldquo;temp files&rdquo; (on brand-update)</h4>
+        <p><strong>4,814 lines</strong>, 12 files: hub/PRD.md (415), hub/TECHNICAL_SPECIFICATION.md (862), hub/USER_MANUAL.md (688),
+        hub/STYLE_GUIDE.md (556), 7 .kilo/plans/*.md (1,410), auto-comparison.html (883).</p>
+        <p class="small">The museum&rsquo;s crown jewel: the product&rsquo;s entire written strategy, invisible to every repo reader &mdash; and the only proof of the pre-March work.</p>
+      </div>
+      <div class="card">
+        <h4>stash@{1} &mdash; &ldquo;dotted + dashed lines&rdquo; (on main)</h4>
+        <p><strong>145 lines</strong>, 9 files: line.js, radar.js, main.js, settings.js, styles.css &mdash; an unfinished
+        line-style feature (dash patterns), abandoned mid-flight.</p>
+        <p class="small">Cross-check: line-style customization for area/line shipped separately in 3f6cdbb (2026-04-23); this stash is the residue of a further pass.</p>
+      </div>
+      <div class="card">
+        <h4>stash@{2} &mdash; &ldquo;improvements and line + bar chart&rdquo; (on main)</h4>
+        <p><strong>544 insertions / 247 deletions</strong>, 7 files: a 513-line app.js rework, package.json (18),
+        test/utilities.test.js (153), LICENSE (21), .gitignore (8).</p>
+        <p class="small">The counterfactual repo: license, ignore rules, package manifest, and a test suite &mdash; all of it one <code>git stash pop</code> away, none of it on main.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Branch registry</h3>
+    <div class="twrap"><table>
+      <thead><tr><th>Branch</th><th>Status</th><th>Evidence</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">main</td><td><span class="tag good">active tip</span></td><td>4b236bb, 2026-06-29</td></tr>
+        <tr><td class="mono">brand-update</td><td><span class="tag warn">1 ahead, 9 behind</span></td><td>Holds only 8d04f14 (Simple Charts &rarr; Charts BeamDelta rename) &mdash; unmerged</td></tr>
+        <tr><td class="mono">feat/inflation-chart</td><td><span class="tag good">fully merged</span></td><td>Empty main..range; merged fast-forward (reflog HEAD@{0}); local + remote still exist</td></tr>
+        <tr><td class="mono">worktree-agent-a7e440a1</td><td><span class="tag">empty scar</span></td><td>Points at c133e42 (in main); no unique commits</td></tr>
+        <tr><td class="mono">worktree-agent-adebde9f</td><td><span class="tag">empty scar</span></td><td>Points at c133e42</td></tr>
+        <tr><td class="mono">worktree-agent-ae9bde8c</td><td><span class="tag">empty scar</span></td><td>Points at c133e42</td></tr>
+        <tr><td class="mono">origin/main</td><td><span class="tag good">in sync</span></td><td>Remote exists; tags: none</td></tr>
+        <tr><td class="mono">origin/feat/inflation-chart</td><td><span class="tag warn">stale remote</span></td><td>Merged content; branch not deleted on the remote</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="section">
+    <h3>Configured values &mdash; the real numbers (pie) and the whole system</h3>
+    <div class="grid2">
+      <div class="mmd-wrap">
+        <div class="mermaid">pie showData
+  title Export pixel budgets by preset
+  "Twitter-X 1200x675" : 810000
+  "Instagram 1080x1080" : 1166400
+  "LinkedIn 1200x627" : 752400
+  "General 1200x900" : 1080000</div>
+        <p class="mmd-note">Diagram 4 of 6 &mdash; the real configured export presets (README &ldquo;Export &amp; Sharing&rdquo;,
+        index.html:55), shown as canvas pixels per single export. Total: 3,808,800 px.</p>
+      </div>
+      <div class="mmd-wrap">
+        <div class="mermaid">flowchart TD
+  U["User"] --> UI["index.html - 3-column layout"]
+  UI --> S["Settings panel - 116 wired inputs"]
+  UI --> DP["Data panel textarea"]
+  S --> ST["state.js - single mutable object"]
+  DP --> PIPE["data.js parse pipeline"]
+  PIPE --> ST
+  ST --> RD["render.js dispatch"]
+  RD --> REG["registry.js - 19 descriptors"]
+  REG --> CH["charts builders"]
+  CH --> CV["Chart preview canvas"]
+  EX["export.js - offscreen canvas"] --> CV
+  subgraph STORES["Browser-only data stores"]
+    LS["localStorage - theme choice"]
+    CDS["state.chartDataStore - per chart type"]
+    DM["dom.js cache - 245 refs"]
+    IDB["IndexedDB - proposed in feature request"]
+  end
+  ST --> LS
+  ST --> CDS
+  UI --> DM
+  DEB["debounced render timer - 300ms"] --> RD
+  classDef ui fill:#182136,stroke:#F7931A,color:#e8edf7;
+  classDef core fill:#131a2a,stroke:#60a5fa,color:#e8edf7;
+  classDef store fill:#131a2a,stroke:#34d399,color:#e8edf7;
+  class UI,S,DP,CV,EX ui
+  class ST,PIPE,RD,REG,CH,DEB core
+  class LS,CDS,DM,IDB store</div>
+        <p class="mmd-note">Diagram 6 of 6 &mdash; the whole system: user flow, stores, the one background timer.
+        No servers, no databases, no containers.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Discrepancy register (unresolved)</h3>
+    <div class="twrap"><table>
+      <thead><tr><th>#</th><th>Sources disagree</th><th>Reading A</th><th>Reading B</th><th>Panel&rsquo;s stance</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>CLAUDE.md vs working tree</td><td>&ldquo;hub/ contains product docs&rdquo;</td><td>No hub/ in tree; the 4 docs exist only in stash@{0}</td><td>Docs are stashed; CLAUDE.md is wrong today</td></tr>
+        <tr><td>2</td><td>CLAUDE.md vs render.js</td><td>&ldquo;dispatches via switch&rdquo;</td><td>Registry lookup, no switch (render.js:7,35)</td><td>Code wins; CLAUDE.md predates Phase 3</td></tr>
+        <tr><td>3</td><td>CLAUDE.md/rules.md vs index.html</td><td>Chart.js 4.4.7, PapaParse 5.4.1</td><td>4.5.1 / 5.5.3 since ee6a9fd</td><td>Markup wins; docs stale</td></tr>
+        <tr><td>4</td><td>rules.md vs registry</td><td>&ldquo;14 types&rdquo;</td><td>19 registered charts</td><td>Registry wins</td></tr>
+        <tr><td>5</td><td>todo.md &sect;1.1 vs git</td><td>&ldquo;app.js (4700+ lines)&rdquo;</td><td>Measured 4,417 lines pre-deletion</td><td>Both may be true (uncommitted working tree); report as-is</td></tr>
+        <tr><td>6</td><td>todo.md &sect;5.1 checkbox vs code</td><td>Unchecked (pending)</td><td>Fix ships in render.js:40-48</td><td>Code wins; checkbox is stale</td></tr>
+        <tr><td>7</td><td>README vs PRD vs branch</td><td>&ldquo;Simple Charts&rdquo; (main)</td><td>&ldquo;Charts BeamDelta&rdquo; (PRD in stash; 8d04f14 on brand-update)</td><td>Genuine open brand fork &mdash; reported, not averaged</td></tr>
+        <tr><td>8</td><td>CLAUDE.md (~190 dom refs) vs todo.md (~229) vs measured</td><td>&ldquo;~190 refs&rdquo;</td><td>245 <code>key:</code> lines in dom.js</td><td>Measured value wins; both docs are snapshots</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- ============================== TAB 9: LESSONS ============================== -->
+<section role="tabpanel" id="panel-lessons" aria-labelledby="tabbtn-lessons" hidden>
+  <h2 class="paneltitle">Lessons</h2>
+  <p class="lede">What this repository teaches &mdash; each one pinned to evidence, not opinion.</p>
+  <div class="grid2">
+    <div class="card"><h4>1 &middot; The highest-leverage refactor is the one you can measure</h4>
+      <p>The registry rewrite &ldquo;cost&rdquo; three feature-less days and returned 39&rarr;0 <code>.includes</code>, 17&rarr;1
+      dispatch branches, 6&rarr;2 files per new chart &mdash; numbers the team wrote down (todo.md Success Metrics). Measure refactors
+      or nobody believes them.</p></div>
+    <div class="card"><h4>2 &middot; Build-then-split works &mdash; if you split within a week</h4>
+      <p>The monolith lived six days and 4,417 lines. Any longer and the split tax compounds; any sooner and you
+      abstract the wrong seams. Day-6 is the sweet spot this repo hit (c025719).</p></div>
+    <div class="card"><h4>3 &middot; A stash is not a backup</h4>
+      <p>The product&rsquo;s entire written strategy (4,814 lines), a test suite, a license, and a .gitignore all live in
+      three stashes &mdash; one <code>git stash drop</code> or a re-cloned machine from oblivion. Anything you would mourn
+      belongs on a branch.</p></div>
+    <div class="card"><h4>4 &middot; Commit messages that describe work that never landed are worse than none</h4>
+      <p>The node_modules mirage (5b8164b, 3f8c9a8) sends every future archaeologist hunting for dependencies that
+      were never committed. In AI-assisted work, verify the diff against the title.</p></div>
+    <div class="card"><h4>5 &middot; If UI truth lives in the DOM, persistence gets expensive</h4>
+      <p>~116 settings inputs are read at render time from the form, not from state. That choice made the UI fast to
+      build &mdash; and made save/search (the current feature request) a form-serialization project instead of a
+      state-dump. Feature-request/save-search-request.md is the receipt.</p></div>
+    <div class="card"><h4>6 &middot; A bug fixed twice is a missing convention</h4>
+      <p>Debounce races were patched Apr 19-20 and again May 4. The durable fix was not the patch but the rule
+      (rules.md:85): one debounced bridge, mandated.</p></div>
+    <div class="card"><h4>7 &middot; Docs rot faster than code</h4>
+      <p>Within eleven weeks, CLAUDE.md was wrong about the dispatch mechanism, the dependency versions, the DOM-ref
+      count, and its own file tree &mdash; while the code it describes stayed correct. Docs need the same review trigger
+      as code.</p></div>
+    <div class="card"><h4>8 &middot; Zero tests is a decision &mdash; even an unmade one</h4>
+      <p>The abandoned suite in stash@{2} proves the intent existed. At 12,844 LOC with 19 chart types, every export
+      bug (1d659bc) and axis bug (ad7bac1) was found by eye. The panel scores this the repo&rsquo;s deepest debt.</p></div>
+    <div class="card"><h4>9 &middot; Formula charts need their own lifecycle, not an exception</h4>
+      <p>Innovator/Kano/Timeline broke the data-driven assumption until <code>isSelfManaged</code> made the difference
+      structural (render.js:40-48). Model your variants in the type system, not in conditionals.</p></div>
+    <div class="card"><h4>10 &middot; Velocity decays unless the queue is real</h4>
+      <p>3.2 commits/day for 19 days, then &minus;89%. What kept the tail alive was a written queue (todo.md phases,
+      then the feature-request doc). The repo stops exactly where the queue stops &mdash; at the save/search fork.</p></div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site">
+  <p>Generated 2026-08-31 by repo-story from a full-history forensic pass (70 commits, 3 stashes, 6 branches).
+  Companion plain-text version: <span class="mono">view-project-story.md</span>.
+  Every claim anchors to a commit hash, <span class="mono">path:line</span>, stash id, or config key; where sources disagree, both readings are shown in the Data room discrepancy register.</p>
+</footer>
+</div>
+
+<button id="totop" type="button" aria-label="Back to top">&#8593; Top</button>
+<script>
+(function(){
+'use strict';
+var d = document;
+var root = d.documentElement;
+var REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- theme ---------- */
+var themeBtn = d.getElementById('themeToggle');
+function themeColors(t){
+  if (t === 'light') {
+    return { background:'transparent', primaryColor:'#eef1f8', primaryTextColor:'#1b2437', primaryBorderColor:'#9aa6bd',
+      secondaryColor:'#f6f7fb', tertiaryColor:'#eef0f6', lineColor:'#5b6779', textColor:'#1b2437',
+      mainBkg:'#eef1f8', nodeBorder:'#9aa6bd', clusterBkg:'#eef0f6', clusterBorder:'#9aa6bd',
+      edgeLabelBackground:'#ffffff', titleColor:'#1b2437', classText:'#1b2437',
+      stateBkg:'#eef1f8', stateBorder:'#9aa6bd', transitionColor:'#5b6779', transitionLabelColor:'#43506a',
+      stateLabelColor:'#1b2437', labelBackgroundColor:'#ffffff', altBackground:'#f6f7fb',
+      compositeBackground:'#eef0f6', compositeBorder:'#9aa6bd', compositeTitleBackground:'#f3f5fa',
+      specialStateColor:'#43506a', noteBkg:'#f3f5fa', noteBorderColor:'#c9d1e0',
+      pie1:'#C2410C', pie2:'#1d4ed8', pie3:'#047857', pie4:'#be185d', pie5:'#6d28d9',
+      pieStrokeColor:'#ffffff', pieTitleTextColor:'#1b2437', pieSectionTextColor:'#ffffff', pieLegendTextColor:'#1b2437' };
+  }
+  return { background:'transparent', primaryColor:'#182136', primaryTextColor:'#e8edf7', primaryBorderColor:'#2e3d5c',
+    secondaryColor:'#131a2a', tertiaryColor:'#0f1420', lineColor:'#7d8aa5', textColor:'#e8edf7',
+    mainBkg:'#182136', nodeBorder:'#2e3d5c', clusterBkg:'#0f1420', clusterBorder:'#2e3d5c',
+    edgeLabelBackground:'#0b0e16', titleColor:'#e8edf7', classText:'#e8edf7',
+    stateBkg:'#182136', stateBorder:'#2e3d5c', transitionColor:'#7d8aa5', transitionLabelColor:'#aab6cc',
+    stateLabelColor:'#e8edf7', labelBackgroundColor:'#0b0e16', altBackground:'#131a2a',
+    compositeBackground:'#0f1420', compositeBorder:'#2e3d5c', compositeTitleBackground:'#131a2a',
+    specialStateColor:'#aab6cc', noteBkg:'#131a2a', noteBorderColor:'#2e3d5c',
+    pie1:'#F7931A', pie2:'#60a5fa', pie3:'#34d399', pie4:'#f472b6', pie5:'#a78bfa',
+    pieStrokeColor:'#0b0e16', pieTitleTextColor:'#e8edf7', pieSectionTextColor:'#0b0e16', pieLegendTextColor:'#e8edf7' };
+}
+var LIGHT_REMAP = { '#131a2a':'#f3f5fa', '#182136':'#eef1f8', '#2e3d5c':'#9aa6bd', '#e8edf7':'#1b2437',
+  '#F7931A':'#C2410C', '#f87171':'#b91c1c', '#60a5fa':'#1d4ed8', '#34d399':'#047857', '#fbbf24':'#92600a' };
+function currentTheme(){ return root.getAttribute('data-theme') === 'light' ? 'light' : 'dark'; }
+function syncThemeButton(){ themeBtn.textContent = 'Theme: ' + currentTheme(); }
+function setTheme(t){
+  root.setAttribute('data-theme', t);
+  try { localStorage.setItem('rs-theme', t); } catch(e){}
+  var meta = d.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', t === 'dark' ? '#0b0e16' : '#f6f7fb');
+  syncThemeButton();
+  rerenderMermaid();
+}
+themeBtn.addEventListener('click', function(){ setTheme(currentTheme() === 'dark' ? 'light' : 'dark'); });
+syncThemeButton();
+
+/* ---------- mermaid (lazy, CDN, offline fallback) ---------- */
+var mermaidMod = null, mermaidLoading = null, mmdId = 0;
+var pristine = new WeakMap();
+function mermaidConfig(t){
+  return { startOnLoad:false, securityLevel:'strict',
+    fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
+    theme: t === 'light' ? 'default' : 'dark',
+    themeVariables: themeColors(t) };
+}
+function ensureMermaid(){
+  if (mermaidMod) return Promise.resolve(mermaidMod);
+  if (!mermaidLoading) {
+    mermaidLoading = import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs')
+      .then(function(m){ mermaidMod = m.default; mermaidMod.initialize(mermaidConfig(currentTheme())); return mermaidMod; })
+      .catch(function(e){ mermaidLoading = null; throw e; });
+  }
+  return mermaidLoading;
+}
+function remapForLight(src){
+  var out = src;
+  for (var k in LIGHT_REMAP) { if (Object.prototype.hasOwnProperty.call(LIGHT_REMAP, k)) {
+    out = out.split(k).join(LIGHT_REMAP[k]);
+  } }
+  return out;
+}
+function fallbackOne(el, src){
+  el.classList.add('mmd-fallback');
+  while (el.firstChild) el.removeChild(el.firstChild);
+  var pre = d.createElement('pre');
+  pre.className = 'mmd-src';
+  pre.textContent = src;
+  el.appendChild(pre);
+}
+function renderMermaidIn(panel){
+  var blocks = [].slice.call(panel.querySelectorAll('.mermaid'));
+  if (!blocks.length) return Promise.resolve();
+  return ensureMermaid().then(function(mm){
+    var chain = Promise.resolve();
+    blocks.forEach(function(el){
+      if (el.getAttribute('data-processed')) return;
+      if (!pristine.has(el)) pristine.set(el, el.textContent.replace(/^\s+|\s+$/g, ''));
+      var src = pristine.get(el);
+      if (currentTheme() === 'light') src = remapForLight(src);
+      el.setAttribute('data-processed', 'true');
+      chain = chain.then(function(){
+        return mm.render('mmd-' + (++mmdId), src).then(function(r){
+          while (el.firstChild) el.removeChild(el.firstChild);
+          var span = d.createElement('div');
+          span.innerHTML = r.svg;
+          while (span.firstChild) el.appendChild(span.firstChild);
+        }).catch(function(){ fallbackOne(el, pristine.get(el)); });
+      });
+    });
+    return chain;
+  }).catch(function(){ blocks.forEach(function(el){ fallbackOne(el, pristine.get(el) || el.textContent); }); });
+}
+function rerenderMermaid(){
+  if (mermaidMod) mermaidMod.initialize(mermaidConfig(currentTheme()));
+  [].slice.call(d.querySelectorAll('.mermaid[data-processed]')).forEach(function(el){ el.removeAttribute('data-processed'); });
+  var active = d.querySelector('[role="tabpanel"]:not([hidden])');
+  if (active) renderMermaidIn(active);
+}
+window.__rsRerenderMermaid = rerenderMermaid;
+
+/* ---------- tabs ---------- */
+var tablist = d.getElementById('tablist');
+var tabs = [].slice.call(tablist.querySelectorAll('[role="tab"]'));
+var shownOnce = {};
+function animateBars(scope){
+  [].slice.call(scope.querySelectorAll('.bar-fill')).forEach(function(f){
+    var w = f.getAttribute('data-w');
+    if (REDUCED) { f.style.transition = 'none'; }
+    f.style.width = w + '%';
+  });
+}
+function onPanelShown(panel, id){
+  if (!panel) return;
+  if (!shownOnce[id]) { shownOnce[id] = true; animateBars(panel); }
+  renderMermaidIn(panel);
+}
+function selectTab(tab, moveFocus){
+  tabs.forEach(function(t){
+    var on = (t === tab);
+    t.setAttribute('aria-selected', on ? 'true' : 'false');
+    t.tabIndex = on ? 0 : -1;
+    var p = d.getElementById(t.getAttribute('aria-controls'));
+    if (p) p.hidden = !on;
+  });
+  if (moveFocus) tab.focus();
+  onPanelShown(d.getElementById(tab.getAttribute('aria-controls')), tab.getAttribute('data-tab'));
+}
+tablist.addEventListener('click', function(e){
+  var t = e.target.closest('[role="tab"]');
+  if (t) selectTab(t, false);
+});
+tablist.addEventListener('keydown', function(e){
+  var i = tabs.indexOf(d.activeElement);
+  if (i < 0) return;
+  var n = null;
+  if (e.key === 'ArrowRight') n = tabs[(i + 1) % tabs.length];
+  else if (e.key === 'ArrowLeft') n = tabs[(i - 1 + tabs.length) % tabs.length];
+  else if (e.key === 'Home') n = tabs[0];
+  else if (e.key === 'End') n = tabs[tabs.length - 1];
+  if (n) { e.preventDefault(); selectTab(n, true); }
+});
+
+/* ---------- counters ---------- */
+function fmt(n, comma){ return comma ? n.toLocaleString('en-US') : String(n); }
+function animateCounters(){
+  [].slice.call(d.querySelectorAll('.stat-num[data-target]')).forEach(function(el){
+    var target = parseInt(el.getAttribute('data-target'), 10) || 0;
+    var comma = el.getAttribute('data-format') === 'comma';
+    if (REDUCED || target === 0) { el.textContent = fmt(target, comma); return; }
+    var t0 = null, dur = 1300;
+    function step(ts){
+      if (!t0) t0 = ts;
+      var p = Math.min((ts - t0) / dur, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt(Math.round(target * eased), comma);
+      if (p < 1) window.requestAnimationFrame(step);
+    }
+    window.requestAnimationFrame(step);
+  });
+}
+
+/* ---------- copy buttons ---------- */
+d.addEventListener('click', function(e){
+  var b = e.target.closest('[data-copy]');
+  if (!b) return;
+  var txt = b.getAttribute('data-copy');
+  function flash(){
+    b.classList.add('copied');
+    var prev = b.textContent;
+    b.textContent = 'copied';
+    window.setTimeout(function(){ b.classList.remove('copied'); b.textContent = prev; }, 1200);
+  }
+  function fallback(){
+    var ta = d.createElement('textarea');
+    ta.value = txt; ta.setAttribute('readonly','');
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    d.body.appendChild(ta); ta.select();
+    try { d.execCommand('copy'); } catch(err){}
+    d.body.removeChild(ta); flash();
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(flash, fallback);
+  } else { fallback(); }
+});
+
+/* ---------- progress + back to top ---------- */
+var prog = d.getElementById('progress'), totop = d.getElementById('totop');
+window.addEventListener('scroll', function(){
+  var h = d.documentElement;
+  var max = h.scrollHeight - h.clientHeight;
+  prog.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+  totop.classList.toggle('show', h.scrollTop > 600);
+}, { passive:true });
+totop.addEventListener('click', function(){ window.scrollTo({ top:0, behavior: REDUCED ? 'auto' : 'smooth' }); });
+
+/* ---------- era chips (timeline) ---------- */
+var eraChips = d.getElementById('eraChips');
+if (eraChips) {
+  eraChips.addEventListener('click', function(e){
+    var chip = e.target.closest('.chip');
+    if (!chip) return;
+    var era = chip.getAttribute('data-era');
+    [].slice.call(eraChips.querySelectorAll('.chip')).forEach(function(c){ c.setAttribute('aria-pressed', c === chip ? 'true' : 'false'); });
+    [].slice.call(d.querySelectorAll('.era')).forEach(function(sec){
+      sec.hidden = (era !== 'all' && sec.getAttribute('data-era') !== era);
+    });
+  });
+}
+
+/* ---------- commit log ---------- */
+var COMMITS = [
+['036d040','2026-04-16','none','initial commit'],
+['ecb4e2d','2026-04-16','feat','feat: Enhance chart configuration options and UI improvements'],
+['57d7c31','2026-04-17','feat','feat: Update branding from ChartForge to Simple Charts across application'],
+['5b8164b','2026-04-17','feat','feat: add Zod v4 and Kilocode SDK dependencies to project node_modules'],
+['3f8c9a8','2026-04-17','chore','chore: update kilo dependencies and sync zod v3/v4 modules'],
+['5e01afe','2026-04-18','none','Enhance accessibility and improve UI/UX'],
+['9bb213c','2026-04-18','fix','fix: update export configuration to use chartInstance.config._config and clarify CSS opacity handling'],
+['ba28153','2026-04-19','feat','feat: implement Innovator\'s Dilemma chart with customizable settings and UI components'],
+['3794e0d','2026-04-19','feat','feat: implement dynamic settings visibility based on selected chart type'],
+['e9e895e','2026-04-19','feat','feat: add support for innovator chart zooming and improve zoom slider UI positioning'],
+['275a179','2026-04-19','feat','feat: enhance Innovator\'s Dilemma chart with additional settings and improved UI components'],
+['67a0380','2026-04-19','feat','feat: enhance innovator chart settings and add timeline event markers'],
+['be14bfc','2026-04-19','feat','feat: increase debounce time for rendering and implement debounced rendering in chart updates'],
+['88f65e8','2026-04-20','feat','feat: replace renderChart with debouncedRender for improved performance during color and zoom adjustments'],
+['4547569','2026-04-20','feat','feat: add JSON data parsing support and format toggle in data input'],
+['cb17aa8','2026-04-20','feat','feat: add combo chart type support and dataset type toggles in settings'],
+['f93e364','2026-04-20','feat','feat: add detailed JSDoc comments for constants, functions, and event handlers in app.js'],
+['b7c60ed','2026-04-21','feat','feat: add segmented bar chart support with customizable segments and settings'],
+['59cba33','2026-04-22','feat','feat: add segmented bar chart section to README and update chart count in overview'],
+['1737ac9','2026-04-22','feat','feat: implement SVG logo upload and display functionality with customizable placement options'],
+['435dcdf','2026-04-22','feat','feat: update README to reflect support for 13 chart types and enhance brand logo upload details'],
+['08fea6a','2026-04-22','clean','clean up: removed unused file'],
+['d50fb7b','2026-04-22','feat','feat: add multi-group support for segmented bar charts with UI elements for group management'],
+['c025719','2026-04-22','feat','feat: add branding, clipboard, color pickers, and dual-axis functionality'],
+['3f6cdbb','2026-04-23','feat','feat: implement line style customization for area and line charts with UI controls'],
+['9135a51','2026-04-24','feat','feat: add Kano Model chart with UI settings and data parsing functionality'],
+['3657655','2026-04-26','fix','fix: correct formatting in README for data input options'],
+['ee6a9fd','2026-04-27','feat','feat: update Chart.js and PapaParse versions; enhance timeline chart event handling'],
+['87e9e6a','2026-04-27','docs','docs: add comprehensive rules and guidelines for Simple Charts AI Assistant'],
+['014a274','2026-04-27','feat','feat: enhance combo chart support in settings and data options'],
+['6420329','2026-04-27','feat','feat: add segmented bar JSON format tooltip and enhance data handling for segmented charts'],
+['7255754','2026-04-28','feat','feat: enhance info tip display for segmented charts with additional data format labels'],
+['0aeb273','2026-04-28','feat','feat: enhance data visibility handling in chart options and improve legend click behavior'],
+['bf1f7a0','2026-04-28','feat','feat: add options for displaying numbers and minimum label percentage in segmented charts'],
+['b596e17','2026-04-28','feat','feat: enhance segmented bar chart to support number display and minimum label percentage'],
+['29f721c','2026-04-28','feat','feat: refactor segment border radius calculation for dynamic visibility in segmented bar chart'],
+['405c9be','2026-04-28','feat','feat: implement percentage mode for segment values in segmented charts'],
+['c133e42','2026-04-29','feat','feat: enhance Y-axis buffer handling for dual-axis charts and add logarithmic tick generation'],
+['84d7dc1','2026-04-29','docs','docs: update repository clone URL in README'],
+['f4cd692','2026-04-29','feat','feat: add dumbbell, bubble compare, and overlay chart types with corresponding settings and rendering logic'],
+['4be16cf','2026-04-30','feat','feat: Enhance comparison charts with new features and improvements'],
+['67756a2','2026-04-30','feat','feat: add documentation for new chart types: dumbbell, bubble compare, and overlay'],
+['4649433','2026-04-30','none','Refactor chart options and enhance functionality'],
+['ec6602e','2026-04-30','feat','feat: enhance line style controls and add semantic color variables in CSS'],
+['28e7cd7','2026-04-30','none','Refactor chart state management and registration'],
+['63e99e5','2026-04-30','feat','feat: update README and add todo for chart registration system enhancements'],
+['0c9b43f','2026-04-30','feat','feat: switch theme to light mode and update color variables for better visibility'],
+['4cd5c9b','2026-05-01','fix','fix: hide grid lines on overlay chart for cleaner visualization'],
+['d67c09c','2026-05-01','feat','feat: enhance donut chart options and update data hint for clarity'],
+['f6cf261','2026-05-01','none','Enhance chart data handling and user experience'],
+['150feb4','2026-05-01','fix','fix: update validation for segmented chart to require at least 1 value column'],
+['d7a35dc','2026-05-02','feat','feat: TODO.md added - enhance chart registration with data validation and improved user feedback'],
+['96ba9f3','2026-05-03','feat','feat: enhance data input options and update format handling for improved user experience'],
+['c589cbf','2026-05-03','feat','feat: add data export options for CSV, TSV, and JSON formats with copy functionality'],
+['e9057ad','2026-05-03','feat','feat: add panel title actions with format options and copy functionality'],
+['ba594be','2026-05-04','update','update: update default export quality to 1x in export options'],
+['1d659bc','2026-05-04','feat','feat: preserve inline plugins in chart exports to fix missing elements'],
+['4791d71','2026-05-04','feat','feat: enhance innovator chart with data-driven input and auto-scaling for Y-axis'],
+['a3aace2','2026-05-04','none','Add documentation comments for chart-related modules and functions'],
+['dfc2798','2026-05-04','fix','fix: use debounced render function for segmented group updates; add missing documentation in timeline UI'],
+['788c2f5','2026-05-04','refactor','refactor: restructure todo.md for modular architecture; enhance chart registration and validation features'],
+['ad7bac1','2026-05-12','fix','fix: update radar chart axis to auto-scale by replacing suggestedMax with beginAtZero'],
+['cb03c7e','2026-05-12','feat','feat: add axis formatting options for dual-axis UI; update state management for axis formats'],
+['a0f7b66','2026-05-12','feat','feat: enhance Y-axis tick formatting by allowing override options and integrate formatting in Innovator\'s Dilemma chart'],
+['b625be1','2026-05-13','feat','feat: add Y-axis scale selection for Innovator\'s Dilemma chart; implement linear and logarithmic scaling options'],
+['474b8c3','2026-05-13','feat','feat: implement logarithmic scale support for Y-axis tick formatting in charts'],
+['7806271','2026-06-13','feat','feat: update waterfall chart colors and legend configuration for improved clarity'],
+['78b7eb8','2026-06-13','feat','feat: add dual-bar chart implementation with customizable settings and validation'],
+['28e81d4','2026-06-29','feat','feat: add inflation calculator with interactive charts and controls'],
+['4b236bb','2026-06-29','feat','feat: update README with new chart types and features; add dual-bar chart and combo chart descriptions']
+];
+var TYPE_LABEL = { feat:'feat', fix:'fix', docs:'docs', refactor:'refactor', chore:'chore', clean:'clean up', update:'update', none:'untyped' };
+var commitBody = d.getElementById('commitBody');
+var monthChips = d.getElementById('monthChips');
+var searchInput = d.getElementById('commitSearch');
+var countLine = d.getElementById('commitCount');
+var noResults = d.getElementById('noResults');
+var monthFilter = 'all';
+
+var MONTH_META = [
+  { key:'2026-04', label:'April 2026' },
+  { key:'2026-05', label:'May 2026' },
+  { key:'2026-06', label:'June 2026' }
+];
+function monthCount(key){ return COMMITS.filter(function(c){ return c[1].indexOf(key) === 0; }).length; }
+
+function buildChips(){
+  var all = d.createElement('button');
+  all.className = 'chip'; all.setAttribute('data-month','all'); all.setAttribute('aria-pressed','true');
+  all.textContent = 'All months (' + COMMITS.length + ')';
+  monthChips.appendChild(all);
+  MONTH_META.forEach(function(m){
+    var b = d.createElement('button');
+    b.className = 'chip'; b.setAttribute('data-month', m.key); b.setAttribute('aria-pressed','false');
+    b.textContent = m.label + ' (' + monthCount(m.key) + ')';
+    monthChips.appendChild(b);
+  });
+  monthChips.addEventListener('click', function(e){
+    var chip = e.target.closest('.chip');
+    if (!chip) return;
+    monthFilter = chip.getAttribute('data-month');
+    [].slice.call(monthChips.querySelectorAll('.chip')).forEach(function(c){ c.setAttribute('aria-pressed', c === chip ? 'true' : 'false'); });
+    applyFilter();
+  });
+}
+function buildRows(){
+  COMMITS.forEach(function(c){
+    var tr = d.createElement('tr');
+    tr.setAttribute('data-month', c[1].slice(0,7));
+    var tdH = d.createElement('td');
+    var wrap = d.createElement('span'); wrap.className = 'hashrow';
+    var h = d.createElement('span'); h.className = 'hash'; h.textContent = c[0];
+    var b = d.createElement('button'); b.className = 'copybtn'; b.type = 'button';
+    b.setAttribute('data-copy', c[0]); b.setAttribute('aria-label', 'Copy hash ' + c[0]);
+    b.textContent = 'copy';
+    wrap.appendChild(h); wrap.appendChild(b); tdH.appendChild(wrap); tr.appendChild(tdH);
+    var tdD = d.createElement('td'); tdD.textContent = c[1]; tr.appendChild(tdD);
+    var tdT = d.createElement('td');
+    var tag = d.createElement('span'); tag.className = 'tag ' + c[2]; tag.textContent = TYPE_LABEL[c[2]] || c[2];
+    tdT.appendChild(tag); tr.appendChild(tdT);
+    var tdS = d.createElement('td'); tdS.textContent = c[3]; tr.appendChild(tdS);
+    tr.setAttribute('data-search', (c[0] + ' ' + c[3] + ' ' + (TYPE_LABEL[c[2]] || c[2])).toLowerCase());
+    commitBody.appendChild(tr);
+  });
+}
+function applyFilter(){
+  var q = (searchInput.value || '').trim().toLowerCase();
+  var shown = 0;
+  [].slice.call(commitBody.querySelectorAll('tr')).forEach(function(tr){
+    var okMonth = (monthFilter === 'all') || (tr.getAttribute('data-month') === monthFilter);
+    var okText = !q || tr.getAttribute('data-search').indexOf(q) !== -1;
+    var on = okMonth && okText;
+    tr.style.display = on ? '' : 'none';
+    if (on) shown++;
+  });
+  countLine.textContent = 'Showing ' + shown + ' of ' + COMMITS.length + ' commits';
+  noResults.style.display = shown === 0 ? 'block' : 'none';
+  commitTableWrapVisible();
+}
+function commitTableWrapVisible(){
+  var wrapEl = d.getElementById('commitTable').parentNode;
+  wrapEl.style.display = shown_rows() ? '' : 'none';
+}
+function shown_rows(){
+  return [].slice.call(commitBody.querySelectorAll('tr')).filter(function(tr){ return tr.style.display !== 'none'; }).length;
+}
+if (searchInput) searchInput.addEventListener('input', applyFilter);
+
+/* ---------- day grid (data room) ---------- */
+function buildDayGrid(){
+  var grid = d.getElementById('dayGrid');
+  if (!grid) return;
+  var counts = {};
+  COMMITS.forEach(function(c){ counts[c[1]] = (counts[c[1]] || 0) + 1; });
+  var spans = [ ['Apr 2026', '2026-04', 16, 30], ['May 2026', '2026-05', 1, 31], ['Jun 2026', '2026-06', 1, 29] ];
+  spans.forEach(function(sp){
+    var label = d.createElement('span');
+    label.className = 'small'; label.style.minWidth = '64px'; label.style.alignSelf = 'center';
+    label.style.fontFamily = 'var(--mono)';
+    label.textContent = sp[0];
+    grid.appendChild(label);
+    for (var day = sp[2]; day <= sp[3]; day++) {
+      var iso = sp[1] + '-' + (day < 10 ? '0' + day : day);
+      var n = counts[iso] || 0;
+      var cell = d.createElement('span');
+      cell.className = 'daycell' + (n ? ' has' : '');
+      cell.textContent = n ? String(n) : '·';
+      cell.title = iso + ': ' + n + ' commit' + (n === 1 ? '' : 's');
+      grid.appendChild(cell);
+    }
+  });
+}
+
+/* ---------- boot ---------- */
+buildChips();
+buildRows();
+applyFilter();
+buildDayGrid();
+animateCounters();
+var firstPanel = d.querySelector('[role="tabpanel"]:not([hidden])');
+if (firstPanel) { shownOnce[firstPanel.id] = true; animateBars(firstPanel); renderMermaidIn(firstPanel); }
+})();
+</script>
+</body>
+</html>

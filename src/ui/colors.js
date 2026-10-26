@@ -12,6 +12,7 @@ export function initColorPickers() {
     picker.addEventListener('input', () => {
       hex.value = picker.value.toUpperCase();
       state.userColors[idx] = picker.value.toUpperCase();
+      if (window.__debouncedSaveProfile) window.__debouncedSaveProfile();
       if (window.__debouncedRender) window.__debouncedRender();
     });
 
@@ -21,6 +22,7 @@ export function initColorPickers() {
       if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
         picker.value = val;
         state.userColors[idx] = val.toUpperCase();
+        if (window.__debouncedSaveProfile) window.__debouncedSaveProfile();
         if (window.__debouncedRender) window.__debouncedRender();
       }
     });
@@ -44,6 +46,7 @@ export function initColorPickers() {
     if (dom.chartGridColor) dom.chartGridColor.value = state.currentTheme === 'dark' ? '#334155' : '#E8DDD0';
     document.querySelectorAll('.palette-swatch').forEach(s => s.classList.remove('active'));
     document.querySelector('.palette-swatch[data-palette="default"]')?.classList.add('active');
+    if (window.__debouncedSaveProfile) window.__debouncedSaveProfile();
     if (window.__renderChart) window.__renderChart();
     showToast('Colors reset to defaults', 'success');
   });
@@ -65,6 +68,7 @@ export function initColorPickers() {
         colorPairs[i].hex.value = color;
       }
     });
+    if (window.__debouncedSaveProfile) window.__debouncedSaveProfile();
     if (window.__renderChart) window.__renderChart();
   });
 }

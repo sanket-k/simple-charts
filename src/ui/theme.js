@@ -20,5 +20,6 @@ export function setTheme(theme) {
   if (!state.userGridColor && dom.chartGridColor) {
     dom.chartGridColor.value = PALETTE[theme].grid;
   }
+  if (window.__debouncedSaveProfile) window.__debouncedSaveProfile();
   if (window.__renderChart) window.__renderChart();
 }
