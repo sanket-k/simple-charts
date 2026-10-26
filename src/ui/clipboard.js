@@ -34,7 +34,43 @@ export function initClipboard() {
     }
   });
 
+  /** Toggles the Keyboard Shortcuts modal cheatsheet and adapts modifier keys to platform. */
+  function toggleShortcutsModal(show) {
+    if (!dom.shortcutsModal) return;
+    const shouldOpen = typeof show === 'boolean' ? show : !dom.shortcutsModal.classList.contains('open');
+    dom.shortcutsModal.classList.toggle('open', shouldOpen);
+    if (shouldOpen) {
+      const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+      document.querySelectorAll('.kbd-mod').forEach(k => {
+        k.textContent = isMac ? '⌘' : 'Ctrl';
+      });
+    }
+  }
+
+  dom.shortcutsBtn?.addEventListener('click', () => toggleShortcutsModal(true));
+  dom.closeShortcutsModalBtn?.addEventListener('click', () => toggleShortcutsModal(false));
+  dom.shortcutsModal?.addEventListener('click', (e) => {
+    if (e.target === dom.shortcutsModal) toggleShortcutsModal(false);
+  });
+
   document.addEventListener('keydown', (e) => {
+    const tag = document.activeElement?.tagName?.toLowerCase();
+    const isInput = tag === 'input' || tag === 'textarea';
+
+    // Show / dismiss shortcuts modal via ? (Shift + /)
+    if (!isInput && (e.key === '?' || (e.shiftKey && e.key === '/'))) {
+      e.preventDefault();
+      toggleShortcutsModal();
+      return;
+    }
+
+    // Dismiss shortcuts modal via Escape
+    if (e.key === 'Escape' && dom.shortcutsModal?.classList.contains('open')) {
+      e.preventDefault();
+      toggleShortcutsModal(false);
+      return;
+    }
+
     if ((e.metaKey || e.ctrlKey) && e.key === 'e') {
       e.preventDefault();
       dom.exportBtn.click();
@@ -44,8 +80,7 @@ export function initClipboard() {
       dom.themeToggle.click();
     }
     if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
-      const tag = document.activeElement?.tagName?.toLowerCase();
-      if (tag !== 'input' && tag !== 'textarea') {
+      if (!isInput) {
         const selection = window.getSelection();
         if (!selection || selection.isCollapsed) {
           e.preventDefault();

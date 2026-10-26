@@ -597,9 +597,14 @@ The number inputs accept values outside the slider range (e.g. larger amounts or
 
 | Shortcut | Action |
 |---|---|
-| `Cmd/Ctrl + E` | Export chart |
+| `?` or `Shift + /` | Open keyboard shortcuts cheatsheet modal |
+| `Cmd/Ctrl + K` | Open Spotlight search for saved graphs |
+| `Cmd/Ctrl + E` | Export chart (open filename dialog) |
 | `Cmd/Ctrl + Shift + D` | Toggle dark/light theme |
-| `Cmd/Ctrl + C` | Copy to clipboard (when no text selected) |
+| `Cmd/Ctrl + C` | Copy chart image to clipboard (when no text selected) |
+| `Cmd/Ctrl + V` | Global paste data from anywhere on screen |
+| `Escape` | Dismiss active modal or overlay |
+| `Enter` | Confirm export or save dialog |
 
 ---
 
@@ -693,9 +698,10 @@ graphs/
 │       ├── branding.js     # Logo upload/clear, brand settings
 │       ├── timeline-ui.js  # Timeline event editor UI
 │       ├── zoom-ui.js      # Zoom slider controls
-│       ├── export.js       # Export modal: PNG, JPG, SVG, WebP
-│       ├── clipboard.js    # Paste handler, keyboard shortcuts (Cmd+E/C/Shift+D)
-│       └── inflation-ui.js # Inflation slider/number-input sync
+│       ├── clipboard.js    # Paste handler & shortcuts cheatsheet (?/Cmd+E/C/Shift+D)
+│       ├── inflation-ui.js # Inflation slider/number-input sync
+│       ├── saved-graphs.js # Saved graphs library & Spotlight modal (Cmd+K)
+│       └── user-profile.js # Brand kit & settings localStorage persistence
 ├── inflation/              # Inflation variant gallery (standalone prototype)
 └── *.csv                   # Sample datasets
 ```

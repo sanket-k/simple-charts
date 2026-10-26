@@ -7,6 +7,9 @@ export const $$ = (sel) => document.querySelectorAll(sel);
 
 /** Cached DOM references — avoids repeated querySelector calls throughout the app. */
 export const dom = {
+  shortcutsBtn: $('#shortcutsBtn'),
+  shortcutsModal: $('#shortcutsModal'),
+  closeShortcutsModalBtn: $('#closeShortcutsModalBtn'),
   themeToggle: $('#themeToggle'),
   exportBtn: $('#exportBtn'),
   exportSize: $('#exportSize'),

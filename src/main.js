@@ -20,7 +20,7 @@ import { initBranding } from './ui/branding.js';
 import { initTimelineUI } from './ui/timeline-ui.js';
 import { initZoomUI } from './ui/zoom-ui.js';
 import { initExport } from './ui/export.js';
-import { initClipboard } from './ui/clipboard.js';
+import { initClipboard } from './ui/clipboard.js?v=2';
 import { initInflationUI } from './ui/inflation-ui.js';
 import { initSavedGraphs } from './ui/saved-graphs.js';
 import { loadUserProfile, initUserProfile, debouncedSaveUserProfile, saveUserProfile } from './ui/user-profile.js';
