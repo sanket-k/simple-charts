@@ -2359,6 +2359,12 @@ body {
   margin-bottom: var(--sp-3);
 }
 
+.saved-modal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
 .saved-modal-title {
   font-size: 0.88rem;
   font-weight: 700;
@@ -2633,6 +2639,234 @@ body {
   font-size: 0.72rem;
   color: var(--text-tertiary);
   text-align: center;
+}
+
+/* ═══════════════════════════════════════════
+   Option A: Backup Milestone Modal & Dot
+   ═══════════════════════════════════════════ */
+
+.topbar-backup-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand-orange);
+  box-shadow: 0 0 0 2px var(--brand-orange-glow);
+  flex-shrink: 0;
+  animation: backupDotPulse 1.8s ease-in-out infinite;
+}
+
+.topbar-backup-dot[hidden] {
+  display: none;
+}
+
+@keyframes backupDotPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.25); opacity: 0.7; }
+}
+
+.backup-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-bg);
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-4);
+  backdrop-filter: blur(2px);
+}
+
+.backup-modal-backdrop.open {
+  display: flex;
+}
+
+.backup-modal-dialog {
+  width: 440px;
+  max-width: 96vw;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.backup-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.backup-modal-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.backup-modal-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--brand-orange-soft);
+  color: var(--brand-orange);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.backup-modal-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.backup-modal-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.backup-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+}
+
+.backup-stat-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-2) var(--sp-3);
+  text-align: center;
+}
+
+.backup-stat-val {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.backup-stat-val.accent {
+  color: var(--brand-orange);
+}
+
+.backup-stat-lbl {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.backup-bundle-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.backup-bundle-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-2) var(--sp-3);
+  cursor: pointer;
+  transition: border-color var(--duration) var(--ease-out);
+}
+
+.backup-bundle-item:hover {
+  border-color: var(--border-focus);
+}
+
+.backup-bundle-left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.backup-bundle-left input[type="checkbox"] {
+  accent-color: var(--brand-orange);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.backup-bundle-name {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.backup-bundle-desc {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+}
+
+.backup-bundle-size {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.backup-quota-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.backup-quota-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.backup-quota-row code,
+.backup-quota-text {
+  font-family: var(--font-mono);
+}
+
+.backup-quota-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.backup-quota-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: var(--brand-orange);
+  transition: width 0.25s var(--ease-out);
+}
+
+.backup-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding-top: var(--sp-1);
+}
+
+.backup-modal-actions-right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
 }
 
 /* Firefox scrollbar */

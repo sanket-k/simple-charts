@@ -376,17 +376,40 @@ export function exportBrandKit() {
   showToast('Brand Kit exported as JSON', 'success');
 }
 
+/** Returns the current Brand Kit payload and serialized byte size for workspace backups. */
+export function getBrandKitSnapshot() {
+  let data = null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') data = parsed;
+    }
+  } catch (err) {
+    // Fall back to live capture below
+  }
+  if (!data) data = captureUserProfile();
+  const bytes = new Blob([JSON.stringify(data)]).size;
+  return { data, bytes };
+}
+
+/** Validates and applies a Brand Kit object to localStorage and the live UI. */
+export function applyBrandKitData(data) {
+  if (!data || typeof data !== 'object') return false;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  loadUserProfile();
+  if (window.__renderChart) window.__renderChart();
+  return true;
+}
+
 /** Imports and hydrates a Brand Kit JSON file. */
 export function importBrandKit(jsonStr) {
   try {
     const data = JSON.parse(jsonStr);
-    if (!data || typeof data !== 'object') {
+    if (!applyBrandKitData(data)) {
       showToast('Invalid Brand Kit file format', 'error');
       return false;
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    loadUserProfile();
-    if (window.__renderChart) window.__renderChart();
     showToast('Brand Kit imported and applied!', 'success');
     return true;
   } catch (err) {

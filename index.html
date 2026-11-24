@@ -88,6 +88,11 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
           <span>Saved (<span id="topbarSavedCount">0</span>)</span>
         </button>
+        <button class="btn-secondary" id="topbarBackupBtn" title="Back up saved graphs & Brand Kit">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Backup</span>
+          <span class="topbar-backup-dot" id="topbarBackupDot" hidden title="Backup recommended"></span>
+        </button>
         <button class="btn-secondary" id="copyJsonBtn" title="Copy chart data as JSON">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
           JSON
@@ -1218,7 +1223,11 @@
       <div class="saved-modal-left">
         <div class="saved-modal-left-header">
           <h3 class="saved-modal-title">Saved Graphs Library</h3>
-          <button type="button" class="quick-save-close" id="closeSavedModalBtn" title="Close (Esc)" aria-label="Close modal">&times;</button>
+          <div class="saved-modal-header-actions">
+            <button type="button" class="saved-btn-xs" id="modalImportBtn" title="Import saved graphs or full backup JSON">↑ Import</button>
+            <button type="button" class="saved-btn-xs" id="modalBackupBtn" title="Back up saved graphs & Brand Kit">↓ Backup</button>
+            <button type="button" class="quick-save-close" id="closeSavedModalBtn" title="Close (Esc)" aria-label="Close modal">&times;</button>
+          </div>
         </div>
         <div class="saved-filter-bar">
           <input type="text" id="modalSavedSearch" class="saved-input" placeholder="Filter by name, sector, date, or column…">
@@ -1306,6 +1315,80 @@
 
       <div class="shortcuts-modal-footer">
         <span class="shortcuts-hint">Tip: Paste CSV, TSV, or JSON anywhere on screen without focusing the text area.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option A: Calm Hybrid Backup Milestone Modal -->
+  <div class="backup-modal-backdrop" id="backupMilestoneModal" role="dialog" aria-modal="true" aria-labelledby="backupModalTitle">
+    <div class="backup-modal-dialog">
+      <div class="backup-modal-header">
+        <div class="backup-modal-title-row">
+          <span class="backup-modal-icon" id="backupModalIcon" aria-hidden="true">★</span>
+          <div>
+            <h3 class="backup-modal-title" id="backupModalTitle">Milestone: 25 Saved Graphs</h3>
+            <p class="backup-modal-subtitle" id="backupModalSubtitle">25 new graphs created since your last backup</p>
+          </div>
+        </div>
+        <button type="button" class="quick-save-close" id="closeBackupModalBtn" title="Close (Esc)" aria-label="Close backup reminder">&times;</button>
+      </div>
+
+      <div class="backup-stats-grid">
+        <div class="backup-stat-card">
+          <div class="backup-stat-val accent" id="backupStat1Val">25</div>
+          <div class="backup-stat-lbl" id="backupStat1Lbl">Total Graphs</div>
+        </div>
+        <div class="backup-stat-card">
+          <div class="backup-stat-val" id="backupStat2Val">+25</div>
+          <div class="backup-stat-lbl" id="backupStat2Lbl">Since Backup</div>
+        </div>
+        <div class="backup-stat-card">
+          <div class="backup-stat-val" id="backupStat3Val">0d</div>
+          <div class="backup-stat-lbl" id="backupStat3Lbl">Last Backup</div>
+        </div>
+      </div>
+
+      <div class="backup-bundle-list">
+        <label class="backup-bundle-item">
+          <span class="backup-bundle-left">
+            <input type="checkbox" id="backupChkGraphs" checked>
+            <span>
+              <strong class="backup-bundle-name">Saved Graphs (<span id="backupGraphsMeta">0 total</span>)</strong>
+              <span class="backup-bundle-desc">Data, labels, chart types &amp; settings</span>
+            </span>
+          </span>
+          <span class="backup-bundle-size" id="backupGraphsSize">0 KB</span>
+        </label>
+
+        <label class="backup-bundle-item">
+          <span class="backup-bundle-left">
+            <input type="checkbox" id="backupChkBrand" checked>
+            <span>
+              <strong class="backup-bundle-name">Brand Kit &amp; Preferences</strong>
+              <span class="backup-bundle-desc">Logo SVG, palette, theme &amp; export defaults</span>
+            </span>
+          </span>
+          <span class="backup-bundle-size" id="backupBrandSize">0 KB</span>
+        </label>
+      </div>
+
+      <div class="backup-quota-wrap">
+        <div class="backup-quota-row">
+          <span>Browser-only <code>localStorage</code></span>
+          <span class="backup-quota-text" id="backupQuotaText">0 KB / ~5.0 MB (0%)</span>
+        </div>
+        <div class="backup-quota-track">
+          <div class="backup-quota-fill" id="backupQuotaFill"></div>
+        </div>
+      </div>
+
+      <div class="backup-modal-footer">
+        <button type="button" class="btn-secondary" id="backupSnoozeBtn">Remind Later (+10)</button>
+        <button type="button" class="btn-secondary" id="backupRestoreBtn" hidden title="Restore graphs & Brand Kit from a .json backup file">↑ Restore (.json)</button>
+        <div class="backup-modal-actions-right">
+          <button type="button" class="btn-secondary" id="backupSkipBtn">Skip</button>
+          <button type="button" class="btn-primary" id="backupNowBtn">↓ Back Up Now (.json)</button>
+        </div>
       </div>
     </div>
   </div>

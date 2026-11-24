@@ -10,9 +10,21 @@ import { renderInnovatorTierNames } from '../charts/innovator.js';
 import { renderTimelineEvents } from './timeline-ui.js';
 import { renderLineStyleControls } from './line-style-ui.js';
 import { updateDataFormatTip } from './settings.js';
-import { setSuppressProfileAutoSave } from './user-profile.js';
+import {
+  setSuppressProfileAutoSave,
+  getBrandKitSnapshot,
+  applyBrandKitData,
+  exportBrandKit,
+} from './user-profile.js';
 
 const STORAGE_KEY = 'simple_charts_saved_graphs_v1';
+const BACKUP_META_KEY = 'simple_charts_backup_meta_v1';
+const BACKUP_COUNT_THRESHOLD = 25;
+const BACKUP_DAYS_THRESHOLD = 30;
+const SNOOZE_EXTRA_SAVES = 10;
+const SNOOZE_DAYS = 7;
+const MS_PER_DAY = 86_400_000;
+const LOCAL_STORAGE_QUOTA_BYTES = 5 * 1024 * 1024;
 
 /** Default preset sectors shown in suggestions alongside user-created sectors */
 const DEFAULT_SECTORS = ['Finance', 'Crypto', 'Macro', 'Product', 'Tech / AI', 'General'];
@@ -47,6 +59,8 @@ const SECTOR_KEYWORDS = {
 };
 
 let savedGraphs = [];
+let backupMeta = null;
+let activeBackupPromptReason = 'count';
 let activeGraphId = null;
 let selectedModalGraphId = null;
 let activeCategory = 'All';
@@ -71,6 +85,113 @@ function saveToStorage() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(savedGraphs));
   } catch (e) {
     showToast('Storage quota exceeded — export library as JSON to free space', 'warning');
+  }
+}
+
+function loadBackupMeta() {
+  try {
+    const raw = localStorage.getItem(BACKUP_META_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        return {
+          lastBackupAt: typeof parsed.lastBackupAt === 'number' ? parsed.lastBackupAt : null,
+          savesSinceBackup: Number.isFinite(parsed.savesSinceBackup) ? Math.max(0, parsed.savesSinceBackup) : 0,
+          snoozedUntilSaves: typeof parsed.snoozedUntilSaves === 'number' ? parsed.snoozedUntilSaves : null,
+          snoozedUntilTime: typeof parsed.snoozedUntilTime === 'number' ? parsed.snoozedUntilTime : null,
+        };
+      }
+    }
+  } catch (e) {
+    // Fall through to seeded defaults
+  }
+
+  // Seed metadata for existing libraries created before backup tracking existed
+  if (savedGraphs.length > 0) {
+    const earliest = savedGraphs.reduce((min, g) => {
+      const ts = typeof g.createdAt === 'number' ? g.createdAt : Date.now();
+      return ts < min ? ts : min;
+    }, Date.now());
+    return {
+      lastBackupAt: earliest,
+      savesSinceBackup: savedGraphs.length,
+      snoozedUntilSaves: null,
+      snoozedUntilTime: null,
+    };
+  }
+
+  return {
+    lastBackupAt: null,
+    savesSinceBackup: 0,
+    snoozedUntilSaves: null,
+    snoozedUntilTime: null,
+  };
+}
+
+function saveBackupMeta() {
+  if (!backupMeta) return;
+  try {
+    localStorage.setItem(BACKUP_META_KEY, JSON.stringify(backupMeta));
+  } catch (e) {
+    // Ignore storage quota errors for metadata
+  }
+}
+
+function formatByteSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) {
+    const kb = bytes / 1024;
+    return `${kb < 10 ? kb.toFixed(1) : Math.round(kb)} KB`;
+  }
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function estimateLocalStorageBytes() {
+  let total = 0;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      const val = key ? localStorage.getItem(key) : '';
+      total += new Blob([key || '', val || '']).size;
+    }
+  } catch (e) {
+    return new Blob([JSON.stringify(savedGraphs)]).size;
+  }
+  return total;
+}
+
+function getBackupTriggerState() {
+  if (!backupMeta) backupMeta = loadBackupMeta();
+  const totalGraphs = savedGraphs.length;
+  const newSinceBackup = backupMeta.savesSinceBackup || 0;
+  const daysSinceBackup = backupMeta.lastBackupAt
+    ? Math.max(0, Math.floor((Date.now() - backupMeta.lastBackupAt) / MS_PER_DAY))
+    : 0;
+
+  if (totalGraphs === 0 || newSinceBackup <= 0) {
+    return { shouldPrompt: false, reason: null, needsDot: false, totalGraphs, newSinceBackup, daysSinceBackup };
+  }
+
+  const countDue = newSinceBackup >= BACKUP_COUNT_THRESHOLD;
+  const daysDue = daysSinceBackup >= BACKUP_DAYS_THRESHOLD;
+  const needsDot = countDue || daysDue;
+
+  const countPromptEligible = countDue && (backupMeta.snoozedUntilSaves == null || newSinceBackup >= backupMeta.snoozedUntilSaves);
+  const daysPromptEligible = daysDue && (backupMeta.snoozedUntilTime == null || Date.now() >= backupMeta.snoozedUntilTime);
+
+  const reason = countPromptEligible ? 'count' : (daysPromptEligible ? 'days' : null);
+  return { shouldPrompt: reason !== null, reason, needsDot, totalGraphs, newSinceBackup, daysSinceBackup };
+}
+
+function updateBackupDot() {
+  const { needsDot, newSinceBackup, daysSinceBackup } = getBackupTriggerState();
+  if (dom.topbarBackupDot) {
+    dom.topbarBackupDot.hidden = !needsDot;
+  }
+  if (dom.topbarBackupBtn) {
+    dom.topbarBackupBtn.title = needsDot
+      ? `Back up workspace — ${newSinceBackup} unbacked-up graph${newSinceBackup === 1 ? '' : 's'} (${daysSinceBackup}d since backup)`
+      : 'Back up saved graphs & Brand Kit';
   }
 }
 
@@ -149,6 +270,8 @@ const EXCLUDED_INPUT_IDS = new Set([
   'csvFileInput',
   'brandLogoFile',
   'importSavedLibInput',
+  'backupChkGraphs',
+  'backupChkBrand',
 ]);
 
 /** Auto-scans all DOM control inputs (<input>, <select>, <textarea> with an id)
@@ -907,6 +1030,12 @@ function saveCurrentGraph() {
   selectedModalGraphId = snapshot.id;
   saveToStorage();
 
+  if (!backupMeta) backupMeta = loadBackupMeta();
+  if (backupMeta.lastBackupAt == null) backupMeta.lastBackupAt = Date.now();
+  backupMeta.savesSinceBackup += 1;
+  saveBackupMeta();
+  updateBackupDot();
+
   dom.quickSaveBox?.classList.remove('open');
 
   // Switch to the Saved tab in Option A so user sees their saved card immediately
@@ -916,6 +1045,11 @@ function saveCurrentGraph() {
 
   renderSavedGraphsUI();
   showToast(`Saved "${snapshot.name}" in ${snapshot.category}`, 'success');
+
+  const trigger = getBackupTriggerState();
+  if (trigger.shouldPrompt) {
+    openBackupModal(trigger);
+  }
 }
 
 function deleteSavedGraph(id) {
@@ -927,8 +1061,190 @@ function deleteSavedGraph(id) {
     selectedModalGraphId = savedGraphs[0]?.id || null;
   }
   saveToStorage();
+  if (backupMeta) {
+    backupMeta.savesSinceBackup = Math.min(backupMeta.savesSinceBackup, savedGraphs.length);
+    saveBackupMeta();
+    updateBackupDot();
+  }
   renderSavedGraphsUI();
   showToast(`Removed "${removed.name}"`, 'success');
+}
+
+function downloadJSON(payload, filename) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function markBackupCompleted() {
+  backupMeta = {
+    lastBackupAt: Date.now(),
+    savesSinceBackup: 0,
+    snoozedUntilSaves: null,
+    snoozedUntilTime: null,
+  };
+  saveBackupMeta();
+  updateBackupDot();
+  closeBackupModal();
+}
+
+function formatShortDate(ts) {
+  try {
+    return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  } catch (e) {
+    return 'your last backup';
+  }
+}
+
+export function openBackupModal(trigger = getBackupTriggerState(), { manual = false } = {}) {
+  if (!dom.backupMilestoneModal) return;
+  const { reason, totalGraphs, newSinceBackup, daysSinceBackup } = trigger;
+  const effectiveReason = reason || (manual ? 'manual' : 'count');
+  activeBackupPromptReason = effectiveReason;
+
+  const isDays = effectiveReason === 'days';
+  const isManual = effectiveReason === 'manual';
+  if (dom.backupModalIcon) dom.backupModalIcon.textContent = isDays ? '⏱' : (isManual ? '↓' : '★');
+
+  if (isDays) {
+    const sinceLabel = backupMeta?.lastBackupAt ? formatShortDate(backupMeta.lastBackupAt) : 'your last backup';
+    if (dom.backupModalTitle) dom.backupModalTitle.textContent = `${daysSinceBackup} Days Since Last Backup`;
+    if (dom.backupModalSubtitle) {
+      dom.backupModalSubtitle.textContent = `You've created ${newSinceBackup} new graph${newSinceBackup === 1 ? '' : 's'} since ${sinceLabel} (${totalGraphs} total at risk)`;
+    }
+    if (dom.backupStat1Val) dom.backupStat1Val.textContent = `${daysSinceBackup}d`;
+    if (dom.backupStat1Lbl) dom.backupStat1Lbl.textContent = 'Since Backup';
+    if (dom.backupStat2Val) dom.backupStat2Val.textContent = `+${newSinceBackup}`;
+    if (dom.backupStat2Lbl) dom.backupStat2Lbl.textContent = 'New Graphs';
+    if (dom.backupStat3Val) dom.backupStat3Val.textContent = String(totalGraphs);
+    if (dom.backupStat3Lbl) dom.backupStat3Lbl.textContent = 'Total Stored';
+    if (dom.backupSnoozeBtn) {
+      dom.backupSnoozeBtn.hidden = false;
+      dom.backupSnoozeBtn.textContent = `Remind in ${SNOOZE_DAYS} Days`;
+    }
+    if (dom.backupRestoreBtn) dom.backupRestoreBtn.hidden = true;
+    if (dom.backupSkipBtn) dom.backupSkipBtn.textContent = 'Skip';
+  } else if (isManual) {
+    if (dom.backupModalTitle) dom.backupModalTitle.textContent = 'Backup & Restore Workspace';
+    if (dom.backupModalSubtitle) {
+      if (totalGraphs === 0) {
+        dom.backupModalSubtitle.textContent = 'Back up your Brand Kit or restore a saved .json backup file';
+      } else if (newSinceBackup === 0) {
+        dom.backupModalSubtitle.textContent = `All ${totalGraphs} saved graph${totalGraphs === 1 ? '' : 's'} are up to date since your last backup`;
+      } else {
+        dom.backupModalSubtitle.textContent = `${newSinceBackup} unbacked-up graph${newSinceBackup === 1 ? '' : 's'} (${totalGraphs} total in this browser)`;
+      }
+    }
+    if (dom.backupStat1Val) dom.backupStat1Val.textContent = String(totalGraphs);
+    if (dom.backupStat1Lbl) dom.backupStat1Lbl.textContent = 'Total Graphs';
+    if (dom.backupStat2Val) dom.backupStat2Val.textContent = `+${newSinceBackup}`;
+    if (dom.backupStat2Lbl) dom.backupStat2Lbl.textContent = 'Since Backup';
+    if (dom.backupStat3Val) dom.backupStat3Val.textContent = `${daysSinceBackup}d`;
+    if (dom.backupStat3Lbl) dom.backupStat3Lbl.textContent = 'Last Backup';
+    if (dom.backupSnoozeBtn) dom.backupSnoozeBtn.hidden = true;
+    if (dom.backupRestoreBtn) dom.backupRestoreBtn.hidden = false;
+    if (dom.backupSkipBtn) dom.backupSkipBtn.textContent = 'Cancel';
+  } else {
+    if (dom.backupModalTitle) dom.backupModalTitle.textContent = `Milestone: ${totalGraphs} Saved Graphs`;
+    if (dom.backupModalSubtitle) {
+      dom.backupModalSubtitle.textContent = `${newSinceBackup} new graph${newSinceBackup === 1 ? '' : 's'} created since your last backup`;
+    }
+    if (dom.backupStat1Val) dom.backupStat1Val.textContent = String(totalGraphs);
+    if (dom.backupStat1Lbl) dom.backupStat1Lbl.textContent = 'Total Graphs';
+    if (dom.backupStat2Val) dom.backupStat2Val.textContent = `+${newSinceBackup}`;
+    if (dom.backupStat2Lbl) dom.backupStat2Lbl.textContent = 'Since Backup';
+    if (dom.backupStat3Val) dom.backupStat3Val.textContent = `${daysSinceBackup}d`;
+    if (dom.backupStat3Lbl) dom.backupStat3Lbl.textContent = 'Last Backup';
+    if (dom.backupSnoozeBtn) {
+      dom.backupSnoozeBtn.hidden = false;
+      dom.backupSnoozeBtn.textContent = `Remind Later (+${SNOOZE_EXTRA_SAVES})`;
+    }
+    if (dom.backupRestoreBtn) dom.backupRestoreBtn.hidden = true;
+    if (dom.backupSkipBtn) dom.backupSkipBtn.textContent = 'Skip';
+  }
+
+  const graphsBytes = new Blob([JSON.stringify(savedGraphs)]).size;
+  const brandSnap = getBrandKitSnapshot();
+  const totalStorageBytes = estimateLocalStorageBytes();
+  const quotaPct = Math.min(100, Math.round((totalStorageBytes / LOCAL_STORAGE_QUOTA_BYTES) * 100));
+
+  if (dom.backupChkGraphs) {
+    dom.backupChkGraphs.checked = totalGraphs > 0;
+    dom.backupChkGraphs.disabled = totalGraphs === 0;
+  }
+  if (dom.backupChkBrand) dom.backupChkBrand.checked = true;
+  if (dom.backupGraphsMeta) dom.backupGraphsMeta.textContent = `${totalGraphs} total · +${newSinceBackup} new`;
+  if (dom.backupGraphsSize) dom.backupGraphsSize.textContent = formatByteSize(graphsBytes);
+  if (dom.backupBrandSize) dom.backupBrandSize.textContent = formatByteSize(brandSnap.bytes);
+  if (dom.backupQuotaText) {
+    dom.backupQuotaText.textContent = `${formatByteSize(totalStorageBytes)} / ~5.0 MB (${quotaPct}%)`;
+  }
+  if (dom.backupQuotaFill) dom.backupQuotaFill.style.width = `${quotaPct}%`;
+
+  dom.backupMilestoneModal.classList.add('open');
+}
+
+export function closeBackupModal() {
+  dom.backupMilestoneModal?.classList.remove('open');
+}
+
+function snoozeBackupModal() {
+  if (!backupMeta) backupMeta = loadBackupMeta();
+  if (activeBackupPromptReason === 'days') {
+    backupMeta.snoozedUntilTime = Date.now() + SNOOZE_DAYS * MS_PER_DAY;
+    showToast(`Reminder snoozed for ${SNOOZE_DAYS} days`, 'success');
+  } else {
+    backupMeta.snoozedUntilSaves = (backupMeta.savesSinceBackup || 0) + SNOOZE_EXTRA_SAVES;
+    showToast(`Reminder snoozed for +${SNOOZE_EXTRA_SAVES} graphs`, 'success');
+  }
+  saveBackupMeta();
+  updateBackupDot();
+  closeBackupModal();
+}
+
+function exportBackupBundle() {
+  const includeGraphs = dom.backupChkGraphs ? dom.backupChkGraphs.checked : true;
+  const includeBrand = dom.backupChkBrand ? dom.backupChkBrand.checked : true;
+
+  if (!includeGraphs && !includeBrand) {
+    showToast('Select at least one item to back up', 'warning');
+    return;
+  }
+
+  if (includeGraphs && includeBrand) {
+    if (savedGraphs.length === 0) {
+      exportBrandKit();
+      closeBackupModal();
+      return;
+    }
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const { data: brandKit } = getBrandKitSnapshot();
+    const payload = {
+      schema: 1,
+      type: 'simple-charts-full-backup',
+      exportedAt: new Date().toISOString(),
+      graphs: savedGraphs,
+      brandKit,
+    };
+    downloadJSON(payload, `simple-charts-backup-${dateStr}.json`);
+    markBackupCompleted();
+    showToast(`Backed up ${savedGraphs.length} saved graphs + Brand Kit`, 'success');
+    return;
+  }
+
+  if (includeGraphs) {
+    exportLibraryJSON();
+    return;
+  }
+
+  exportBrandKit();
+  closeBackupModal();
 }
 
 function exportLibraryJSON() {
@@ -937,13 +1253,8 @@ function exportLibraryJSON() {
     return;
   }
   const dateStr = new Date().toISOString().slice(0, 10);
-  const blob = new Blob([JSON.stringify(savedGraphs, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `simple-charts-library-${dateStr}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadJSON(savedGraphs, `simple-charts-library-${dateStr}.json`);
+  markBackupCompleted();
   showToast(`Exported ${savedGraphs.length} saved graphs`, 'success');
 }
 
@@ -953,32 +1264,57 @@ function importLibraryJSON(file) {
   reader.onload = (e) => {
     try {
       const parsed = JSON.parse(e.target.result);
-      const list = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.graphs) ? parsed.graphs : null);
-      if (!list) {
-        showToast('Invalid library JSON file', 'error');
+      const list = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.graphs) ? parsed.graphs : null);
+      const rawBrandKit = (parsed && !Array.isArray(parsed))
+        ? (parsed.brandKit && typeof parsed.brandKit === 'object'
+          ? parsed.brandKit
+          : ((parsed.branding || parsed.palette) ? parsed : null))
+        : null;
+
+      if (!list && !rawBrandKit) {
+        showToast('Invalid backup or library JSON file', 'error');
         return;
       }
-      const existingIds = new Set(savedGraphs.map(g => g.id));
+
+      const wasEmpty = savedGraphs.length === 0;
       let added = 0;
-      list.forEach(item => {
-        if (item && (item.rawText != null || item.chartSpecific)) {
-          const entry = {
-            ...item,
-            id: item.id && !existingIds.has(item.id) ? item.id : `sc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            name: item.name || 'Imported Graph',
-            category: item.category || 'General',
-            date: item.date || new Date().toISOString().slice(0, 10),
-          };
-          savedGraphs.unshift(entry);
-          existingIds.add(entry.id);
-          added++;
-        }
-      });
-      saveToStorage();
-      renderSavedGraphsUI();
-      showToast(`Imported ${added} saved graph${added === 1 ? '' : 's'}!`, 'success');
+      if (list) {
+        const existingIds = new Set(savedGraphs.map(g => g.id));
+        list.forEach(item => {
+          if (item && (item.rawText != null || item.chartSpecific)) {
+            const entry = {
+              ...item,
+              id: item.id && !existingIds.has(item.id) ? item.id : `sc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              name: item.name || 'Imported Graph',
+              category: item.category || 'General',
+              date: item.date || new Date().toISOString().slice(0, 10),
+            };
+            savedGraphs.unshift(entry);
+            existingIds.add(entry.id);
+            added++;
+          }
+        });
+        saveToStorage();
+        renderSavedGraphsUI();
+      }
+
+      const brandApplied = rawBrandKit ? applyBrandKitData(rawBrandKit) : false;
+
+      if (wasEmpty && added > 0) {
+        markBackupCompleted();
+      } else {
+        closeBackupModal();
+      }
+
+      if (added > 0 && brandApplied) {
+        showToast(`Restored ${added} saved graph${added === 1 ? '' : 's'} + Brand Kit!`, 'success');
+      } else if (brandApplied && !list) {
+        showToast('Restored Brand Kit & preferences!', 'success');
+      } else {
+        showToast(`Imported ${added} saved graph${added === 1 ? '' : 's'}!`, 'success');
+      }
     } catch (err) {
-      showToast('Failed to parse library JSON', 'error');
+      showToast('Failed to parse backup JSON', 'error');
     }
   };
   reader.readAsText(file);
@@ -1005,8 +1341,10 @@ export function closeSavedModal() {
 
 export function initSavedGraphs() {
   savedGraphs = loadFromStorage();
+  backupMeta = loadBackupMeta();
   populateChartTypeFilters();
   renderSavedGraphsUI();
+  updateBackupDot();
 
   // Quick Save triggers
   dom.openQuickSaveBtn?.addEventListener('click', openQuickSaveBox);
@@ -1050,13 +1388,31 @@ export function initSavedGraphs() {
   });
 
   // Library JSON Export / Import
+  const triggerImportPicker = () => dom.importSavedLibInput?.click();
   dom.exportSavedLibBtn?.addEventListener('click', exportLibraryJSON);
-  dom.importSavedLibBtn?.addEventListener('click', () => dom.importSavedLibInput?.click());
+  dom.importSavedLibBtn?.addEventListener('click', triggerImportPicker);
+  dom.modalImportBtn?.addEventListener('click', triggerImportPicker);
+  dom.backupRestoreBtn?.addEventListener('click', triggerImportPicker);
   dom.importSavedLibInput?.addEventListener('change', (e) => {
     if (e.target.files?.[0]) {
       importLibraryJSON(e.target.files[0]);
       e.target.value = '';
     }
+  });
+
+  // Option A Backup Milestone Modal triggers (automatic + manual)
+  const handleManualBackupOpen = () => {
+    closeSavedModal();
+    openBackupModal(getBackupTriggerState(), { manual: true });
+  };
+  dom.topbarBackupBtn?.addEventListener('click', handleManualBackupOpen);
+  dom.modalBackupBtn?.addEventListener('click', handleManualBackupOpen);
+  dom.backupNowBtn?.addEventListener('click', exportBackupBundle);
+  dom.backupSnoozeBtn?.addEventListener('click', snoozeBackupModal);
+  dom.backupSkipBtn?.addEventListener('click', closeBackupModal);
+  dom.closeBackupModalBtn?.addEventListener('click', closeBackupModal);
+  dom.backupMilestoneModal?.addEventListener('click', (e) => {
+    if (e.target === dom.backupMilestoneModal) closeBackupModal();
   });
 
   // Global keyboard shortcut: Cmd/Ctrl + K opens Option C Spotlight Modal
@@ -1068,8 +1424,18 @@ export function initSavedGraphs() {
       } else {
         openSavedModal();
       }
-    } else if (e.key === 'Escape' && dom.savedGraphsModal?.classList.contains('open')) {
-      closeSavedModal();
+    } else if (e.key === 'Escape') {
+      if (dom.backupMilestoneModal?.classList.contains('open')) {
+        closeBackupModal();
+      } else if (dom.savedGraphsModal?.classList.contains('open')) {
+        closeSavedModal();
+      }
     }
   });
+
+  // Check on startup in case 30 days elapsed or 25+ graphs await backup
+  const startupTrigger = getBackupTriggerState();
+  if (startupTrigger.shouldPrompt) {
+    openBackupModal(startupTrigger);
+  }
 }

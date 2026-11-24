@@ -295,3 +295,21 @@
 - [x] Built `view-project-story.md` (46 KB companion): sections 1-9, ToC verified resolving, 6 mermaid fences with classDef stripped
 - [x] Browser verification passed: 0 console messages; 0 horizontal overflow on all 9 tabs at 1440 / 390 / 360 px; 0 gradients in source and DOM; keyboard tab nav with wrap-around; default tab = Project 101; theme switch re-renders diagrams in both themes (light uses #C2410C accent)
 - [x] Discrepancy register surfaced (8 items) — see Data room §Discrepancies: stashed hub/ docs, stale CLAUDE.md, brand fork (Simple Charts vs Charts BeamDelta), todo.md §5.1 checkbox vs shipped code, "4700+ lines" vs measured 4,417
+
+---
+
+# Retrospective — 20-11-2026 (repo-story v2)
+
+- [x] User approved: fresh v2 from scratch, reusing v1 facts with re-verification; recreate under the same filenames (v1 files were deleted in the working tree, uncommitted — v1 remains recoverable at HEAD via 3d45518)
+- [x] Re-mined forensics at HEAD f9d7031: 72 commits (2026-04-16 → 2026-10-26, +2 October commits vs v1), 194 days elapsed / 119 silent, 14,154 LOC, 19 registered chart types, 5,503 stashed insertions, 284 dom refs, monolith measured 4,683 at d50fb7b
+- [x] Re-verified every reused v1 claim; two v1 corrections registered in D8 rows 9-10 (Kilo plan date ambiguous, commit count superseded); rubric deltas: Release hygiene 3→2 (dist/ 179 days stale), Scope discipline 6→7 (persistence fork shipped in 3d45518)
+- [x] Built `view-project-story.html` (110,588 bytes, 1,484 lines) from 3 scripted parts: 9 tabs (Project 101 default), all-72-commit searchable log with month chips, era chips incl. zero-commit gap era, 14 animated rubric bars, 20-row ledger, 6 post-mortems (incl. new §6.6 working-tree deletion), data room D1-D8, 11 lessons, 6 Mermaid diagrams
+- [x] Source audits passed: 0 gradient occurrences; 9/9 balanced tabpanels; 6 mermaid blocks; `node --check` on extracted script → clean
+- [x] Built `view-project-story.md` (companion): sections 1-9 mirroring HTML tabs, ToC anchors matching headers, 6 mermaid fences (no classDef, no `<>` in labels), cross-refs to section numbers, generation-dated footer pointing at the interactive version
+- [x] Browser verification block (Chrome DevTools MCP) — all passed: 9/9 tabs activate (exactly one visible panel each); counters animate (229 rAF frames, reduced-motion aware); commit search 7/72 → 0/72 → reset; month chips radio-style with All reset ("47 of 72" for Apr); era chips incl. zero-commit gap era (visibility toggle, DOM never destroyed); accordions; copy-hash flash + revert; keyboard tab nav with wrap-around both directions; default tab = Project 101 on fresh load; theme toggle persists (localStorage `rps-theme`), meta theme-color syncs, light theme applied pre-paint on fresh load
+- [x] 0 console messages across the whole session; 0 horizontal overflow on every tab at 1280 desktop and 360 / 390 / 440 / 500 px (narrow widths via same-origin iframe emulation — Chrome window resize clamps at 500)
+- [x] Gradient audit: 0 occurrences in file source; DOM audit — 0 computed gradient backgrounds; Mermaid emits 5 `linearGradient` defs, all **unreferenced** (verified via fill/stroke url(#) scan) — Rule 1 compliant
+- [x] Diagram theme verification per theme: state fill #1B2129↔#F5EFE6, transition #98A4B3↔#6E6350, special-state circles #98A4B3↔#6E6350, labels light↔dark text; id-stripped SVG style hashes identical across a dark→light→dark round trip (deterministic re-render)
+- [x] Three scripted atomic patches during verification (each anchor asserted ×1, JS re-checked with `node --check`): (1) mermaid `initialize({theme:'base', themeVariables})` was never passed at render time — `themeVars()` was dead code, Mermaid defaults (#ECECFF / #9370DB / #333333) leaked into the stateDiagram; (2) hero counter first frame showed "-0" (negative easing progress) — clamped `Math.max(0, …)`; (3) `.brand h1` `white-space:nowrap` overflowed to 436px at ≤440px widths — now wraps
+- [ ] Not live-tested: Mermaid CDN-failure fallback (source-fallback code path exists and was code-reviewed; no network-interception tool available to trigger it)
+- [x] Companion `view-project-story.md` written: sections 1-9 mirror the HTML tabs, ToC anchors match headers, 6 mermaid fences (no classDef, no `<>` in labels), footer points to the interactive version

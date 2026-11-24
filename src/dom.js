@@ -267,6 +267,8 @@ export const dom = {
   // Saved Graphs (Option A Inline Tab + Option C 2-Pane Modal)
   topbarSavedBtn: $('#topbarSavedBtn'),
   topbarSavedCount: $('#topbarSavedCount'),
+  topbarBackupBtn: $('#topbarBackupBtn'),
+  topbarBackupDot: $('#topbarBackupDot'),
   openQuickSaveBtn: $('#openQuickSaveBtn'),
   quickSaveBox: $('#quickSaveBox'),
   closeQuickSaveBtn: $('#closeQuickSaveBtn'),
@@ -296,6 +298,32 @@ export const dom = {
   modalCategoryPills: $('#modalCategoryPills'),
   modalSavedList: $('#modalSavedList'),
   modalPreviewPane: $('#modalPreviewPane'),
+
+  // Backup Milestone Modal (Option A)
+  modalImportBtn: $('#modalImportBtn'),
+  modalBackupBtn: $('#modalBackupBtn'),
+  backupMilestoneModal: $('#backupMilestoneModal'),
+  closeBackupModalBtn: $('#closeBackupModalBtn'),
+  backupModalIcon: $('#backupModalIcon'),
+  backupModalTitle: $('#backupModalTitle'),
+  backupModalSubtitle: $('#backupModalSubtitle'),
+  backupStat1Val: $('#backupStat1Val'),
+  backupStat1Lbl: $('#backupStat1Lbl'),
+  backupStat2Val: $('#backupStat2Val'),
+  backupStat2Lbl: $('#backupStat2Lbl'),
+  backupStat3Val: $('#backupStat3Val'),
+  backupStat3Lbl: $('#backupStat3Lbl'),
+  backupChkGraphs: $('#backupChkGraphs'),
+  backupChkBrand: $('#backupChkBrand'),
+  backupGraphsMeta: $('#backupGraphsMeta'),
+  backupGraphsSize: $('#backupGraphsSize'),
+  backupBrandSize: $('#backupBrandSize'),
+  backupQuotaText: $('#backupQuotaText'),
+  backupQuotaFill: $('#backupQuotaFill'),
+  backupSnoozeBtn: $('#backupSnoozeBtn'),
+  backupRestoreBtn: $('#backupRestoreBtn'),
+  backupSkipBtn: $('#backupSkipBtn'),
+  backupNowBtn: $('#backupNowBtn'),
 };
 
 /** Color picker input -> hex display pairs for the 5-color palette editor */
