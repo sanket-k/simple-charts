@@ -10,12 +10,15 @@ A browser-based, publication-quality chart creation tool designed for producing 
 - [Chart Types](#chart-types)
 - [Features](#features)
   - [Data Input](#data-input)
+  - [Chart Discovery & Usage Guides](#chart-discovery--usage-guides)
+  - [Workspace Layout](#workspace-layout)
   - [Style & Display](#style--display)
   - [Formatting](#formatting)
   - [Annotations](#annotations)
   - [Colors & Theming](#colors--theming)
   - [Branding & Watermark](#branding--watermark)
-  - [Zoom & Pan](#zoom--pan)
+  - [Saved Graphs, Brand Kit & Backups](#saved-graphs-brand-kit--backups)
+  - [Zoom & Story Playhead](#zoom--story-playhead)
   - [Dual Y-Axis](#dual-y-axis)
   - [Timeline Events](#timeline-events)
   - [Innovator's Dilemma](#innovators-dilemma)
@@ -85,9 +88,9 @@ Then open `http://localhost:8080` in your browser. All dependencies load via CDN
 
 ### Quick Start
 
-1. **Choose a chart type** from the grid at the top of the left panel
-2. **Enter data** in the right panel — paste CSV/TSV/JSON text, upload a file, or use manual entry
-3. **Customize** using the settings panels (labels, style, colors, formatting)
+1. **Choose a chart type** from the Core grid, **Most Used** shelf, or the **Browse all 19 charts** catalog popover (optionally toggle **Guide: On** for hover explanations of best use cases and column setup)
+2. **Enter data** in the right panel — paste CSV/TSV/JSON text, upload a file, use manual entry, or load from **Saved**
+3. **Customize** using the settings panels (labels, style, colors, formatting) and drag/collapse/reorder workspace panels as needed
 4. **Export** using the download button or `Cmd/Ctrl + E`
 
 ### Global Paste
@@ -115,6 +118,7 @@ graph TB
         FORMAT[format.js<br/>Number Formatting]
         DATE[date-utils.js<br/>Date Parse & Format]
         DATA[data.js<br/>Parsing Pipeline]
+        REG[charts/registry.js<br/>19 Chart Descriptors]
         RENDER[render.js<br/>Chart Dispatcher]
     end
 
@@ -133,27 +137,34 @@ graph TB
         SEGMENTED[charts/segmented.js]
         INNOVATOR[charts/innovator.js]
         KANO[charts/kano.js]
+        COMPARE[dumbbell / bubble-compare / overlay / dual-bar]
+        INFL[charts/inflation.js]
     end
 
     subgraph UI Modules
         THEME[ui/theme.js]
         COLORS[ui/colors.js]
         SETTINGS[ui/settings.js]
+        USAGE[ui/chart-usage.js]
+        GUIDE[ui/chart-guide.js]
+        LAYOUT[ui/panel-layout.js]
         DUAL[ui/dual-axis.js]
         COMBOUI[ui/combo-ui.js]
         BRAND[ui/branding.js]
         TLUI[ui/timeline-ui.js]
         ZOOM[ui/zoom-ui.js]
+        SAVED[ui/saved-graphs.js]
+        PROF[ui/user-profile.js]
         EXPORT[ui/export.js]
         CLIP[ui/clipboard.js]
     end
 
     subgraph CDN Dependencies
-        CJ[Chart.js 4.4.7]
+        CJ[Chart.js 4.5.1]
         DA[chartjs-adapter-date-fns]
         AN[chartjs-plugin-annotation]
         DL[chartjs-plugin-datalabels]
-        PP[PapaParse 5.4.1]
+        PP[PapaParse 5.5.3]
         GF[Google Fonts]
     end
 
@@ -394,13 +405,26 @@ A self-managed chart that shows what an amount of money is worth over time at a 
 
 ### Data Input
 
-Three input modes accessible via tabs in the right panel:
+Four input modes accessible via tabs in the right panel:
 
 | Mode | How It Works | Best For |
 |---|---|---|
 | **Paste** | Paste CSV, TSV, or JSON text into a textarea with format toggle | Quick data from spreadsheets, Google Sheets |
 | **File Upload** | Drag-and-drop or browse for `.csv`/`.tsv`/`.json` files | Large datasets, exported files |
 | **Manual Entry** | Editable spreadsheet-like grid with dynamic series/rows | Building data from scratch |
+| **Saved** | Search, filter by sector/type, and reload saved value snapshots | Reusing recurring datasets |
+
+### Chart Discovery & Usage Guides
+
+- **Most Used Shelf (`Top: On/Off`)** — Weighted usage scoring (`browse: 0.25`, `edit: 1.0`, `export: 3.0` with 30-day half-life decay) surfaces up to 3 frequently used chart types above the Core grid.
+- **Visual Chart Catalog (`Browse all 19 charts`)** — Popover organized across 6 intent categories (*Trend & Time*, *Compare & Rank*, *Part of Whole*, *XY & Multi-Axis*, *Flow & Change*, *Frameworks & Calc*) with live search and unseen `New` badge tracking.
+- **Opt-In Chart Guides (`Guide: Off/On`)** — Off by default to keep the workspace quiet. Toggling **Guide: On** in the Chart Type header reveals a `popover="hint"` card on hover or keyboard focus showing **Best used for**, **How to structure data** column pills, and **Skip if** alternatives (with a *"Turn off guides"* link inside the card).
+
+### Workspace Layout
+
+- **Resizable Side Panels** — Drag the left (`190–640 px`) or right (`220–680 px`) splitter handles (mouse or keyboard arrows) to adjust panel widths; live width badges flash `Saved` on persist.
+- **Collapsible & Reorderable** — Collapse either side panel down to a floating restore pill on the canvas edge, or swap left/right/stage positions with the panel chrome arrows.
+- **Reset Layout** — Topbar layout button restores default widths (`240 px` / `280 px`), visibility, and panel order; layout state persists in `localStorage`.
 
 **Supported data formats (toggle between CSV / TSV / JSON):**
 ```
@@ -499,14 +523,19 @@ Add a brand name and/or logo to exported charts:
 
 Logo and name are vertically centered when side-by-side and horizontally centered when stacked.
 
-### Zoom & Pan
+### Saved Graphs, Brand Kit & Backups
 
-A dual-handle range slider appears for line, timeline, area, and innovator charts when data exceeds 50 points:
+- **Auto-Saved Brand Kit (`user-profile.js`)** — Automatically persists theme, brand name, uploaded/SVG logo, palette colors, export presets, formatting defaults, `Top: On/Off`, and `Guide: Off/On` preferences to `localStorage`, with JSON export/import and reset controls.
+- **Saved Graphs Library (`saved-graphs.js`)** — Save chart data snapshots with auto-detected sector chips, browse inline in the **Saved** tab or open the 2-pane **Spotlight Library (`Cmd/Ctrl + K`)** with live preview, and export/import libraries as JSON.
+- **Backup Milestone Prompts** — Tracks saves and days since last backup (`25` saves or `30` days), showing a topbar dot and milestone modal to download or restore a combined Saved Graphs + Brand Kit `.json` backup.
 
-- Drag handles to select a visible sub-range
-- Start/end labels show the current range
-- Reset button returns to full view
-- Zoom is applied before rendering for smooth preview
+### Zoom & Story Playhead
+
+A stepped-node dual-handle range slider appears below the canvas for `line`, `timeline`, `area`, `innovator`, and `combo` charts (or any chart with 50+ points, minimum 2 points):
+
+- **Stepped Node Track** — Snap start/end handles across data steps with adaptive node labels and a live range pill
+- **Story Playhead** — Press the **Play** button to animate a progressive reveal from the selected start point to the end point
+- **Reset** button returns to the full `[0, 100]` range
 
 ### Dual Y-Axis
 
@@ -614,11 +643,11 @@ All loaded via CDN — no npm, no bundler.
 
 | Library | Version | Purpose |
 |---|---|---|
-| [Chart.js](https://www.chartjs.org/) | 4.4.7 | Core chart rendering engine |
+| [Chart.js](https://www.chartjs.org/) | 4.5.1 | Core chart rendering engine |
 | [chartjs-adapter-date-fns](https://github.com/chartjs/chartjs-adapter-date-fns) | 3.0.0 | Date/time axis support |
 | [chartjs-plugin-annotation](https://github.com/chartjs/chartjs-plugin-annotation) | 3.1.0 | Reference lines and event markers |
 | [chartjs-plugin-datalabels](https://github.com/chartjs/chartjs-plugin-datalabels) | 2.2.0 | Custom data labels |
-| [PapaParse](https://www.papaparse.com/) | 5.4.1 | CSV parsing with web workers |
+| [PapaParse](https://www.papaparse.com/) | 5.5.3 | CSV/TSV parsing with web workers |
 | Google Fonts | — | Inter (300–700) + JetBrains Mono (400–500) |
 
 ---
@@ -666,8 +695,9 @@ graphs/
 │   ├── format.js           # formatNumber (6 modes)
 │   ├── date-utils.js       # tryParseDate, isDateColumn, formatDateLabel
 │   ├── data.js             # Parsing pipeline: CSV, TSV, JSON, manual, downsample, zoom
-│   ├── format-number.js    # Y-tick, data-label, tooltip formatters
+│   ├── chart-format.js     # Y-tick, data-label, tooltip formatters
 │   ├── charts/
+│   │   ├── registry.js     # Chart descriptor registry, capabilities, guide metadata & validation
 │   │   ├── base-options.js # FONTS tokens, getTooltipBase, getLegendBase, ASPECT_RATIOS, theme colors, plugins
 │   │   ├── line.js         # Line chart builder
 │   │   ├── bar.js          # Vertical & horizontal bar chart builder
@@ -691,17 +721,20 @@ graphs/
 │   └── ui/
 │       ├── theme.js        # Dark/light theme toggle
 │       ├── colors.js       # Color pickers, preset palette listeners
-│       ├── settings.js     # Chart type grid, settings panel visibility
+│       ├── settings.js     # Chart type grid, catalog popover, settings panel visibility
+│       ├── chart-usage.js  # Weighted usage scoring, 30-day decay & Most Used shelf
+│       ├── chart-guide.js  # Opt-in Guide: On/Off hovercard popover for chart usage & columns
+│       ├── panel-layout.js # Resizable, collapsible & reorderable workspace panels
 │       ├── dual-axis.js    # Dual Y-axis assignment UI
 │       ├── combo-ui.js     # Combo chart dataset type selector
 │       ├── line-style-ui.js # Per-series line style controls
 │       ├── branding.js     # Logo upload/clear, brand settings
 │       ├── timeline-ui.js  # Timeline event editor UI
-│       ├── zoom-ui.js      # Zoom slider controls
+│       ├── zoom-ui.js      # Stepped zoom slider & story playhead controls
 │       ├── clipboard.js    # Paste handler & shortcuts cheatsheet (?/Cmd+E/C/Shift+D)
 │       ├── inflation-ui.js # Inflation slider/number-input sync
-│       ├── saved-graphs.js # Saved graphs library & Spotlight modal (Cmd+K)
-│       └── user-profile.js # Brand kit & settings localStorage persistence
+│       ├── saved-graphs.js # Saved graphs library, Spotlight modal (Cmd+K) & backup milestones
+│       └── user-profile.js # Brand kit & preferences localStorage persistence
 ├── inflation/              # Inflation variant gallery (standalone prototype)
 └── *.csv                   # Sample datasets
 ```

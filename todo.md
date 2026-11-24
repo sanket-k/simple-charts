@@ -313,3 +313,40 @@
 - [x] Three scripted atomic patches during verification (each anchor asserted ×1, JS re-checked with `node --check`): (1) mermaid `initialize({theme:'base', themeVariables})` was never passed at render time — `themeVars()` was dead code, Mermaid defaults (#ECECFF / #9370DB / #333333) leaked into the stateDiagram; (2) hero counter first frame showed "-0" (negative easing progress) — clamped `Math.max(0, …)`; (3) `.brand h1` `white-space:nowrap` overflowed to 436px at ≤440px widths — now wraps
 - [ ] Not live-tested: Mermaid CDN-failure fallback (source-fallback code path exists and was code-reviewed; no network-interception tool available to trigger it)
 - [x] Companion `view-project-story.md` written: sections 1-9 mirror the HTML tabs, ToC anchors match headers, 6 mermaid fences (no classDef, no `<>` in labels), footer points to the interactive version
+
+---
+
+# Phase 9: Brand Kit, Discovery, Workspace Layout & Time Playhead — 2026-10-26 to 2026-11-24
+
+- [x] 9.1 Persistent Brand Kit & Saved Graphs Library (`3d45518`, `fc1c6b3`)
+- [x] 9.2 Keyboard Shortcuts Cheatsheet Modal (`f9d7031`)
+- [x] 9.3 Most Used Shelf, Visual Catalog & Chart Guides (`0de21f9`, `3d7c818`)
+- [x] 9.4 Resizable, Collapsible & Reorderable Workspace Panels (`2ff9690`, `16b2a3c`)
+- [x] 9.5 Stepped Node Time Slider with Story Playhead (`0ee8a3f`)
+
+---
+
+### 9.1 Persistent Brand Kit, Saved Graphs & Backup Milestones
+
+- [x] `ui/user-profile.js` — auto-saves branding, logo (SVG/data URL), colors, theme, export presets, formatting, style, and UI preferences to `localStorage` (`simple_charts_brand_kit_v1`)
+- [x] `ui/saved-graphs.js` — inline `Saved` data tab + 2-pane Spotlight modal (`⌘K`) with sector keyword detection and JSON import/export
+- [x] Backup milestone reminder modal + topbar `Backup` dot (`25` saves or `30` days since backup), bundling Saved Graphs + Brand Kit into `.json` backup/restore
+
+### 9.2 Keyboard Shortcuts Cheatsheet
+
+- [x] Interactive `#shortcutsModal` triggered by `?` or topbar `#shortcutsBtn` (`ui/clipboard.js`)
+
+### 9.3 Chart Discovery & Opt-In Usage Guides
+
+- [x] `ui/chart-usage.js` — weighted scoring (`browse: 0.25`, `edit: 1.0`, `export: 3.0`, 30-day half-life decay) surfacing Top-3 **Most Used** shelf with `Top: On/Off` toggle (`state.smartChartTop`)
+- [x] Visual **Chart Catalog** popover (`#chartCatalogPopover`) with 6 intent categories, search, and unseen `New` badge tracking
+- [x] `ui/chart-guide.js` + `guide` metadata (`bestFor`, `avoid`, `columns`) for all 19 charts in `charts/registry.js` — opt-in **Guide: Off / On** pill (`state.chartGuideEnabled`, default `false`) opening `#chartGuidePopover` (`popover="hint"`) on hover/focus
+
+### 9.4 Adjustable Workspace Panels
+
+- [x] `ui/panel-layout.js` — drag-resizable (`left` 190–640px, `right` 220–680px), collapsible (floating restore pills), and reorderable workspace panels persisted in `localStorage` (`simple_charts_panel_layout_v1`), plus topbar `#resetLayoutBtn`
+- [x] Preferred width preservation and autosave hardening across panel collapse/restore and viewport changes
+
+### 9.5 Stepped Node Time Slider & Story Playhead
+
+- [x] `data.js` + `ui/zoom-ui.js` — stepped node track with adaptive labels, `#zoomRangePill`, and **Story Playhead** (`#zoomPlayBtn`) animating progressive range reveal (`90–340 ms` step interval)

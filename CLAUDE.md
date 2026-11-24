@@ -23,14 +23,15 @@ Then open `http://localhost:8080`. No test suite exists.
 │   ├── main.js                 # Entry point: init(), event wiring, sample data
 │   ├── render.js               # Chart render dispatcher (routes to builders)
 │   ├── state.js                # Single mutable state object
-│   ├── dom.js                  # DOM cache ($, $$, dom object ~190 refs)
+│   ├── dom.js                  # DOM cache ($, $$, dom object)
 │   ├── constants.js            # PALETTE, DEFAULT_COLORS, PRESET_PALETTES, CONFIG
 │   ├── utils.js                # debounce, safeInt, safeFloat, hexToRgba, showToast
 │   ├── format.js               # formatNumber (auto, raw, comma, currency, percent, short)
 │   ├── chart-format.js         # Y-tick, data-label, tooltip formatter builders
 │   ├── date-utils.js           # tryParseDate, isDateColumn, formatDateLabel
-│   ├── data.js                 # Parsing pipeline: CSV, JSON, manual, downsample, zoom
+│   ├── data.js                 # Parsing pipeline: CSV, TSV, JSON, manual, downsample, stepped zoom
 │   ├── charts/
+│   │   ├── registry.js         # Chart descriptor registry, capabilities, guide metadata, validation
 │   │   ├── base-options.js     # FONTS tokens, getTooltipBase, getLegendBase, theme plugins
 │   │   ├── compare-utils.js    # Shared helpers for dumbbell/bubble-compare/overlay
 │   │   ├── line.js             # Standard chart builders (one file per type)
@@ -39,12 +40,13 @@ Then open `http://localhost:8080`. No test suite exists.
 │   │   ├── waterfall.js, combo.js, timeline.js
 │   │   ├── segmented.js, innovator.js, kano.js
 │   │   ├── dumbbell.js, bubble-compare.js, overlay.js
+│   │   └── dual-bar.js, inflation.js
 │   └── ui/
 │       ├── theme.js, colors.js, settings.js
-│       ├── dual-axis.js, combo-ui.js, line-style-ui.js
+│       ├── chart-usage.js, chart-guide.js, panel-layout.js
+│       ├── dual-axis.js, combo-ui.js, line-style-ui.js, inflation-ui.js
 │       ├── branding.js, timeline-ui.js, zoom-ui.js
 │       ├── export.js, clipboard.js, saved-graphs.js, user-profile.js
-├── hub/                        # Product docs (PRD, tech spec, user manual, style guide)
 └── dist/                       # Pre-built deployed output
 ```
 
@@ -61,16 +63,18 @@ index.html ──► src/main.js (entry, init())
 ```
 
 - **Single mutable state** (`state.js`) — imported by every module, direct mutation is the norm
-- **DOM cache** (`dom.js`) — `$()`, `$$()`, `dom` object (~190 refs). Queried once at load, never in render loops
+- **DOM cache** (`dom.js`) — `$()`, `$$()`, `dom` object. Queried once at load, never in render loops
 - **No circular deps** — strict DAG. Cycles broken via `window.__` bridges set in `main.js`:
   - `window.__renderChart` — immediate render
   - `window.__debouncedRender` — 300ms debounced render
   - `window.__updateAfterDataLoad` — full data pipeline after parse
+  - `window.__loadSampleForType` — load sample or cached per-chart data
+  - `window.__debouncedSaveProfile` / `window.__saveProfileImmediate` — Brand Kit & preference persistence
 - **Named exports only** — no `export default` anywhere
 
 ### Chart Builder Pattern
 
-Each chart type is a file in `src/charts/` exporting a builder function that returns a Chart.js config. `render.js` dispatches via `switch` on `state.currentChartType`. "Self-managed" charts (innovator, kano, segmented, dumbbell, bubble-compare, overlay) build their own options from scratch using shared helpers from `base-options.js`.
+Each chart type is a file in `src/charts/` calling `registerChart()` from `src/charts/registry.js` at import time. `render.js` imports all chart modules for side-effect registration and dispatches via `getChartDescriptor(state.currentChartType)`. "Self-managed" charts (`isSelfManaged: true` — innovator, kano, segmented, dumbbell, bubble-compare, overlay, dual-bar, inflation) build their own options from scratch using shared helpers from `base-options.js`.
 
 ### Data Pipeline
 
@@ -82,7 +86,7 @@ Switching chart types saves/restores textarea content and parsed data via `state
 
 ## CDN Globals
 
-`Chart` (4.4.7), `ChartDataLabels` (2.2.0), `Papa` (PapaParse 5.4.1) — accessed as `window.*`, never imported or npm-installed.
+`Chart` (4.5.1), `ChartDataLabels` (2.2.0), `Papa` (PapaParse 5.5.3) — accessed as `window.*`, never imported or npm-installed.
 
 ## Design Tokens
 
@@ -94,12 +98,11 @@ Switching chart types saves/restores textarea content and parsed data via `state
 
 ## Adding a New Chart Type
 
-1. Create `charts/<type>.js` with builder function
-2. Import and add `case` in `render.js`
-3. Add button in `index.html`
-4. Add settings panel HTML + toggle visibility in `ui/settings.js`
+1. Create `charts/<type>.js` calling `registerChart({ id, label, icon, dataHint, dataExample, builder, capabilities })`
+2. Add category/summary/guide metadata in `CHART_CATALOG_META` (`charts/registry.js`)
+3. Add side-effect import in `render.js` (core/most-used/catalog buttons auto-generate from registry)
+4. If chart-specific controls are needed, add settings panel HTML, cache DOM in `dom.js`, and map in `ui/settings.js` (`chartPanelMap`)
 5. Add sample data in `main.js`
-6. Cache new DOM elements in `dom.js`
 
 ## Adding a New UI Feature
 
@@ -119,4 +122,3 @@ Switching chart types saves/restores textarea content and parsed data via `state
 - Files: `kebab-case`, functions: `camelCase`, constants: `UPPER_SNAKE_CASE`
 - Feedback: `showToast(msg, 'success'|'error'|'warning')` — never `alert()`
 - Data limits: 500pts→monthly downsample, 2K→quarterly, 10K→warning, 50K→hard limit, 30 bars max, 12/10 pie/donut slices
-- `hub/` contains product docs (PRD, tech spec, user manual, style guide) — reference only, not consumed at runtime
