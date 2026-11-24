@@ -1,14 +1,27 @@
-/** Settings panel — visibility toggling, chart type grid, format hints, and all settings inputs. */
+/** Settings panel — visibility toggling, chart type grid, catalog popover, format hints, and all settings inputs. */
 import { CONFIG, DEFAULT_COLORS } from '../constants.js';
 import { state } from '../state.js';
 import { dom, $$ } from '../dom.js';
-import { getCapabilities, getAllChartDescriptors, getChartDescriptor } from '../charts/registry.js';
+import { escapeHtml, showToast } from '../utils.js';
+import { CHART_CATEGORIES, getCapabilities, getAllChartDescriptors, getChartDescriptor } from '../charts/registry.js';
 import { renderGroupTabs, renderSegmentList, getDefaultSegments, ensureGroupStructure } from '../charts/segmented.js';
 import { renderInnovatorTierNames } from '../charts/innovator.js';
 import { renderComboDatasetTypes } from './combo-ui.js';
 import { renderAxisAssignments } from './dual-axis.js';
 import { renderLineStyleControls } from './line-style-ui.js';
 import { updateZoomSlider } from '../data.js';
+import {
+  recordChartUsage,
+  resetVisitEditGuard,
+  getTopUsedChartIds,
+  hasRecordedUsage,
+  markChartSeen,
+  isChartUnseenNew,
+  resetChartUsage,
+} from './chart-usage.js';
+
+let catalogCategoryFilter = 'all';
+let catalogSearchQuery = '';
 
 /** Shows/hides settings controls based on the current chart type's capabilities. */
 export function updateSettingsVisibility() {
@@ -137,59 +150,363 @@ export function updateDataFormatTip() {
   if (hint) hint.textContent = example ? hintStr : '';
 }
 
-/** Generate chart type grid buttons from registry */
-function buildChartTypeGrid() {
-  const grid = dom.chartTypeGrid;
-  if (!grid) return;
+/** Creates a compact grid button for a chart descriptor. */
+function createChartTypeButton(desc) {
+  const isSelected = state.currentChartType === desc.id;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'chart-type-btn' + (isSelected ? ' active' : '');
+  btn.dataset.type = desc.id;
+  btn.title = desc.summary ? `${desc.label} Chart — ${desc.summary}` : `${desc.label} Chart`;
+  btn.role = 'tab';
+  btn.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+  btn.innerHTML = `${desc.icon}<span>${escapeHtml(desc.label)}</span>`;
+  return btn;
+}
 
-  grid.innerHTML = '';
+/** Syncs active/aria-selected state across Most Used, Core, catalog cards, and trigger pill. */
+export function syncChartTypeSelectionUI(chartId = state.currentChartType) {
+  $$('.chart-type-btn').forEach(b => {
+    const match = b.dataset.type === chartId;
+    b.classList.toggle('active', match);
+    b.setAttribute('aria-selected', match ? 'true' : 'false');
+  });
+
+  if (dom.chartCatalogGrid) {
+    dom.chartCatalogGrid.querySelectorAll('.chart-catalog-card').forEach(card => {
+      card.classList.toggle('active', card.dataset.type === chartId);
+    });
+  }
+
+  if (dom.chartCatalogActivePill) {
+    const visibleInSidebar = new Set([
+      ...(state.smartChartTop ? getTopUsedChartIds(3) : []),
+      ...getCoreChartDescriptors().map(d => d.id),
+    ]);
+    const desc = getChartDescriptor(chartId);
+    if (desc && !visibleInSidebar.has(chartId)) {
+      dom.chartCatalogActivePill.textContent = desc.label;
+      dom.chartCatalogActivePill.hidden = false;
+    } else {
+      dom.chartCatalogActivePill.hidden = true;
+    }
+  }
+}
+
+function getCoreChartDescriptors() {
+  const all = getAllChartDescriptors();
+  const core = all.filter(d => d.isCore);
+  return core.length > 0 ? core : all.slice(0, 6);
+}
+
+/** Updates smart-top toggle controls, New badge, and Most Used + Core shelves. */
+export function refreshChartTypeGrid() {
   const descriptors = getAllChartDescriptors();
+  const topIds = state.smartChartTop ? getTopUsedChartIds(3) : [];
+  const topDescriptors = topIds.map(id => getChartDescriptor(id)).filter(Boolean);
 
-  descriptors.forEach((desc, i) => {
+  if (dom.mostUsedShelf && dom.mostUsedGrid) {
+    dom.mostUsedGrid.innerHTML = '';
+    if (state.smartChartTop && topDescriptors.length > 0) {
+      topDescriptors.forEach(desc => dom.mostUsedGrid.appendChild(createChartTypeButton(desc)));
+      dom.mostUsedShelf.hidden = false;
+    } else {
+      dom.mostUsedShelf.hidden = true;
+    }
+  }
+
+  const coreDescriptors = getCoreChartDescriptors();
+  if (dom.coreChartsCount) dom.coreChartsCount.textContent = String(coreDescriptors.length);
+
+  if (dom.chartTypeGrid) {
+    dom.chartTypeGrid.innerHTML = '';
+    coreDescriptors.forEach(desc => dom.chartTypeGrid.appendChild(createChartTypeButton(desc)));
+  }
+
+  if (dom.smartTopToggleBtn) {
+    dom.smartTopToggleBtn.textContent = state.smartChartTop ? 'Top: On' : 'Top: Off';
+    dom.smartTopToggleBtn.classList.toggle('active', Boolean(state.smartChartTop));
+    dom.smartTopToggleBtn.setAttribute('aria-pressed', state.smartChartTop ? 'true' : 'false');
+  }
+  if (dom.smartTopPopoverToggle) {
+    dom.smartTopPopoverToggle.checked = Boolean(state.smartChartTop);
+  }
+  if (dom.resetChartUsageBtn) {
+    dom.resetChartUsageBtn.hidden = !hasRecordedUsage();
+  }
+
+  if (dom.chartCatalogTriggerLabel) {
+    dom.chartCatalogTriggerLabel.textContent = `Browse all ${descriptors.length} charts`;
+  }
+  if (dom.chartCatalogTotalCount) {
+    dom.chartCatalogTotalCount.textContent = String(descriptors.length);
+  }
+  if (dom.chartCatalogNewBadge) {
+    const unseenNewCount = descriptors.filter(d => isChartUnseenNew(d)).length;
+    if (unseenNewCount > 0) {
+      dom.chartCatalogNewBadge.textContent = `${unseenNewCount} New`;
+      dom.chartCatalogNewBadge.hidden = false;
+    } else {
+      dom.chartCatalogNewBadge.hidden = true;
+    }
+  }
+
+  syncChartTypeSelectionUI(state.currentChartType);
+
+  if (dom.chartCatalogPopover && !dom.chartCatalogPopover.hidden) {
+    renderCatalogPills();
+    renderCatalogGrid();
+  }
+}
+
+function renderCatalogPills() {
+  if (!dom.chartCatalogPills) return;
+  const descriptors = getAllChartDescriptors();
+  const hasNewCharts = descriptors.some(d => d.isNew);
+  const newCount = descriptors.filter(d => isChartUnseenNew(d)).length;
+
+  const pills = [{ id: 'all', label: `All (${descriptors.length})` }];
+  if (hasNewCharts) {
+    pills.push({ id: 'new', label: newCount > 0 ? `New (${newCount})` : 'New' });
+  }
+  CHART_CATEGORIES.forEach(cat => {
+    const count = descriptors.filter(d => d.category === cat.id).length;
+    if (count > 0) pills.push({ id: cat.id, label: cat.label });
+  });
+
+  if (!pills.some(p => p.id === catalogCategoryFilter)) {
+    catalogCategoryFilter = 'all';
+  }
+
+  dom.chartCatalogPills.innerHTML = '';
+  pills.forEach(p => {
     const btn = document.createElement('button');
-    btn.className = 'chart-type-btn' + (i === 0 ? ' active' : '');
-    btn.dataset.type = desc.id;
-    btn.title = desc.label + ' Chart';
-    btn.role = 'tab';
-    btn.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
-    btn.innerHTML = `${desc.icon}<span>${desc.label}</span>`;
-    grid.appendChild(btn);
+    btn.type = 'button';
+    btn.className = 'chart-catalog-pill' + (catalogCategoryFilter === p.id ? ' active' : '');
+    btn.dataset.cat = p.id;
+    btn.textContent = p.label;
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', catalogCategoryFilter === p.id ? 'true' : 'false');
+    dom.chartCatalogPills.appendChild(btn);
   });
 }
 
-/** Generates chart type buttons from the registry and wires selection behavior. */
-export function initChartTypeGrid() {
-  // Auto-generate buttons from registry
-  buildChartTypeGrid();
-
-  dom.chartTypeGrid.addEventListener('click', (e) => {
-    const btn = e.target.closest('.chart-type-btn');
-    if (!btn) return;
-    $$('.chart-type-btn').forEach(b => {
-      b.classList.remove('active');
-      b.setAttribute('aria-selected', 'false');
-    });
-    btn.classList.add('active');
-    btn.setAttribute('aria-selected', 'true');
-    state.previousChartType = state.currentChartType;
-    state.currentChartType = btn.dataset.type;
-
-    if (state.currentChartType === 'segmented' && state.charts.segmented.segments.length === 0 && state.charts.segmented.groups.length === 0) {
-      state.charts.segmented.segments = getDefaultSegments();
-      ensureGroupStructure();
-      renderGroupTabs();
-      renderSegmentList();
-    } else if (state.currentChartType === 'segmented') {
-      ensureGroupStructure();
-      renderGroupTabs();
-    }
-
-    updateSettingsVisibility();
-    updateDataFormatTip();
-    if (window.__loadSampleForType) window.__loadSampleForType(state.currentChartType);
-    if (window.__renderChart) window.__renderChart();
-    updateZoomSlider();
+function syncCatalogPillSelection() {
+  if (!dom.chartCatalogPills) return;
+  dom.chartCatalogPills.querySelectorAll('.chart-catalog-pill').forEach(btn => {
+    const isMatch = btn.dataset.cat === catalogCategoryFilter;
+    btn.classList.toggle('active', isMatch);
+    btn.setAttribute('aria-selected', isMatch ? 'true' : 'false');
   });
+}
+
+function renderCatalogGrid() {
+  if (!dom.chartCatalogGrid) return;
+  const descriptors = getAllChartDescriptors();
+  const q = catalogSearchQuery.trim().toLowerCase();
+
+  const filtered = descriptors.filter(d => {
+    if (catalogCategoryFilter === 'new' && !d.isNew) return false;
+    if (catalogCategoryFilter !== 'all' && catalogCategoryFilter !== 'new' && d.category !== catalogCategoryFilter) {
+      return false;
+    }
+    if (!q) return true;
+    const catLabel = CHART_CATEGORIES.find(c => c.id === d.category)?.label || '';
+    return (
+      d.label.toLowerCase().includes(q) ||
+      d.id.toLowerCase().includes(q) ||
+      (d.summary && d.summary.toLowerCase().includes(q)) ||
+      catLabel.toLowerCase().includes(q)
+    );
+  });
+
+  dom.chartCatalogGrid.innerHTML = '';
+  if (filtered.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'chart-catalog-empty';
+    empty.textContent = 'No chart types match your search.';
+    dom.chartCatalogGrid.appendChild(empty);
+    return;
+  }
+
+  filtered.forEach(desc => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'chart-catalog-card' + (state.currentChartType === desc.id ? ' active' : '');
+    card.dataset.type = desc.id;
+    const showNew = isChartUnseenNew(desc);
+    card.innerHTML = `
+      ${desc.icon}
+      <div class="chart-catalog-card-body">
+        <div class="chart-catalog-card-head">
+          <span class="chart-catalog-card-name">${escapeHtml(desc.label)}</span>
+          ${showNew ? '<span class="chart-catalog-new-badge">New</span>' : ''}
+        </div>
+        <div class="chart-catalog-card-desc">${escapeHtml(desc.summary || desc.dataHint || '')}</div>
+      </div>
+    `;
+    dom.chartCatalogGrid.appendChild(card);
+  });
+}
+
+function positionCatalogPopover() {
+  const pop = dom.chartCatalogPopover;
+  const trigger = dom.chartCatalogTrigger;
+  if (!pop || !trigger || pop.hidden) return;
+
+  const rect = trigger.getBoundingClientRect();
+  const margin = 12;
+  const popW = Math.min(410, window.innerWidth - margin * 2);
+  const popH = Math.min(560, window.innerHeight - 76);
+
+  if (window.innerWidth > 768 && rect.right + popW + margin <= window.innerWidth) {
+    pop.style.left = `${Math.round(rect.right + 10)}px`;
+    const maxTop = Math.max(60, window.innerHeight - popH - margin);
+    const desiredTop = Math.min(Math.max(60, rect.top - 90), maxTop);
+    pop.style.top = `${Math.round(desiredTop)}px`;
+  } else {
+    pop.style.left = `${Math.round(Math.max(margin, (window.innerWidth - popW) / 2))}px`;
+    const belowTop = rect.bottom + 8;
+    const top = (belowTop + 260 <= window.innerHeight) ? belowTop : Math.max(60, window.innerHeight - popH - margin);
+    pop.style.top = `${Math.round(top)}px`;
+  }
+}
+
+function openChartCatalog() {
+  if (!dom.chartCatalogPopover) return;
+  catalogSearchQuery = '';
+  if (dom.chartCatalogSearch) dom.chartCatalogSearch.value = '';
+  renderCatalogPills();
+  renderCatalogGrid();
+  dom.chartCatalogPopover.hidden = false;
+  dom.chartCatalogTrigger?.classList.add('open');
+  dom.chartCatalogTrigger?.setAttribute('aria-expanded', 'true');
+  positionCatalogPopover();
+  dom.chartCatalogSearch?.focus();
+}
+
+function closeChartCatalog() {
+  if (!dom.chartCatalogPopover || dom.chartCatalogPopover.hidden) return;
+  dom.chartCatalogPopover.hidden = true;
+  dom.chartCatalogTrigger?.classList.remove('open');
+  dom.chartCatalogTrigger?.setAttribute('aria-expanded', 'false');
+}
+
+function setSmartChartTopEnabled(enabled, showFeedback = true) {
+  state.smartChartTop = Boolean(enabled);
+  refreshChartTypeGrid();
+  if (window.__debouncedSaveProfile) window.__debouncedSaveProfile();
+  if (showFeedback) {
+    showToast(state.smartChartTop ? 'Most Used charts enabled' : 'Most Used charts hidden', 'success');
+  }
+}
+
+/** Switches the active chart type from any shelf or catalog card and updates dependent panels. */
+function selectChartType(type) {
+  if (!type || !getChartDescriptor(type)) return;
+
+  const clearedNew = markChartSeen(type);
+  resetVisitEditGuard();
+  recordChartUsage(type, 'browse');
+
+  state.previousChartType = state.currentChartType;
+  state.currentChartType = type;
+
+  if (state.currentChartType === 'segmented' && state.charts.segmented.segments.length === 0 && state.charts.segmented.groups.length === 0) {
+    state.charts.segmented.segments = getDefaultSegments();
+    ensureGroupStructure();
+    renderGroupTabs();
+    renderSegmentList();
+  } else if (state.currentChartType === 'segmented') {
+    ensureGroupStructure();
+    renderGroupTabs();
+  }
+
+  if (clearedNew) {
+    refreshChartTypeGrid();
+  } else {
+    syncChartTypeSelectionUI(type);
+  }
+  closeChartCatalog();
+
+  updateSettingsVisibility();
+  updateDataFormatTip();
+  if (window.__loadSampleForType) window.__loadSampleForType(state.currentChartType);
+  if (window.__renderChart) window.__renderChart();
+  updateZoomSlider();
+}
+
+/** Generates chart type buttons from the registry and wires selection, catalog popover, and usage toggles. */
+export function initChartTypeGrid() {
+  window.__refreshChartTypeGrid = refreshChartTypeGrid;
+  window.__syncChartTypeSelection = syncChartTypeSelectionUI;
+
+  refreshChartTypeGrid();
+
+  const onGridClick = (e) => {
+    const btn = e.target.closest('.chart-type-btn');
+    if (btn?.dataset.type) selectChartType(btn.dataset.type);
+  };
+  dom.chartTypeGrid?.addEventListener('click', onGridClick);
+  dom.mostUsedGrid?.addEventListener('click', onGridClick);
+
+  dom.smartTopToggleBtn?.addEventListener('click', () => {
+    setSmartChartTopEnabled(!state.smartChartTop);
+  });
+
+  dom.smartTopPopoverToggle?.addEventListener('change', (e) => {
+    setSmartChartTopEnabled(e.target.checked);
+  });
+
+  dom.resetChartUsageBtn?.addEventListener('click', () => {
+    resetChartUsage();
+    refreshChartTypeGrid();
+    showToast('Chart usage history cleared', 'success');
+  });
+
+  dom.chartCatalogTrigger?.addEventListener('click', () => {
+    if (dom.chartCatalogPopover?.hidden) openChartCatalog();
+    else closeChartCatalog();
+  });
+
+  dom.closeChartCatalogBtn?.addEventListener('click', closeChartCatalog);
+
+  dom.chartCatalogSearch?.addEventListener('input', (e) => {
+    catalogSearchQuery = e.target.value || '';
+    renderCatalogGrid();
+  });
+
+  dom.chartCatalogPills?.addEventListener('click', (e) => {
+    const pill = e.target.closest('.chart-catalog-pill');
+    if (!pill?.dataset.cat) return;
+    catalogCategoryFilter = pill.dataset.cat;
+    syncCatalogPillSelection();
+    renderCatalogGrid();
+  });
+
+  dom.chartCatalogGrid?.addEventListener('click', (e) => {
+    const card = e.target.closest('.chart-catalog-card');
+    if (card?.dataset.type) selectChartType(card.dataset.type);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!dom.chartCatalogPopover || dom.chartCatalogPopover.hidden) return;
+    const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+    const insidePopover = path.includes(dom.chartCatalogPopover) || dom.chartCatalogPopover.contains(e.target);
+    const insideTrigger = path.includes(dom.chartCatalogTrigger) || dom.chartCatalogTrigger?.contains(e.target);
+    if (insidePopover || insideTrigger) return;
+    closeChartCatalog();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && dom.chartCatalogPopover && !dom.chartCatalogPopover.hidden) {
+      e.preventDefault();
+      closeChartCatalog();
+      dom.chartCatalogTrigger?.focus();
+    }
+  });
+
+  window.addEventListener('resize', positionCatalogPopover);
 
   // Data format info-tip toggle (shared for all chart types)
   const formatBtn = document.getElementById('chartDataFormatBtn');
@@ -397,6 +714,9 @@ export function initSettingsListeners() {
       }
       if (el === dom.dualBarBorderRadius && dom.dualBarBorderRadiusValue) {
         dom.dualBarBorderRadiusValue.textContent = dom.dualBarBorderRadius.value;
+      }
+      if (recordChartUsage(state.currentChartType, 'edit')) {
+        refreshChartTypeGrid();
       }
       if (window.__debouncedRender) window.__debouncedRender();
       if (window.__debouncedSaveProfile) window.__debouncedSaveProfile();

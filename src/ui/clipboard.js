@@ -3,6 +3,7 @@ import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { showToast } from '../utils.js';
 import { parseJSONData, parseDataFromText } from '../data.js';
+import { trackChartAction } from './chart-usage.js';
 
 /** Wires global paste handler (auto-parses data) and keyboard shortcuts. */
 export function initClipboard() {
@@ -28,6 +29,7 @@ export function initClipboard() {
       state.parsedData = state.rawParsedData;
       state.zoomRange = [0, 100];
       if (window.__updateAfterDataLoad) window.__updateAfterDataLoad();
+      trackChartAction(state.currentChartType, 'edit');
       const fmt = (trimmed.startsWith('{') || trimmed.startsWith('[')) && parseJSONData(text) ? 'JSON'
         : trimmed.includes('\t') && !trimmed.includes(',') ? 'TSV' : 'CSV';
       showToast(`Data pasted and parsed (${fmt})!`, 'success');

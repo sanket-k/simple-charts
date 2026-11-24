@@ -24,6 +24,7 @@ import { initClipboard } from './ui/clipboard.js?v=2';
 import { initInflationUI } from './ui/inflation-ui.js';
 import { initSavedGraphs } from './ui/saved-graphs.js';
 import { loadUserProfile, initUserProfile, debouncedSaveUserProfile, saveUserProfile } from './ui/user-profile.js';
+import { trackChartAction } from './ui/chart-usage.js';
 
 // Expose render functions globally for UI module callbacks
 const debouncedRender = debounce(() => renderChart(), CONFIG.debounceMs);
@@ -199,6 +200,7 @@ function initParseButton() {
       state.parsedData = state.rawParsedData;
       state.zoomRange = [0, 100];
       updateAfterDataLoad();
+      trackChartAction(state.currentChartType, 'edit');
     } else {
       showToast('Could not parse data. Check the format hint above the data input.', 'error');
     }
@@ -265,6 +267,7 @@ async function handleCSVFile(file) {
       state.parsedData = state.rawParsedData;
       state.zoomRange = [0, 100];
       updateAfterDataLoad();
+      trackChartAction(state.currentChartType, 'edit');
       showToast(`Loaded ${file.name} (${state.rawParsedData.labels.length.toLocaleString()} rows)`, 'success');
     }
   };
@@ -294,7 +297,10 @@ function initManualEntry() {
 
   const parseManualDataDebounced = debounce(() => {
     parseManualData();
-    if (state.rawParsedData) updateAfterDataLoad();
+    if (state.rawParsedData) {
+      updateAfterDataLoad();
+      trackChartAction(state.currentChartType, 'edit');
+    }
   }, CONFIG.debounceMs);
 
   dom.manualRows.parentElement.addEventListener('input', (e) => {

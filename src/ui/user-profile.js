@@ -81,6 +81,9 @@ export function captureUserProfile() {
       downsample: dom.downsampleSelect?.value ?? 'auto',
       maxRows: dom.maxRowsInput?.value ?? '50000',
     },
+    preferences: {
+      smartChartTop: Boolean(state.smartChartTop),
+    },
   };
 }
 
@@ -254,6 +257,14 @@ export function loadUserProfile() {
       if (dom.maxRowsInput && d.maxRows) dom.maxRowsInput.value = d.maxRows;
     }
 
+    // 8. UI Preferences
+    if (p.preferences && typeof p.preferences.smartChartTop === 'boolean') {
+      state.smartChartTop = p.preferences.smartChartTop;
+    } else {
+      state.smartChartTop = true;
+    }
+    if (window.__refreshChartTypeGrid) window.__refreshChartTypeGrid();
+
     isRestoring = false;
     return true;
   } catch (err) {
@@ -346,6 +357,9 @@ export function resetUserProfile() {
   });
   if (dom.downsampleSelect) dom.downsampleSelect.value = 'auto';
   if (dom.maxRowsInput) dom.maxRowsInput.value = '50000';
+
+  state.smartChartTop = true;
+  if (window.__refreshChartTypeGrid) window.__refreshChartTypeGrid();
 
   isRestoring = false;
   if (window.__renderChart) window.__renderChart();

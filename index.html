@@ -113,10 +113,35 @@
     <!-- Left Panel: Chart Type & Settings -->
     <aside class="panel panel-left">
       <div class="panel-section">
-        <h3 class="panel-title">Chart Type</h3>
-        <div class="chart-type-grid" id="chartTypeGrid" role="tablist" aria-label="Chart type">
-          <!-- Buttons auto-generated from chart registry -->
+        <h3 class="panel-title">
+          <span>Chart Type</span>
+          <div class="panel-title-actions">
+            <button type="button" class="brand-kit-action-btn smart-top-toggle active" id="smartTopToggleBtn" aria-pressed="true" title="Surface most used chart types at the top (click to turn off)">Top: On</button>
+          </div>
+        </h3>
+        <div id="mostUsedShelf" class="most-used-shelf" hidden>
+          <div class="chart-shelf-label">
+            <span>Most Used</span>
+            <span class="chart-shelf-meta">Auto</span>
+          </div>
+          <div class="chart-type-grid" id="mostUsedGrid" role="tablist" aria-label="Most used chart types"></div>
+          <div class="chart-shelf-divider"></div>
         </div>
+        <div class="chart-shelf-label" id="coreChartsLabel">
+          <span>Core Charts</span>
+          <span class="chart-shelf-meta" id="coreChartsCount">6</span>
+        </div>
+        <div class="chart-type-grid" id="chartTypeGrid" role="tablist" aria-label="Core chart types">
+          <!-- Core chart buttons auto-generated from chart registry -->
+        </div>
+        <button type="button" class="chart-catalog-trigger" id="chartCatalogTrigger" aria-expanded="false" aria-haspopup="dialog" aria-controls="chartCatalogPopover">
+          <span class="chart-catalog-trigger-label" id="chartCatalogTriggerLabel">Browse all charts</span>
+          <span class="chart-catalog-trigger-meta">
+            <span class="chart-catalog-active-pill" id="chartCatalogActivePill" hidden></span>
+            <span class="chart-catalog-new-badge" id="chartCatalogNewBadge" hidden></span>
+            <svg class="chart-catalog-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </span>
+        </button>
       </div>
 
       <!-- Labels -->
@@ -1216,6 +1241,29 @@
 
   <!-- Shared Datalist for Sector Suggestions -->
   <datalist id="savedCategoryDatalist"></datalist>
+
+  <!-- Chart Catalog Visual Popover (Pattern 2) -->
+  <div class="chart-catalog-popover" id="chartCatalogPopover" role="dialog" aria-modal="false" aria-label="All Chart Types" hidden>
+    <div class="chart-catalog-header">
+      <div class="chart-catalog-title-wrap">
+        <h3 class="chart-catalog-title">Chart Catalog</h3>
+        <span class="chart-catalog-count" id="chartCatalogTotalCount">19</span>
+      </div>
+      <button type="button" class="quick-save-close" id="closeChartCatalogBtn" title="Close (Esc)" aria-label="Close chart catalog">&times;</button>
+    </div>
+    <div class="chart-catalog-controls">
+      <input type="text" id="chartCatalogSearch" class="chart-catalog-search" placeholder="Search by chart or use case (e.g. gap, share, flow)…" autocomplete="off">
+      <div class="chart-catalog-pills" id="chartCatalogPills" role="tablist" aria-label="Chart categories"></div>
+    </div>
+    <div class="chart-catalog-grid" id="chartCatalogGrid"></div>
+    <div class="chart-catalog-footer">
+      <label class="chart-catalog-pref">
+        <input type="checkbox" id="smartTopPopoverToggle" checked>
+        <span>Show Most Used at top</span>
+      </label>
+      <button type="button" class="brand-kit-action-btn" id="resetChartUsageBtn" hidden>Reset usage</button>
+    </div>
+  </div>
 
   <!-- Option C: 2-Pane Spotlight Modal for Saved Graphs -->
   <div class="saved-modal-backdrop" id="savedGraphsModal" role="dialog" aria-modal="true" aria-label="Saved Graphs Library">

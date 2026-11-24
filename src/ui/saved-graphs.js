@@ -10,6 +10,7 @@ import { renderInnovatorTierNames } from '../charts/innovator.js';
 import { renderTimelineEvents } from './timeline-ui.js';
 import { renderLineStyleControls } from './line-style-ui.js';
 import { updateDataFormatTip } from './settings.js';
+import { trackChartAction } from './chart-usage.js';
 import {
   setSuppressProfileAutoSave,
   getBrandKitSnapshot,
@@ -462,11 +463,15 @@ export async function applySavedGraph(id, { valuesOnly = false } = {}) {
     if (!valuesOnly && entry.chartType && entry.chartType !== state.currentChartType) {
       state.previousChartType = state.currentChartType;
       state.currentChartType = entry.chartType;
-      $$('.chart-type-btn').forEach(b => {
-        const isMatch = b.dataset.type === entry.chartType;
-        b.classList.toggle('active', isMatch);
-        b.setAttribute('aria-selected', isMatch ? 'true' : 'false');
-      });
+      if (window.__syncChartTypeSelection) {
+        window.__syncChartTypeSelection(entry.chartType);
+      } else {
+        $$('.chart-type-btn').forEach(b => {
+          const isMatch = b.dataset.type === entry.chartType;
+          b.classList.toggle('active', isMatch);
+          b.setAttribute('aria-selected', isMatch ? 'true' : 'false');
+        });
+      }
       updateDataFormatTip();
     }
 
@@ -1044,6 +1049,7 @@ function saveCurrentGraph() {
   }
 
   renderSavedGraphsUI();
+  trackChartAction(state.currentChartType, 'export');
   showToast(`Saved "${snapshot.name}" in ${snapshot.category}`, 'success');
 
   const trigger = getBackupTriggerState();

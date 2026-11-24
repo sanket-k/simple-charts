@@ -3,6 +3,7 @@ import { state } from '../state.js';
 import { dom } from '../dom.js';
 import { safeInt, showToast } from '../utils.js';
 import { getThemeColors, bgPlugin, sourceFooterPlugin, brandPlugin } from '../charts/base-options.js';
+import { trackChartAction } from './chart-usage.js';
 
 /** Generates a filename from chart title/dataset names with a date suffix. */
 function getExportFilename(ext) {
@@ -132,6 +133,7 @@ function deepCloneConfig(obj, seen = new WeakMap()) {
 
 /** Renders the chart to an offscreen canvas at the selected size/quality and triggers download. */
 function doExport(filename, format, ext) {
+  trackChartAction(state.currentChartType, 'export');
   const sizeStr = dom.exportSize.value;
   const [w, h] = sizeStr.split('x').map(Number);
   const quality = safeInt(dom.exportQuality?.value, 1);
@@ -231,6 +233,7 @@ async function copyAsJSON() {
     };
 
     await navigator.clipboard.writeText(JSON.stringify(jsonData, null, 2));
+    trackChartAction(state.currentChartType, 'export');
     showToast('Chart data copied as JSON!', 'success');
   } catch (err) {
     showToast('Copy failed', 'error');
@@ -252,6 +255,7 @@ async function copyToClipboard() {
       await navigator.clipboard.write([
         new ClipboardItem({ 'image/png': blob })
       ]);
+      trackChartAction(state.currentChartType, 'export');
       showToast('Chart copied to clipboard!', 'success');
     } else {
       const url = URL.createObjectURL(blob);
@@ -260,6 +264,7 @@ async function copyToClipboard() {
       link.href = url;
       link.click();
       URL.revokeObjectURL(url);
+      trackChartAction(state.currentChartType, 'export');
       showToast('Clipboard not supported \u2014 downloaded instead', 'warning');
     }
   } catch (err) {

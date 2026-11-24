@@ -3,6 +3,38 @@
 
 const registry = new Map();
 
+/** Intent-based categories for organizing the chart catalog. */
+export const CHART_CATEGORIES = [
+  { id: 'trend', label: 'Trend & Time' },
+  { id: 'compare', label: 'Compare & Rank' },
+  { id: 'part', label: 'Part of Whole' },
+  { id: 'rel', label: 'XY & Multi-Axis' },
+  { id: 'flow', label: 'Flow & Change' },
+  { id: 'strategy', label: 'Frameworks & Calc' },
+];
+
+const CHART_CATALOG_META = {
+  line: { category: 'trend', isCore: true, summary: 'Trends over continuous time or intervals' },
+  bar: { category: 'compare', isCore: true, summary: 'Horizontal bars for ranking & long labels' },
+  vbar: { category: 'compare', isCore: true, summary: 'Vertical columns for comparing categories' },
+  pie: { category: 'part', isCore: true, summary: 'Share of whole (auto-groups >12 slices)' },
+  donut: { category: 'part', summary: 'Clean part-of-whole with center cutout' },
+  area: { category: 'trend', isCore: true, summary: 'Stacked volume & composition over time' },
+  radar: { category: 'rel', summary: 'Compare multi-metric profiles on spokes' },
+  scatter: { category: 'rel', summary: 'Correlation & outliers across X / Y values' },
+  waterfall: { category: 'flow', summary: 'Step-by-step +/- variance to cumulative total' },
+  combo: { category: 'trend', isCore: true, summary: 'Bars + trend line with optional dual axis' },
+  timeline: { category: 'trend', summary: 'Line trend with vertical milestone markers' },
+  segmented: { category: 'part', summary: 'Single stacked bar (100% or unit values)' },
+  innovator: { category: 'strategy', summary: 'Christensen sustaining vs disruptive curve' },
+  kano: { category: 'strategy', summary: 'Feature prioritization (Must-be vs Delight)' },
+  dumbbell: { category: 'compare', summary: 'Before/after gap with xN improvement pill' },
+  'bubble-compare': { category: 'compare', summary: 'Area-proportional before/after circles' },
+  overlay: { category: 'compare', summary: 'Log-scale foreground bar over faded baseline' },
+  'dual-bar': { category: 'compare', isNew: true, summary: 'Concentric current vs target progress bars' },
+  inflation: { category: 'strategy', isNew: true, summary: 'Purchasing power calculator across years' },
+};
+
 /** Default capability values (all false). Descriptors only override what's true. */
 const DEFAULT_CAPABILITIES = {
   grid: false,
@@ -21,7 +53,14 @@ const DEFAULT_CAPABILITIES = {
 };
 
 export function registerChart(descriptor) {
-  registry.set(descriptor.id, descriptor);
+  const meta = CHART_CATALOG_META[descriptor.id] || {};
+  registry.set(descriptor.id, {
+    category: descriptor.category || meta.category || 'compare',
+    summary: descriptor.summary || meta.summary || '',
+    isCore: descriptor.isCore ?? meta.isCore ?? false,
+    isNew: descriptor.isNew ?? meta.isNew ?? false,
+    ...descriptor,
+  });
 }
 
 export function getChartDescriptor(id) {

@@ -24,6 +24,7 @@ export const state = {
   seriesCount: 1,
   chartDataStore: {},
   previousChartType: null,
+  smartChartTop: true,
 
   // Per-chart namespaced state
   charts: {
