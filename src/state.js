@@ -20,6 +20,7 @@ export const state = {
   datasetChartTypes: [],
   datasetLineStyles: [],
   zoomRange: [0, 100],
+  isZoomPlaying: false,
   dataFormat: 'csv',
   seriesCount: 1,
   chartDataStore: {},

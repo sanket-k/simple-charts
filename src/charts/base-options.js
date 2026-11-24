@@ -269,7 +269,7 @@ export function getBaseChartOptions() {
   const showDataLabels = dom.showDataLabels.checked;
   const maxTicks = safeInt(dom.maxTicks.value, 12);
   const yScale = dom.yAxisScale.value;
-  const animDuration = safeInt(dom.animationSpeed?.value, 600);
+  const animDuration = state.isZoomPlaying ? 0 : safeInt(dom.animationSpeed?.value, 600);
   const legendPos = dom.legendPosition?.value || 'top';
   const tooltipStyle = dom.tooltipStyle?.value || 'default';
   const gridStyleVal = dom.gridStyle?.value || 'solid';

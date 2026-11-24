@@ -424,7 +424,7 @@ export function renderInnovatorsDilemmaChart() {
   };
 
   // ── Chart config ────────────────────────────────────────────
-  const animDuration = safeInt(dom.animationSpeed?.value, 600);
+  const animDuration = state.isZoomPlaying ? 0 : safeInt(dom.animationSpeed?.value, 600);
 
   const config = {
     type: 'line',

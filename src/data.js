@@ -101,26 +101,128 @@ export function applyZoom(data) {
   };
 }
 
-/** Updates the zoom slider UI labels and thumb positions to reflect the current range. */
-export function updateZoomLabels() {
-  let lbls = [];
+/** Returns the active label array used by the zoom slider. */
+export function getZoomLabels() {
   if (state.currentChartType === 'innovator') {
-    lbls = state.charts.innovator.currentLabels;
-  } else if (state.parsedData) {
-    lbls = state.parsedData.labels;
+    return state.charts.innovator.currentLabels || [];
+  }
+  return state.parsedData?.labels || [];
+}
+
+/** Converts percentage-based state.zoomRange [0..100] into inclusive discrete indices [lo, hi]. */
+export function zoomRangeToIndices(len) {
+  if (len <= 1) return [0, 0];
+  const lo = Math.max(0, Math.min(len - 2, Math.floor((state.zoomRange[0] / 100) * len)));
+  const hi = Math.min(len - 1, Math.max(lo + 1, Math.ceil((state.zoomRange[1] / 100) * len) - 1));
+  return [lo, hi];
+}
+
+/** Converts inclusive discrete indices [lo, hi] back into percentage-based state.zoomRange [0..100]. */
+export function indicesToZoomRange(lo, hi, len) {
+  if (len <= 1) return [0, 100];
+  const maxIdx = len - 1;
+  const startPct = lo <= 0 ? 0 : (lo / maxIdx) * 100;
+  const endPct = hi >= maxIdx ? 100 : (hi / maxIdx) * 100;
+  return [startPct, endPct];
+}
+
+/** Picks up to maxItems evenly spaced indices from [0..len-1], always including endpoints. */
+function sampleIndices(len, maxItems) {
+  if (len <= maxItems) {
+    return Array.from({ length: len }, (_, i) => i);
+  }
+  const indices = new Set([0, len - 1]);
+  const slots = maxItems - 1;
+  for (let i = 1; i < slots; i++) {
+    indices.add(Math.round((i / slots) * (len - 1)));
+  }
+  return Array.from(indices).sort((a, b) => a - b);
+}
+
+let lastSteppedSignature = '';
+
+/** Rebuilds stepped node dots and labels when the underlying label set changes. */
+function renderSteppedTrack(lbls) {
+  const sig = `${lbls.length}|${lbls[0] ?? ''}|${lbls[lbls.length - 1] ?? ''}`;
+  if (sig === lastSteppedSignature) return;
+  lastSteppedSignature = sig;
+
+  const maxIdx = lbls.length - 1;
+  const dotIndices = sampleIndices(lbls.length, 21);
+  if (dom.zoomSteppedNodes) {
+    dom.zoomSteppedNodes.innerHTML = dotIndices
+      .map((idx) => `<span class="zoom-step-dot" data-idx="${idx}" style="left:${(idx / maxIdx) * 100}%"></span>`)
+      .join('');
   }
 
-  if (!lbls || lbls.length === 0) return;
+  const labelIndices = sampleIndices(lbls.length, 9);
+  if (dom.zoomSteppedLabels) {
+    dom.zoomSteppedLabels.innerHTML = labelIndices
+      .map((idx) => `<span class="zoom-step-label" data-idx="${idx}">${lbls[idx] ?? ''}</span>`)
+      .join('');
+  }
+}
+
+/** Updates the zoom slider UI labels, stepped nodes, and thumb positions to reflect the current range. */
+export function updateZoomLabels() {
+  const lbls = getZoomLabels();
+  if (!lbls || lbls.length < 2) return;
 
   const len = lbls.length;
-  const startIdx = Math.floor((state.zoomRange[0] / 100) * len);
-  const endIdx = Math.min(Math.ceil((state.zoomRange[1] / 100) * len), len - 1);
-  dom.zoomLabelStart.textContent = lbls[startIdx] || '';
-  dom.zoomLabelEnd.textContent = lbls[endIdx] || '';
+  const maxIdx = len - 1;
+  const [lo, hi] = zoomRangeToIndices(len);
 
-  const thumbW = 16;
-  dom.zoomSliderRange.style.left = `calc(${state.zoomRange[0]}% + ${thumbW / 2 - (state.zoomRange[0] / 100) * thumbW}px)`;
-  dom.zoomSliderRange.style.width = `calc(${state.zoomRange[1] - state.zoomRange[0]}% - ${(state.zoomRange[1] - state.zoomRange[0]) / 100 * thumbW}px)`;
+  dom.zoomMin.min = 0;
+  dom.zoomMin.max = maxIdx;
+  dom.zoomMin.step = 1;
+  dom.zoomMin.value = lo;
+
+  dom.zoomMax.min = 0;
+  dom.zoomMax.max = maxIdx;
+  dom.zoomMax.step = 1;
+  dom.zoomMax.value = hi;
+
+  dom.zoomMin.style.setProperty('--attr-min', 0);
+  dom.zoomMin.style.setProperty('--attr-max', maxIdx);
+  dom.zoomMin.style.setProperty('--control-value', lo);
+  dom.zoomMax.style.setProperty('--attr-min', 0);
+  dom.zoomMax.style.setProperty('--attr-max', maxIdx);
+  dom.zoomMax.style.setProperty('--control-value', hi);
+
+  dom.zoomMin.setAttribute('aria-valuetext', `Start: ${lbls[lo] ?? ''}`);
+  dom.zoomMax.setAttribute('aria-valuetext', `End: ${lbls[hi] ?? ''}`);
+  dom.zoomMin.style.zIndex = lo > maxIdx - 2 ? '5' : '4';
+
+  const pLo = (lo / maxIdx) * 100;
+  const pHi = (hi / maxIdx) * 100;
+  dom.zoomSliderRange.style.left = `${pLo}%`;
+  dom.zoomSliderRange.style.width = `${pHi - pLo}%`;
+
+  if (dom.zoomSteppedNodes) {
+    dom.zoomSteppedNodes.querySelectorAll('.zoom-step-dot').forEach((dot) => {
+      const idx = Number(dot.dataset.idx);
+      dot.classList.toggle('active', idx >= lo && idx <= hi);
+    });
+  }
+
+  if (dom.zoomSteppedLabels) {
+    dom.zoomSteppedLabels.querySelectorAll('.zoom-step-label').forEach((lbl) => {
+      const idx = Number(lbl.dataset.idx);
+      lbl.classList.toggle('active', idx >= lo && idx <= hi);
+    });
+  }
+
+  const isZoomed = lo > 0 || hi < maxIdx;
+  if (dom.zoomResetBtn) {
+    dom.zoomResetBtn.hidden = !isZoomed;
+  }
+  if (dom.zoomRangePill) {
+    const showPill = len > 9 && isZoomed;
+    dom.zoomRangePill.hidden = !showPill;
+    if (showPill) {
+      dom.zoomRangePill.textContent = `${lbls[lo] ?? ''} – ${lbls[hi] ?? ''}`;
+    }
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -556,22 +658,28 @@ export function updateDataOptions() {
   }
 }
 
-/** Shows/hides the zoom slider based on chart type and data size, and syncs input values. */
+/** Shows/hides the zoom slider based on chart type and data size, and syncs stepped nodes + values. */
 export function updateZoomSlider() {
   const isInnovator = state.currentChartType === 'innovator';
   if (!state.parsedData && !isInnovator) {
     dom.zoomSliderContainer.style.display = 'none';
+    dom.zoomSliderContainer.dispatchEvent(new CustomEvent('zoom:dataset-changed'));
     return;
   }
   const isLineChart = ['line', 'timeline', 'area', 'innovator', 'combo'].includes(state.currentChartType);
-  const len = isInnovator ? state.charts.innovator.currentLabels.length : (state.parsedData ? state.parsedData.labels.length : 0);
-  if (!isLineChart && len < 50) {
+  const lbls = getZoomLabels();
+  const len = lbls.length;
+  if ((!isLineChart && len < 50) || len < 2) {
     dom.zoomSliderContainer.style.display = 'none';
+    dom.zoomSliderContainer.dispatchEvent(new CustomEvent('zoom:dataset-changed'));
     return;
   }
-  dom.zoomSliderContainer.style.display = 'block';
-  dom.zoomMin.value = state.zoomRange[0];
-  dom.zoomMax.value = state.zoomRange[1];
+  const prevSig = lastSteppedSignature;
+  dom.zoomSliderContainer.style.display = 'flex';
+  renderSteppedTrack(lbls);
+  if (prevSig !== lastSteppedSignature) {
+    dom.zoomSliderContainer.dispatchEvent(new CustomEvent('zoom:dataset-changed'));
+  }
   updateZoomLabels();
 }
 

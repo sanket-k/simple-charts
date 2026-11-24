@@ -1011,18 +1011,28 @@
         <div class="chart-container" id="chartContainer">
           <canvas id="chartCanvas"></canvas>
         </div>
-        <!-- Zoom Slider -->
+        <!-- Zoom Slider (Stepped Node Track + Story Playhead) -->
         <div class="zoom-slider-container" id="zoomSliderContainer" style="display:none;">
-          <div class="zoom-slider-track" id="zoomSliderTrack">
-            <div class="zoom-slider-range" id="zoomSliderRange"></div>
-            <input type="range" class="zoom-handle zoom-handle-min" id="zoomMin" min="0" max="100" value="0" step="0.1">
-            <input type="range" class="zoom-handle zoom-handle-max" id="zoomMax" min="0" max="100" value="100" step="0.1">
+          <button type="button" class="zoom-play-btn" id="zoomPlayBtn" aria-pressed="false" title="Animate reveal from start to end" aria-label="Play range reveal animation">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+          </button>
+
+          <div class="zoom-stepped-main">
+            <div class="zoom-slider-track" id="zoomSliderTrack">
+              <div class="zoom-stepped-rail">
+                <div class="zoom-slider-range" id="zoomSliderRange"></div>
+                <div class="zoom-stepped-nodes" id="zoomSteppedNodes" aria-hidden="true"></div>
+              </div>
+              <label for="zoomMin" class="visually-hidden">Start time</label>
+              <input type="range" class="zoom-handle zoom-handle-min" id="zoomMin" min="0" max="7" value="0" step="1">
+              <label for="zoomMax" class="visually-hidden">End time</label>
+              <input type="range" class="zoom-handle zoom-handle-max" id="zoomMax" min="0" max="7" value="7" step="1">
+            </div>
+            <div class="zoom-stepped-labels" id="zoomSteppedLabels"></div>
           </div>
-          <div class="zoom-labels">
-            <span id="zoomLabelStart">Start</span>
-            <button type="button" class="zoom-reset-btn" id="zoomResetBtn" title="Reset zoom">Reset</button>
-            <span id="zoomLabelEnd">End</span>
-          </div>
+
+          <span class="zoom-range-pill" id="zoomRangePill" hidden></span>
+          <button type="button" class="zoom-reset-btn" id="zoomResetBtn" title="Reset zoom" hidden>Reset</button>
         </div>
       </div>
     </section>
