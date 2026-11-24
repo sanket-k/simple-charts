@@ -33,6 +33,8 @@ export const dom = {
   mostUsedShelf: $('#mostUsedShelf'),
   mostUsedGrid: $('#mostUsedGrid'),
   smartTopToggleBtn: $('#smartTopToggleBtn'),
+  chartGuideToggleBtn: $('#chartGuideToggleBtn'),
+  chartGuidePopover: $('#chartGuidePopover'),
   coreChartsLabel: $('#coreChartsLabel'),
   coreChartsCount: $('#coreChartsCount'),
   chartCatalogTrigger: $('#chartCatalogTrigger'),

@@ -3853,3 +3853,192 @@ body.is-resizing-panels * {
     box-shadow: none;
   }
 }
+
+/* ═══════════════════════════════════════════
+   Chart Guide Toggle & Popover (Pattern A)
+   ═══════════════════════════════════════════ */
+
+.chart-guide-toggle.active {
+  background: var(--brand-orange-soft);
+  border-color: rgba(247, 147, 26, 0.5);
+  color: var(--brand-orange);
+}
+
+.chart-guide-popover {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  z-index: 2200;
+  width: 320px;
+  max-width: calc(100vw - 24px);
+  padding: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  display: none;
+}
+
+.chart-guide-popover:is(:popover-open, .open) {
+  display: block;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .chart-guide-popover {
+    opacity: 0;
+    transform: translateX(-4px) scale(0.98);
+    transition: opacity 0.15s var(--ease-out), transform 0.15s var(--ease-out), display 0.15s, overlay 0.15s;
+    transition-behavior: allow-discrete;
+  }
+  .chart-guide-popover:is(:popover-open, .open) {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  @starting-style {
+    .chart-guide-popover:is(:popover-open, .open) {
+      opacity: 0;
+      transform: translateX(-4px) scale(0.98);
+    }
+  }
+}
+
+.chart-guide-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 13px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.chart-guide-head-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.chart-guide-head-left svg {
+  width: 22px;
+  height: 22px;
+  color: var(--brand-orange);
+  flex-shrink: 0;
+}
+
+.chart-guide-name {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.chart-guide-cat {
+  font-size: 0.64rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--brand-orange-soft);
+  color: var(--brand-text);
+  white-space: nowrap;
+}
+
+.chart-guide-body {
+  padding: 11px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.chart-guide-summary {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.chart-guide-section-label {
+  font-size: 0.63rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  margin-bottom: 3px;
+}
+
+.chart-guide-list {
+  margin: 0;
+  padding-left: 15px;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chart-guide-cols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chart-guide-col-pill {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+}
+
+.chart-guide-col-pill em {
+  font-style: normal;
+  color: var(--brand-text);
+  font-weight: 600;
+}
+
+.chart-guide-avoid {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  background: rgba(245, 158, 11, 0.12);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+}
+
+.chart-guide-avoid strong {
+  color: #D97706;
+}
+
+[data-theme="dark"] .chart-guide-avoid strong {
+  color: #FBBF24;
+}
+
+.chart-guide-foot {
+  padding: 7px 13px;
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.67rem;
+  color: var(--text-tertiary);
+}
+
+.chart-guide-off-link {
+  border: none;
+  background: transparent;
+  color: var(--brand-text);
+  font-family: var(--font-sans);
+  font-size: 0.67rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.chart-guide-off-link:hover {
+  color: var(--brand-orange);
+}

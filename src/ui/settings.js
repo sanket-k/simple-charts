@@ -19,6 +19,7 @@ import {
   isChartUnseenNew,
   resetChartUsage,
 } from './chart-usage.js';
+import { initChartGuide, syncChartGuideUI, hideChartGuidePopover } from './chart-guide.js';
 
 let catalogCategoryFilter = 'all';
 let catalogSearchQuery = '';
@@ -257,6 +258,8 @@ export function refreshChartTypeGrid() {
     renderCatalogPills();
     renderCatalogGrid();
   }
+
+  syncChartGuideUI();
 }
 
 function renderCatalogPills() {
@@ -381,6 +384,7 @@ function openChartCatalog() {
   if (dom.chartCatalogSearch) dom.chartCatalogSearch.value = '';
   renderCatalogPills();
   renderCatalogGrid();
+  syncChartGuideUI();
   dom.chartCatalogPopover.hidden = false;
   dom.chartCatalogTrigger?.classList.add('open');
   dom.chartCatalogTrigger?.setAttribute('aria-expanded', 'true');
@@ -389,6 +393,7 @@ function openChartCatalog() {
 }
 
 function closeChartCatalog() {
+  hideChartGuidePopover();
   if (!dom.chartCatalogPopover || dom.chartCatalogPopover.hidden) return;
   dom.chartCatalogPopover.hidden = true;
   dom.chartCatalogTrigger?.classList.remove('open');
@@ -408,6 +413,7 @@ function setSmartChartTopEnabled(enabled, showFeedback = true) {
 function selectChartType(type) {
   if (!type || !getChartDescriptor(type)) return;
 
+  hideChartGuidePopover();
   const clearedNew = markChartSeen(type);
   resetVisitEditGuard();
   recordChartUsage(type, 'browse');
@@ -445,6 +451,7 @@ export function initChartTypeGrid() {
   window.__syncChartTypeSelection = syncChartTypeSelectionUI;
 
   refreshChartTypeGrid();
+  initChartGuide();
 
   const onGridClick = (e) => {
     const btn = e.target.closest('.chart-type-btn');
@@ -477,6 +484,7 @@ export function initChartTypeGrid() {
   dom.chartCatalogSearch?.addEventListener('input', (e) => {
     catalogSearchQuery = e.target.value || '';
     renderCatalogGrid();
+    syncChartGuideUI();
   });
 
   dom.chartCatalogPills?.addEventListener('click', (e) => {
@@ -485,6 +493,7 @@ export function initChartTypeGrid() {
     catalogCategoryFilter = pill.dataset.cat;
     syncCatalogPillSelection();
     renderCatalogGrid();
+    syncChartGuideUI();
   });
 
   dom.chartCatalogGrid?.addEventListener('click', (e) => {
@@ -503,6 +512,13 @@ export function initChartTypeGrid() {
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && dom.chartCatalogPopover && !dom.chartCatalogPopover.hidden) {
+      const guideOpen = dom.chartGuidePopover?.classList.contains('open') || (() => {
+        try { return Boolean(dom.chartGuidePopover?.matches(':popover-open')); } catch { return false; }
+      })();
+      if (guideOpen) {
+        hideChartGuidePopover();
+        return;
+      }
       e.preventDefault();
       closeChartCatalog();
       dom.chartCatalogTrigger?.focus();

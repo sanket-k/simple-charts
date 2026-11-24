@@ -142,6 +142,7 @@
         <h3 class="panel-title">
           <span>Chart Type</span>
           <div class="panel-title-actions">
+            <button type="button" class="brand-kit-action-btn chart-guide-toggle" id="chartGuideToggleBtn" aria-pressed="false" title="Show chart usage guides on hover (click to turn on)">Guide: Off</button>
             <button type="button" class="brand-kit-action-btn smart-top-toggle active" id="smartTopToggleBtn" aria-pressed="true" title="Surface most used chart types at the top (click to turn off)">Top: On</button>
           </div>
         </h3>
@@ -1336,6 +1337,9 @@
       <button type="button" class="brand-kit-action-btn" id="resetChartUsageBtn" hidden>Reset usage</button>
     </div>
   </div>
+
+  <!-- Chart Guide Hovercard (Pattern A: Off | Smart | On) -->
+  <div class="chart-guide-popover" id="chartGuidePopover" popover="hint" role="tooltip"></div>
 
   <!-- Option C: 2-Pane Spotlight Modal for Saved Graphs -->
   <div class="saved-modal-backdrop" id="savedGraphsModal" role="dialog" aria-modal="true" aria-label="Saved Graphs Library">

@@ -14,25 +14,306 @@ export const CHART_CATEGORIES = [
 ];
 
 const CHART_CATALOG_META = {
-  line: { category: 'trend', isCore: true, summary: 'Trends over continuous time or intervals' },
-  bar: { category: 'compare', isCore: true, summary: 'Horizontal bars for ranking & long labels' },
-  vbar: { category: 'compare', isCore: true, summary: 'Vertical columns for comparing categories' },
-  pie: { category: 'part', isCore: true, summary: 'Share of whole (auto-groups >12 slices)' },
-  donut: { category: 'part', summary: 'Clean part-of-whole with center cutout' },
-  area: { category: 'trend', isCore: true, summary: 'Stacked volume & composition over time' },
-  radar: { category: 'rel', summary: 'Compare multi-metric profiles on spokes' },
-  scatter: { category: 'rel', summary: 'Correlation & outliers across X / Y values' },
-  waterfall: { category: 'flow', summary: 'Step-by-step +/- variance to cumulative total' },
-  combo: { category: 'trend', isCore: true, summary: 'Bars + trend line with optional dual axis' },
-  timeline: { category: 'trend', summary: 'Line trend with vertical milestone markers' },
-  segmented: { category: 'part', summary: 'Single stacked bar (100% or unit values)' },
-  innovator: { category: 'strategy', summary: 'Christensen sustaining vs disruptive curve' },
-  kano: { category: 'strategy', summary: 'Feature prioritization (Must-be vs Delight)' },
-  dumbbell: { category: 'compare', summary: 'Before/after gap with xN improvement pill' },
-  'bubble-compare': { category: 'compare', summary: 'Area-proportional before/after circles' },
-  overlay: { category: 'compare', summary: 'Log-scale foreground bar over faded baseline' },
-  'dual-bar': { category: 'compare', isNew: true, summary: 'Concentric current vs target progress bars' },
-  inflation: { category: 'strategy', isNew: true, summary: 'Purchasing power calculator across years' },
+  line: {
+    category: 'trend',
+    isCore: true,
+    summary: 'Trends over continuous time or intervals',
+    guide: {
+      bestFor: [
+        'Trends over continuous time (days, months, years)',
+        'Comparing 2–4 metrics on the same timeline',
+      ],
+      avoid: 'Discrete unordered categories — use V-Bar or H-Bar instead.',
+      columns: [
+        { col: 'Col 1', role: 'Date / Label' },
+        { col: 'Col 2+', role: 'Line Series' },
+      ],
+    },
+  },
+  bar: {
+    category: 'compare',
+    isCore: true,
+    summary: 'Horizontal bars for ranking & long labels',
+    guide: {
+      bestFor: [
+        'Ranking categories & leaderboards',
+        'Long category names that wrap poorly under vertical columns',
+      ],
+      avoid: 'Continuous time trends — use Line or Area instead.',
+      columns: [
+        { col: 'Col 1', role: 'Category' },
+        { col: 'Col 2+', role: 'Bar Series' },
+      ],
+    },
+  },
+  vbar: {
+    category: 'compare',
+    isCore: true,
+    summary: 'Vertical columns for comparing categories',
+    guide: {
+      bestFor: [
+        'Comparing 3–12 categories side-by-side',
+        'Short labels across quarters, cohorts, or groups',
+      ],
+      avoid: 'Long label text (use H-Bar) or >30 bars.',
+      columns: [
+        { col: 'Col 1', role: 'Category' },
+        { col: 'Col 2+', role: 'Bar Series' },
+      ],
+    },
+  },
+  pie: {
+    category: 'part',
+    isCore: true,
+    summary: 'Share of whole (auto-groups >12 slices)',
+    guide: {
+      bestFor: [
+        'Quick share-of-whole breakdowns (≤6 main slices)',
+        'Highlighting one dominant slice against the rest',
+      ],
+      avoid: 'Comparing close values or >12 slices — use H-Bar instead.',
+      columns: [
+        { col: 'Col 1', role: 'Slice Name' },
+        { col: 'Col 2', role: 'Share Value' },
+      ],
+    },
+  },
+  donut: {
+    category: 'part',
+    summary: 'Clean part-of-whole with center cutout',
+    guide: {
+      bestFor: [
+        'Clean part-of-whole share with modern center cutout',
+        'Budget, market share, or portfolio composition (≤10 slices)',
+      ],
+      avoid: 'Multiple series or precise value comparisons — use Segmented or H-Bar.',
+      columns: [
+        { col: 'Col 1', role: 'Slice Name' },
+        { col: 'Col 2', role: 'Share Value' },
+      ],
+    },
+  },
+  area: {
+    category: 'trend',
+    isCore: true,
+    summary: 'Stacked volume & composition over time',
+    guide: {
+      bestFor: [
+        'Cumulative volume & stacked composition over time',
+        'Showing how sub-segments grow into a total',
+      ],
+      avoid: 'Non-additive metrics (like % rates) — use Line instead.',
+      columns: [
+        { col: 'Col 1', role: 'Date / Period' },
+        { col: 'Col 2+', role: 'Stacked Series' },
+      ],
+    },
+  },
+  radar: {
+    category: 'rel',
+    summary: 'Compare multi-metric profiles on spokes',
+    guide: {
+      bestFor: [
+        'Multi-dimensional profile comparisons (e.g. Us vs. Competitor)',
+        'Scoring 3–8 balanced attributes on one polygon',
+      ],
+      avoid: 'Fewer than 3 rows or metrics with wildly different units.',
+      columns: [
+        { col: 'Col 1', role: 'Metric Axis (≥3)' },
+        { col: 'Col 2+', role: 'Polygon Series' },
+      ],
+    },
+  },
+  scatter: {
+    category: 'rel',
+    summary: 'Correlation & outliers across X / Y values',
+    guide: {
+      bestFor: [
+        'Spotting correlation, clusters, and outliers across X & Y',
+        'Continuous numeric pairs (e.g. spend vs. conversion)',
+      ],
+      avoid: 'Text category labels — X values must be numeric.',
+      columns: [
+        { col: 'Col 1', role: 'X (Numeric)' },
+        { col: 'Col 2', role: 'Y (Numeric)' },
+        { col: 'Col 3+', role: 'Extra Series' },
+      ],
+    },
+  },
+  waterfall: {
+    category: 'flow',
+    summary: 'Step-by-step +/- variance to cumulative total',
+    guide: {
+      bestFor: [
+        'Income statements (Revenue → COGS → OpEx → Net Profit)',
+        'Step-by-step +/- bridges explaining net change',
+      ],
+      avoid: 'Independent totals with no running sum — use V-Bar.',
+      columns: [
+        { col: 'Col 1', role: 'Step Label' },
+        { col: 'Col 2', role: '+/- Value' },
+      ],
+    },
+  },
+  combo: {
+    category: 'trend',
+    isCore: true,
+    summary: 'Bars + trend line with optional dual axis',
+    guide: {
+      bestFor: [
+        'Pairing volume (bars) with rate or % margin (line)',
+        'Comparing two different units via Dual Y-Axis',
+      ],
+      avoid: 'Single-series data — use V-Bar or Line instead.',
+      columns: [
+        { col: 'Col 1', role: 'Period / Label' },
+        { col: 'Col 2', role: 'Bar Series' },
+        { col: 'Col 3+', role: 'Line Series' },
+      ],
+    },
+  },
+  timeline: {
+    category: 'trend',
+    summary: 'Line trend with vertical milestone markers',
+    guide: {
+      bestFor: [
+        'Price or metric trends annotated with dated milestones',
+        'Storytelling around launches, forks, or policy dates',
+      ],
+      avoid: 'Data without dates — use Line instead.',
+      columns: [
+        { col: 'Col 1', role: 'Date' },
+        { col: 'Col 2', role: 'Metric Value' },
+      ],
+    },
+  },
+  segmented: {
+    category: 'part',
+    summary: 'Single stacked bar (100% or unit values)',
+    guide: {
+      bestFor: [
+        '100% composition or unit share in a single stacked bar',
+        'Before/after share shifts across 1–4 groups (e.g. 2020 vs. 2025)',
+      ],
+      avoid: 'More than ~6 tiny segments — use H-Bar for clarity.',
+      columns: [
+        { col: 'Col 1', role: 'Group Name' },
+        { col: 'Col 2+', role: 'Segment Values' },
+      ],
+    },
+  },
+  innovator: {
+    category: 'strategy',
+    summary: 'Christensen sustaining vs disruptive curve',
+    guide: {
+      bestFor: [
+        'Christensen disruption decks (disruptive curve crossing market tiers)',
+        'Progressive input: 1 column auto-generates incumbent & tiers',
+      ],
+      avoid: 'Standard KPI time-series without market tiers — use Line.',
+      columns: [
+        { col: 'Col 1', role: 'Time' },
+        { col: 'Col 2', role: 'Disruptive' },
+        { col: 'Col 3+', role: 'Incumbent / Tiers (opt.)' },
+      ],
+    },
+  },
+  kano: {
+    category: 'strategy',
+    summary: 'Feature prioritization (Must-be vs Delight)',
+    guide: {
+      bestFor: [
+        'Product roadmap prioritization (Cost vs. Satisfaction)',
+        'Separating Must-be table stakes from Delighters',
+      ],
+      avoid: 'Generic XY numeric data — use Scatter instead.',
+      columns: [
+        { col: 'Col 1', role: 'Feature' },
+        { col: 'Col 2', role: 'Cost (1–10)' },
+        { col: 'Col 3', role: 'Sat (-3–10)' },
+      ],
+    },
+  },
+  dumbbell: {
+    category: 'compare',
+    summary: 'Before/after gap with xN improvement pill',
+    guide: {
+      bestFor: [
+        'Dramatic Before → After leaps spanning 10×–1000×',
+        'Highlighting relative ×N improvement multipliers',
+      ],
+      avoid: 'Zero or negative values (log scale requires > 0) — use H-Bar or Waterfall.',
+      columns: [
+        { col: 'Col 1', role: 'Metric' },
+        { col: 'Col 2', role: 'Before (>0)' },
+        { col: 'Col 3', role: 'After (>0)' },
+      ],
+    },
+  },
+  'bubble-compare': {
+    category: 'compare',
+    summary: 'Area-proportional before/after circles',
+    guide: {
+      bestFor: [
+        'Visualizing huge area-proportional before/after scale gaps',
+        'Executive storytelling where circle size conveys magnitude',
+      ],
+      avoid: 'Zero/negative values (> 0 required) or precise reading — use Dumbbell.',
+      columns: [
+        { col: 'Col 1', role: 'Metric' },
+        { col: 'Col 2', role: 'Before (>0)' },
+        { col: 'Col 3', role: 'After (>0)' },
+      ],
+    },
+  },
+  overlay: {
+    category: 'compare',
+    summary: 'Log-scale foreground bar over faded baseline',
+    guide: {
+      bestFor: [
+        'Foreground vs. baseline bar layered on one track',
+        'Compact log-scale comparison with ×N ratio badges',
+      ],
+      avoid: 'Values ≤ 0 (> 0 required) or >2 data columns — use Dual-Bar or H-Bar.',
+      columns: [
+        { col: 'Col 1', role: 'Metric' },
+        { col: 'Col 2', role: 'Foreground (>0)' },
+        { col: 'Col 3', role: 'Baseline (>0)' },
+      ],
+    },
+  },
+  'dual-bar': {
+    category: 'compare',
+    isNew: true,
+    summary: 'Concentric current vs target progress bars',
+    guide: {
+      bestFor: [
+        'Concentric Current vs. Target progress (OKRs, quotas, budgets)',
+        'Showing % attainment when all rows share the same unit',
+      ],
+      avoid: 'Inner values larger than target or mismatched row units — use H-Bar.',
+      columns: [
+        { col: 'Col 1', role: 'Category' },
+        { col: 'Col 2', role: 'Target (Outer)' },
+        { col: 'Col 3', role: 'Current (Inner)' },
+      ],
+    },
+  },
+  inflation: {
+    category: 'strategy',
+    isNew: true,
+    summary: 'Purchasing power calculator across years',
+    guide: {
+      bestFor: [
+        'Interactive purchasing-power erosion across years',
+        'Driven by left-panel Amount/Rate/Year sliders (no CSV needed)',
+      ],
+      avoid: 'Plotting your own custom spreadsheet data — use Line or Area.',
+      columns: [
+        { col: 'Inputs', role: 'Amount, Rate % & Years (Left Panel)' },
+      ],
+    },
+  },
 };
 
 /** Default capability values (all false). Descriptors only override what's true. */
@@ -59,6 +340,7 @@ export function registerChart(descriptor) {
     summary: descriptor.summary || meta.summary || '',
     isCore: descriptor.isCore ?? meta.isCore ?? false,
     isNew: descriptor.isNew ?? meta.isNew ?? false,
+    guide: descriptor.guide || meta.guide || null,
     ...descriptor,
   });
 }

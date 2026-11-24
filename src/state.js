@@ -26,6 +26,7 @@ export const state = {
   chartDataStore: {},
   previousChartType: null,
   smartChartTop: true,
+  chartGuideEnabled: false,
 
   // Per-chart namespaced state
   charts: {

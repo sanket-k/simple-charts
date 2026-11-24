@@ -83,6 +83,7 @@ export function captureUserProfile() {
     },
     preferences: {
       smartChartTop: Boolean(state.smartChartTop),
+      chartGuideEnabled: Boolean(state.chartGuideEnabled),
     },
   };
 }
@@ -263,6 +264,13 @@ export function loadUserProfile() {
     } else {
       state.smartChartTop = true;
     }
+    if (p.preferences && typeof p.preferences.chartGuideEnabled === 'boolean') {
+      state.chartGuideEnabled = p.preferences.chartGuideEnabled;
+    } else if (p.preferences && (p.preferences.chartGuideMode === 'on' || p.preferences.chartGuideMode === 'smart')) {
+      state.chartGuideEnabled = true;
+    } else {
+      state.chartGuideEnabled = false;
+    }
     if (window.__refreshChartTypeGrid) window.__refreshChartTypeGrid();
 
     isRestoring = false;
@@ -359,6 +367,7 @@ export function resetUserProfile() {
   if (dom.maxRowsInput) dom.maxRowsInput.value = '50000';
 
   state.smartChartTop = true;
+  state.chartGuideEnabled = false;
   if (window.__refreshChartTypeGrid) window.__refreshChartTypeGrid();
 
   isRestoring = false;
