@@ -507,6 +507,13 @@ body.is-resizing-panels * {
   border: 1px solid var(--border-primary);
   color: var(--brand-orange);
   white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.panel-width-badge.is-saved {
+  color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 45%, transparent);
+  background: color-mix(in srgb, var(--color-success) 10%, var(--bg-secondary));
 }
 
 .panel-chrome-actions {

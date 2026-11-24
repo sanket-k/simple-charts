@@ -1,7 +1,7 @@
 /** Adjustable Panel Layout — independent drag resizing, collapsing, and DOM-synced panel reordering. */
 import { state } from '../state.js';
 import { dom, $$ } from '../dom.js';
-import { showToast } from '../utils.js';
+import { debounce, showToast } from '../utils.js';
 
 const STORAGE_KEY = 'simple_charts_panel_layout_v1';
 
@@ -23,6 +23,22 @@ const DEFAULT_LAYOUT = {
 
 let layout = cloneDefaultLayout();
 let tabletRightOpen = false;
+let isDraggingAny = false;
+const badgeFlashTimers = { left: null, right: null };
+
+function flashSavedBadge(id) {
+  const badge = id === 'left' ? dom.leftPanelWidthBadge : dom.rightPanelWidthBadge;
+  if (!badge) return;
+  const effectiveW = getEffectiveWidth(id);
+  badge.textContent = `${effectiveW}px · Saved`;
+  badge.classList.add('is-saved');
+  if (badgeFlashTimers[id]) clearTimeout(badgeFlashTimers[id]);
+  badgeFlashTimers[id] = setTimeout(() => {
+    badge.classList.remove('is-saved');
+    badge.textContent = `${getEffectiveWidth(id)}px`;
+    badgeFlashTimers[id] = null;
+  }, 1100);
+}
 
 function cloneDefaultLayout() {
   return {
@@ -105,12 +121,24 @@ function loadLayout() {
   }
 }
 
-function saveLayout() {
+function saveLayout(savedPanelId = null) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
+    if (savedPanelId) flashSavedBadge(savedPanelId);
   } catch {
     // Ignore storage quota errors
   }
+}
+
+const debouncedSaveLayout = debounce(() => saveLayout(), 150);
+
+/** Computes the rendered width clamped to the current viewport without mutating saved preferences. */
+function getEffectiveWidth(id) {
+  const savedWidth = layout[getWidthKey(id)];
+  if (isMobileViewport() || (id === 'right' && isTabletViewport())) {
+    return savedWidth;
+  }
+  return clampPanelWidth(id, savedWidth);
 }
 
 /** Reorders DOM children in #appLayout so keyboard focus matches visual order. */
@@ -147,20 +175,13 @@ function rebuildDomOrder() {
 function syncLayoutUI() {
   if (!dom.panelLeft || !dom.panelRight) return;
 
-  if (!isMobileViewport()) {
-    layout.leftWidth = clampPanelWidth('left', layout.leftWidth);
-    if (!isTabletViewport()) {
-      layout.rightWidth = clampPanelWidth('right', layout.rightWidth);
-    }
-  }
-
   const tablet = isTabletViewport();
   const stageIdx = layout.order.indexOf('stage');
 
   ['left', 'right'].forEach((id) => {
     const panel = getPanelEl(id);
     const splitter = getSplitterEl(id);
-    const width = layout[getWidthKey(id)];
+    const width = getEffectiveWidth(id);
     const collapsed = layout[getCollapsedKey(id)];
     const slotIdx = layout.order.indexOf(id);
 
@@ -178,7 +199,9 @@ function syncLayoutUI() {
     }
 
     const badge = id === 'left' ? dom.leftPanelWidthBadge : dom.rightPanelWidthBadge;
-    if (badge) badge.textContent = `${width}px`;
+    if (badge && !badge.classList.contains('is-saved')) {
+      badge.textContent = `${width}px`;
+    }
 
     const moveLeftBtn = panel.querySelector(`[data-panel-target="${id}"][data-panel-action="move-left"]`);
     const moveRightBtn = panel.querySelector(`[data-panel-target="${id}"][data-panel-action="move-right"]`);
@@ -236,7 +259,7 @@ function movePanel(id, delta) {
 
   rebuildDomOrder();
   syncLayoutUI();
-  saveLayout();
+  saveLayout(id);
   requestAnimationFrame(resizeChartSmoothly);
 }
 
@@ -248,7 +271,7 @@ function setPanelCollapsed(id, collapsed) {
   }
   layout[getCollapsedKey(id)] = Boolean(collapsed);
   syncLayoutUI();
-  saveLayout();
+  saveLayout(collapsed ? null : id);
   setTimeout(resizeChartSmoothly, 200);
 }
 
@@ -270,6 +293,7 @@ function wireSplitter(splitter, id) {
   splitter.addEventListener('pointerdown', (e) => {
     if (isMobileViewport()) return;
     e.preventDefault();
+    isDraggingAny = true;
     splitter.setPointerCapture(e.pointerId);
     splitter.classList.add('active');
     panel.classList.add('is-dragging');
@@ -282,8 +306,9 @@ function wireSplitter(splitter, id) {
     }
 
     const startX = e.clientX;
-    const startW = layout[getWidthKey(id)];
+    const startW = getEffectiveWidth(id);
     const isLeftOfStage = panel.dataset.side === 'left';
+    let ended = false;
 
     const onMove = (ev) => {
       const dx = ev.clientX - startX;
@@ -293,7 +318,10 @@ function wireSplitter(splitter, id) {
       panel.style.setProperty('--panel-w', `${next}px`);
 
       const badge = id === 'left' ? dom.leftPanelWidthBadge : dom.rightPanelWidthBadge;
-      if (badge) badge.textContent = `${next}px`;
+      if (badge) {
+        badge.classList.remove('is-saved');
+        badge.textContent = `${next}px`;
+      }
       splitter.setAttribute('aria-valuenow', String(next));
 
       if (dom.panelDragTooltip) {
@@ -308,9 +336,13 @@ function wireSplitter(splitter, id) {
       if (window.__repositionCatalogPopover) {
         window.__repositionCatalogPopover();
       }
+      debouncedSaveLayout();
     };
 
     const onEnd = () => {
+      if (ended) return;
+      ended = true;
+      isDraggingAny = false;
       splitter.classList.remove('active');
       panel.classList.remove('is-dragging');
       document.body.classList.remove('is-resizing-panels');
@@ -320,36 +352,39 @@ function wireSplitter(splitter, id) {
         chart.options.animation.duration = prevAnimDuration;
       }
 
-      saveLayout();
+      saveLayout(id);
       syncLayoutUI();
       resizeChartSmoothly();
 
       splitter.removeEventListener('pointermove', onMove);
       splitter.removeEventListener('pointerup', onEnd);
       splitter.removeEventListener('pointercancel', onEnd);
+      splitter.removeEventListener('lostpointercapture', onEnd);
     };
 
     splitter.addEventListener('pointermove', onMove);
     splitter.addEventListener('pointerup', onEnd);
     splitter.addEventListener('pointercancel', onEnd);
+    splitter.addEventListener('lostpointercapture', onEnd);
   });
 
   splitter.addEventListener('dblclick', () => {
     layout[getWidthKey(id)] = PANEL_BOUNDS[id].defaultWidth;
     syncLayoutUI();
-    saveLayout();
+    saveLayout(id);
     setTimeout(resizeChartSmoothly, 200);
   });
 
   splitter.addEventListener('keydown', (e) => {
     const step = e.shiftKey ? 40 : 12;
     const dir = panel.dataset.side === 'left' ? 1 : -1;
+    const current = getEffectiveWidth(id);
     let handled = true;
 
     if (e.key === 'ArrowRight') {
-      layout[getWidthKey(id)] = clampPanelWidth(id, layout[getWidthKey(id)] + step * dir);
+      layout[getWidthKey(id)] = clampPanelWidth(id, current + step * dir);
     } else if (e.key === 'ArrowLeft') {
-      layout[getWidthKey(id)] = clampPanelWidth(id, layout[getWidthKey(id)] - step * dir);
+      layout[getWidthKey(id)] = clampPanelWidth(id, current - step * dir);
     } else if (e.key === 'Home') {
       layout[getWidthKey(id)] = clampPanelWidth(id, PANEL_BOUNDS[id].min);
     } else if (e.key === 'End') {
@@ -363,7 +398,7 @@ function wireSplitter(splitter, id) {
     if (handled) {
       e.preventDefault();
       syncLayoutUI();
-      saveLayout();
+      saveLayout(id);
       resizeChartSmoothly();
     }
   });
@@ -398,5 +433,9 @@ export function initPanelLayout() {
 
   window.addEventListener('resize', () => {
     syncLayoutUI();
+  });
+
+  window.addEventListener('beforeunload', () => {
+    if (isDraggingAny) saveLayout();
   });
 }
