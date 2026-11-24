@@ -514,7 +514,7 @@ export function updateDataOptions() {
   }
 
   const showOptions = state.rawParsedData.labels.length > 100 || state.rawParsedData.datasets.length > 1;
-  dom.dataOptionsSection.style.display = showOptions ? 'block' : 'none';
+  dom.dataOptionsSection.style.display = showOptions ? '' : 'none';
 
   dom.columnSelect.innerHTML = '';
   state.rawParsedData.datasets.forEach((ds, i) => {
@@ -540,7 +540,7 @@ export function updateDataOptions() {
 
   const isAxisChart = ['line', 'timeline', 'bar', 'vbar', 'area', 'scatter', 'waterfall', 'combo'].includes(state.currentChartType);
   if (state.rawParsedData.datasets.length >= 2 && isAxisChart) {
-    dom.dualAxisSection.style.display = 'block';
+    dom.dualAxisSection.style.display = '';
     if (state.axisAssignments.length !== state.rawParsedData.datasets.length) {
       state.axisAssignments = state.rawParsedData.datasets.map((_, i) => i === 0 ? 'left' : 'right');
     }

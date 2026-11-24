@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
   <title>Simple Charts — Branded Chart Creator for Social Media</title>
   <meta name="description" content="Create beautiful, brand-consistent charts for social media. Line charts, pie charts, bar charts, and more with your custom brand kit.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -41,6 +42,13 @@
       <span class="data-info" id="dataInfo"></span>
     </div>
     <div class="topbar-right">
+      <button class="btn-icon" id="resetLayoutBtn" title="Reset panel widths &amp; positions" aria-label="Reset panel layout" hidden>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="16" rx="2"/>
+          <line x1="8" y1="4" x2="8" y2="20"/>
+          <line x1="16" y1="4" x2="16" y2="20"/>
+        </svg>
+      </button>
       <button class="btn-icon" id="shortcutsBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="2" y="4" width="20" height="16" rx="2" ry="2"/>
@@ -109,9 +117,27 @@
     </div>
   </header>
 
-  <main class="app-layout">
+  <main class="app-layout" id="appLayout">
     <!-- Left Panel: Chart Type & Settings -->
-    <aside class="panel panel-left">
+    <aside class="panel panel-left" id="panelLeft" data-panel="left" data-side="left" aria-label="Chart settings">
+      <div class="panel-chrome">
+        <div class="panel-chrome-title">
+          <span class="panel-chrome-name">Settings</span>
+          <span class="panel-width-badge" id="leftPanelWidthBadge">240px</span>
+        </div>
+        <div class="panel-chrome-actions">
+          <button type="button" class="panel-chrome-btn" data-panel-target="left" data-panel-action="move-left" title="Move panel left" aria-label="Move Settings panel left" disabled>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button type="button" class="panel-chrome-btn" data-panel-target="left" data-panel-action="move-right" title="Move panel right" aria-label="Move Settings panel right">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <button type="button" class="panel-chrome-btn" data-panel-target="left" data-panel-action="collapse" title="Collapse panel" aria-label="Collapse Settings panel">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="panel-scroll">
       <div class="panel-section">
         <h3 class="panel-title">
           <span>Chart Type</span>
@@ -145,9 +171,9 @@
       </div>
 
       <!-- Labels -->
-      <div class="panel-section">
+      <div class="panel-section panel-form-section">
         <h3 class="panel-title">Labels</h3>
-        <div class="input-group">
+        <div class="input-group input-group--full">
           <label for="chartTitle">Title</label>
           <input type="text" id="chartTitle" placeholder="Chart title…" value="">
         </div>
@@ -191,7 +217,7 @@
       </div>
 
       <!-- Innovator's Dilemma Settings (shown for innovator chart) -->
-      <div class="panel-section" id="innovatorSettings" style="display:none;">
+      <div class="panel-section panel-form-section" id="innovatorSettings" style="display:none;">
         <h3 class="panel-title">Innovator's Dilemma</h3>
         <div class="input-group-row">
           <div class="input-group">
@@ -326,7 +352,7 @@
       </div>
 
       <!-- Segmented Bar Settings -->
-      <div class="panel-section" id="segmentedSettings" style="display:none;">
+      <div class="panel-section panel-form-section" id="segmentedSettings" style="display:none;">
         <h3 class="panel-title">Segmented Bar</h3>
         <div class="input-group">
           <label for="segmentedMode">Mode</label>
@@ -377,7 +403,7 @@
           <span class="range-value" id="segmentedMinLabelPctValue">8%</span>
         </div>
         <div class="input-group-separator"></div>
-        <div class="input-group">
+        <div class="input-group input-group--full">
           <label>Comparison Groups</label>
           <div class="segmented-group-tabs" id="segmentedGroupTabs"></div>
           <div style="display:flex;gap:6px;margin-top:6px;">
@@ -404,7 +430,7 @@
       </div>
 
       <!-- Kano Model Settings -->
-      <div class="panel-section" id="kanoSettings" style="display:none;">
+      <div class="panel-section panel-form-section" id="kanoSettings" style="display:none;">
         <h3 class="panel-title">Kano Model</h3>
         <div class="input-group checkbox-group">
           <input type="checkbox" id="kanoShowMustBe" checked>
@@ -442,7 +468,7 @@
       </div>
 
       <!-- Dumbbell Chart Settings -->
-      <div class="panel-section" id="dumbbellSettings" style="display:none;">
+      <div class="panel-section panel-form-section" id="dumbbellSettings" style="display:none;">
         <h3 class="panel-title">Dumbbell Chart</h3>
         <div class="input-group">
           <label>Sort By</label>
@@ -509,7 +535,7 @@
       </div>
 
       <!-- Bubble Compare Settings -->
-      <div class="panel-section" id="bubbleCompareSettings" style="display:none;">
+      <div class="panel-section panel-form-section" id="bubbleCompareSettings" style="display:none;">
         <h3 class="panel-title">Bubble Compare</h3>
         <div class="input-group">
           <label>Sort By</label>
@@ -582,7 +608,7 @@
       </div>
 
       <!-- Overlay Chart Settings -->
-      <div class="panel-section" id="overlaySettings" style="display:none;">
+      <div class="panel-section panel-form-section" id="overlaySettings" style="display:none;">
         <h3 class="panel-title">Overlay Chart</h3>
         <div class="input-group">
           <label>Sort By</label>
@@ -650,7 +676,7 @@
         </div>
       </div>
 
-      <div class="panel-section" id="dualBarSettings" style="display:none;">
+      <div class="panel-section panel-form-section" id="dualBarSettings" style="display:none;">
         <h3 class="panel-title">Dual-Bar Chart</h3>
         <div class="input-group">
           <label for="dualBarInnerWidth">Inner Bar Width</label>
@@ -673,7 +699,7 @@
         </div>
       </div>
 
-      <div class="panel-section" id="inflationSettings" style="display:none;">
+      <div class="panel-section panel-form-section" id="inflationSettings" style="display:none;">
         <h3 class="panel-title">Inflation</h3>
         <div class="input-group">
           <label for="inflationAmount">Amount (USD)</label>
@@ -710,7 +736,7 @@
       </div>
 
       <!-- Style -->
-      <div class="panel-section">
+      <div class="panel-section panel-form-section">
         <h3 class="panel-title">Style</h3>
         <div class="input-group">
           <label for="chartCurve">Line Tension</label>
@@ -765,7 +791,7 @@
       </div>
 
       <!-- Display -->
-      <div class="panel-section">
+      <div class="panel-section panel-form-section">
         <h3 class="panel-title">Display</h3>
         <div class="input-group">
           <label for="legendPosition">Legend Position</label>
@@ -796,7 +822,7 @@
       </div>
 
       <!-- Formatting -->
-      <div class="panel-section">
+      <div class="panel-section panel-form-section">
         <h3 class="panel-title">Formatting</h3>
         <div class="input-group">
           <label for="xAxisType">X-Axis Type</label>
@@ -965,10 +991,22 @@
           <input type="color" class="color-input" id="chartGridColor" value="#E8DDD0">
         </div>
       </div>
+      </div>
     </aside>
 
+    <!-- Left Panel Resizer -->
+    <div class="panel-splitter" id="leftSplitter" role="separator" tabindex="0" aria-orientation="vertical" aria-label="Resize Settings panel" aria-valuenow="240" aria-valuemin="190" aria-valuemax="640"></div>
+
     <!-- Center: Chart Preview -->
-    <section class="chart-stage">
+    <section class="chart-stage" id="chartStage">
+      <button type="button" class="panel-restore-pill left" id="restoreLeftPanelBtn" hidden title="Show Settings panel" aria-label="Show Settings panel">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+        <span>Settings</span>
+      </button>
+      <button type="button" class="panel-restore-pill right" id="restoreRightPanelBtn" hidden title="Show Data panel" aria-label="Show Data panel">
+        <span>Data</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
       <div class="chart-wrapper">
         <div class="chart-container" id="chartContainer">
           <canvas id="chartCanvas"></canvas>
@@ -989,8 +1027,29 @@
       </div>
     </section>
 
+    <!-- Right Panel Resizer -->
+    <div class="panel-splitter" id="rightSplitter" role="separator" tabindex="0" aria-orientation="vertical" aria-label="Resize Data panel" aria-valuenow="280" aria-valuemin="220" aria-valuemax="680"></div>
+
     <!-- Right Panel: Data Input -->
-    <aside class="panel panel-right">
+    <aside class="panel panel-right" id="panelRight" data-panel="right" data-side="right" aria-label="Data and branding">
+      <div class="panel-chrome">
+        <div class="panel-chrome-title">
+          <span class="panel-chrome-name">Data &amp; Brand</span>
+          <span class="panel-width-badge" id="rightPanelWidthBadge">280px</span>
+        </div>
+        <div class="panel-chrome-actions">
+          <button type="button" class="panel-chrome-btn" data-panel-target="right" data-panel-action="move-left" title="Move panel left" aria-label="Move Data panel left">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button type="button" class="panel-chrome-btn" data-panel-target="right" data-panel-action="move-right" title="Move panel right" aria-label="Move Data panel right" disabled>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <button type="button" class="panel-chrome-btn" data-panel-target="right" data-panel-action="collapse" title="Collapse panel" aria-label="Collapse Data panel">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="panel-scroll">
       <div class="panel-section">
         <h3 class="panel-title">
           Data
@@ -1173,7 +1232,7 @@
       </div>
 
       <!-- Branding -->
-      <div class="panel-section">
+      <div class="panel-section panel-form-section">
         <h3 class="panel-title">
           Branding
           <span class="brand-kit-status" id="brandKitStatus" title="Brand Kit and personal defaults are automatically saved locally in your browser">Auto-Saved</span>
@@ -1184,11 +1243,11 @@
             <input type="file" id="importBrandKitFile" accept=".json" hidden>
           </div>
         </h3>
-        <div class="input-group">
+        <div class="input-group input-group--full">
           <label for="brandName">Brand Name</label>
           <input type="text" id="brandName" placeholder="e.g. Simple Charts" value="Simple Charts">
         </div>
-        <div class="input-group">
+        <div class="input-group input-group--full">
           <label for="brandLogoFile">Brand Logo</label>
           <div class="brand-logo-tabs">
             <button class="brand-logo-tab active" id="logoTabFile" data-tab="file">File</button>
@@ -1236,8 +1295,11 @@
           <span class="range-value" id="brandOpacityValue">0.7</span>
         </div>
       </div>
+      </div>
     </aside>
   </main>
+
+  <div class="panel-drag-tooltip" id="panelDragTooltip" aria-hidden="true"></div>
 
   <!-- Shared Datalist for Sector Suggestions -->
   <datalist id="savedCategoryDatalist"></datalist>

@@ -7,6 +7,18 @@ export const $$ = (sel) => document.querySelectorAll(sel);
 
 /** Cached DOM references — avoids repeated querySelector calls throughout the app. */
 export const dom = {
+  appLayout: $('#appLayout'),
+  panelLeft: $('#panelLeft'),
+  panelRight: $('#panelRight'),
+  leftSplitter: $('#leftSplitter'),
+  rightSplitter: $('#rightSplitter'),
+  chartStage: $('#chartStage'),
+  leftPanelWidthBadge: $('#leftPanelWidthBadge'),
+  rightPanelWidthBadge: $('#rightPanelWidthBadge'),
+  restoreLeftPanelBtn: $('#restoreLeftPanelBtn'),
+  restoreRightPanelBtn: $('#restoreRightPanelBtn'),
+  resetLayoutBtn: $('#resetLayoutBtn'),
+  panelDragTooltip: $('#panelDragTooltip'),
   shortcutsBtn: $('#shortcutsBtn'),
   shortcutsModal: $('#shortcutsModal'),
   closeShortcutsModalBtn: $('#closeShortcutsModalBtn'),

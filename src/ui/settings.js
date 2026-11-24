@@ -55,10 +55,10 @@ export function updateSettingsVisibility() {
     inflation: dom.inflationSettings,
   };
   Object.entries(chartPanelMap).forEach(([id, panel]) => {
-    if (panel) panel.style.display = t === id ? 'block' : 'none';
+    if (panel) panel.style.display = t === id ? '' : 'none';
   });
   // Timeline settings panel also shows for innovator
-  if (dom.timelineSettings) dom.timelineSettings.style.display = (t === 'timeline' || t === 'innovator') ? 'block' : 'none';
+  if (dom.timelineSettings) dom.timelineSettings.style.display = (t === 'timeline' || t === 'innovator') ? '' : 'none';
 
   // Shared controls driven by capabilities
   toggle(dom.chartCurve, caps.curve);
@@ -95,14 +95,14 @@ export function updateSettingsVisibility() {
     if (!caps.dualAxis || !state.rawParsedData || state.rawParsedData.datasets.length < 2) {
       dom.dualAxisSection.style.display = 'none';
     } else {
-      dom.dualAxisSection.style.display = 'block';
+      dom.dualAxisSection.style.display = '';
     }
   }
 
   const comboEl = dom.comboSettings;
   if (comboEl) {
     if (t === 'combo' && state.rawParsedData && state.rawParsedData.datasets.length >= 2) {
-      comboEl.style.display = 'block';
+      comboEl.style.display = '';
       renderComboDatasetTypes();
     } else {
       comboEl.style.display = 'none';
@@ -114,7 +114,7 @@ export function updateSettingsVisibility() {
     const isLineStyleChart = caps.lineStyle;
     const comboHasLine = t === 'combo' && state.datasetChartTypes.some(dt => dt === 'line');
     const showLineStyles = (isLineStyleChart || comboHasLine) && state.rawParsedData && state.rawParsedData.datasets.length >= 1;
-    lineStyleSection.style.display = showLineStyles ? 'block' : 'none';
+    lineStyleSection.style.display = showLineStyles ? '' : 'none';
     if (showLineStyles) renderLineStyleControls();
   }
 }
@@ -349,7 +349,7 @@ function renderCatalogGrid() {
   });
 }
 
-function positionCatalogPopover() {
+export function positionCatalogPopover() {
   const pop = dom.chartCatalogPopover;
   const trigger = dom.chartCatalogTrigger;
   if (!pop || !trigger || pop.hidden) return;
@@ -358,11 +358,14 @@ function positionCatalogPopover() {
   const margin = 12;
   const popW = Math.min(410, window.innerWidth - margin * 2);
   const popH = Math.min(560, window.innerHeight - 76);
+  const maxTop = Math.max(60, window.innerHeight - popH - margin);
+  const desiredTop = Math.min(Math.max(60, rect.top - 90), maxTop);
 
-  if (window.innerWidth > 768 && rect.right + popW + margin <= window.innerWidth) {
+  if (window.innerWidth > 768 && rect.right + popW + 10 + margin <= window.innerWidth) {
     pop.style.left = `${Math.round(rect.right + 10)}px`;
-    const maxTop = Math.max(60, window.innerHeight - popH - margin);
-    const desiredTop = Math.min(Math.max(60, rect.top - 90), maxTop);
+    pop.style.top = `${Math.round(desiredTop)}px`;
+  } else if (window.innerWidth > 768 && rect.left - popW - 10 >= margin) {
+    pop.style.left = `${Math.round(rect.left - popW - 10)}px`;
     pop.style.top = `${Math.round(desiredTop)}px`;
   } else {
     pop.style.left = `${Math.round(Math.max(margin, (window.innerWidth - popW) / 2))}px`;
@@ -507,6 +510,7 @@ export function initChartTypeGrid() {
   });
 
   window.addEventListener('resize', positionCatalogPopover);
+  window.__repositionCatalogPopover = positionCatalogPopover;
 
   // Data format info-tip toggle (shared for all chart types)
   const formatBtn = document.getElementById('chartDataFormatBtn');

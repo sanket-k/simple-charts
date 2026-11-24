@@ -23,6 +23,7 @@ import { initExport } from './ui/export.js';
 import { initClipboard } from './ui/clipboard.js?v=2';
 import { initInflationUI } from './ui/inflation-ui.js';
 import { initSavedGraphs } from './ui/saved-graphs.js';
+import { initPanelLayout } from './ui/panel-layout.js';
 import { loadUserProfile, initUserProfile, debouncedSaveUserProfile, saveUserProfile } from './ui/user-profile.js';
 import { trackChartAction } from './ui/chart-usage.js';
 
@@ -445,6 +446,7 @@ function init() {
   }
 
   // Initialize all UI modules
+  initPanelLayout();
   initTheme();
   initColorPickers();
   initChartTypeGrid();
